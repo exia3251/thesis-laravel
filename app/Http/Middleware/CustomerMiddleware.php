@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class CustomerMiddleware
+{
+    public function handle(Request $request, Closure $next)
+    {
+        if (!Auth::check() || !Auth::user()->isCustomer()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please login first'
+                ], 401);
+            }
+            return redirect('/shop/login');
+        }
+
+        return $next($request);
+    }
+}
