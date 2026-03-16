@@ -6,7 +6,6 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\CustomerProfile;
-use App\Models\Supplier;
 use App\Models\Product;
 use App\Models\Inventory;
 
@@ -45,34 +44,7 @@ class DatabaseSeeder extends Seeder
 
         echo "✅ Customer created: customer / customer123\n";
 
-        // Create suppliers
-        $supplier1 = Supplier::create([
-            'supplier_name' => 'Shell Philippines',
-            'contact_person' => 'Maria Santos',
-            'phone' => '02-8888-8888',
-            'email' => 'shell@example.com',
-            'address' => 'Makati City, Metro Manila'
-        ]);
-
-        $supplier2 = Supplier::create([
-            'supplier_name' => 'Petron Corporation',
-            'contact_person' => 'Juan Cruz',
-            'phone' => '02-7777-7777',
-            'email' => 'petron@example.com',
-            'address' => 'Pasig City, Metro Manila'
-        ]);
-
-        $supplier3 = Supplier::create([
-            'supplier_name' => 'Caltex',
-            'contact_person' => 'Pedro Reyes',
-            'phone' => '02-6666-6666',
-            'email' => 'caltex@example.com',
-            'address' => 'Taguig City, Metro Manila'
-        ]);
-
-        echo "✅ 3 Suppliers created\n";
-
-        // Create sample products with inventory
+        // Create sample products with inventory (NO suppliers)
         $products = [
             [
                 'product_name' => 'Shell Helix Ultra 5W-40 (1L)',
@@ -82,8 +54,7 @@ class DatabaseSeeder extends Seeder
                 'unit' => '1 Liter',
                 'price' => 850.00,
                 'reorder_level' => 10,
-                'supplier_id' => $supplier1->supplier_id,
-                'description' => 'Fully synthetic motor oil',
+                'description' => 'Fully synthetic motor oil for superior engine protection',
                 'stock' => 50
             ],
             [
@@ -94,8 +65,7 @@ class DatabaseSeeder extends Seeder
                 'unit' => '4 Liters',
                 'price' => 3200.00,
                 'reorder_level' => 5,
-                'supplier_id' => $supplier1->supplier_id,
-                'description' => 'Fully synthetic motor oil',
+                'description' => 'Fully synthetic motor oil - 4 liter pack for better value',
                 'stock' => 30
             ],
             [
@@ -106,8 +76,7 @@ class DatabaseSeeder extends Seeder
                 'unit' => '1 Liter',
                 'price' => 450.00,
                 'reorder_level' => 15,
-                'supplier_id' => $supplier2->supplier_id,
-                'description' => 'High performance semi-synthetic oil',
+                'description' => 'High performance semi-synthetic oil for racing enthusiasts',
                 'stock' => 75
             ],
             [
@@ -118,8 +87,7 @@ class DatabaseSeeder extends Seeder
                 'unit' => '4 Liters',
                 'price' => 1700.00,
                 'reorder_level' => 8,
-                'supplier_id' => $supplier2->supplier_id,
-                'description' => 'High performance semi-synthetic oil',
+                'description' => 'High performance semi-synthetic oil - 4 liter value pack',
                 'stock' => 40
             ],
             [
@@ -130,8 +98,7 @@ class DatabaseSeeder extends Seeder
                 'unit' => '1 Liter',
                 'price' => 280.00,
                 'reorder_level' => 20,
-                'supplier_id' => $supplier3->supplier_id,
-                'description' => 'Conventional mineral oil',
+                'description' => 'Conventional mineral oil for older engines',
                 'stock' => 100
             ],
             [
@@ -142,8 +109,7 @@ class DatabaseSeeder extends Seeder
                 'unit' => '4 Liters',
                 'price' => 1050.00,
                 'reorder_level' => 10,
-                'supplier_id' => $supplier3->supplier_id,
-                'description' => 'Conventional mineral oil',
+                'description' => 'Conventional mineral oil - 4 liter economy pack',
                 'stock' => 60
             ],
             [
@@ -154,8 +120,7 @@ class DatabaseSeeder extends Seeder
                 'unit' => '1 Liter',
                 'price' => 650.00,
                 'reorder_level' => 12,
-                'supplier_id' => $supplier1->supplier_id,
-                'description' => 'Heavy duty diesel engine oil',
+                'description' => 'Heavy duty diesel engine oil with low emissions technology',
                 'stock' => 45
             ],
             [
@@ -166,8 +131,7 @@ class DatabaseSeeder extends Seeder
                 'unit' => '1 Liter',
                 'price' => 900.00,
                 'reorder_level' => 8,
-                'supplier_id' => $supplier2->supplier_id,
-                'description' => 'Advanced fuel economy oil',
+                'description' => 'Advanced fuel economy oil for modern engines',
                 'stock' => 35
             ],
         ];
@@ -202,10 +166,9 @@ class DatabaseSeeder extends Seeder
         echo "  Password: customer123\n";
         echo "========================================\n";
         echo "\n";
-        echo "⚠️  SECURITY NOTE:\n";
-        echo "Passwords are now HASHED in the database!\n";
-        echo "You can verify in phpMyAdmin - passwords will look like:\n";
-        echo "\$2y\$12\$abcd1234... (bcrypt hash)\n";
+        echo "📦 PRODUCTS (No Suppliers):\n";
+        echo "All products now use 'brand' field only\n";
+        echo "No supplier relationships needed!\n";
         echo "========================================\n";
     }
 }

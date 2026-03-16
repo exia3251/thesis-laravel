@@ -7,7 +7,6 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\SalesController;
-use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Customer\ShopController;
 use App\Http\Controllers\Customer\CartController;
@@ -42,13 +41,12 @@ Route::middleware(['admin', 'throttle:100,1'])->prefix('admin')->group(function 
     // Dashboard
     Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
     
-    // Products
+    // Products (NO supplier endpoints)
     Route::get('/products', [ProductController::class, 'getProducts']);
     Route::get('/products/{id}', [ProductController::class, 'getProduct']);
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{id}', [ProductController::class, 'update']);
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
-    Route::get('/suppliers/list', [ProductController::class, 'getSuppliers']);
     
     // Inventory
     Route::get('/inventory', [InventoryController::class, 'getInventory']);
@@ -61,12 +59,6 @@ Route::middleware(['admin', 'throttle:100,1'])->prefix('admin')->group(function 
     Route::get('/sales/{id}', [SalesController::class, 'getSale']);
     Route::post('/sales', [SalesController::class, 'store']);
     Route::get('/sales/products/list', [SalesController::class, 'getProducts']);
-    
-    // Suppliers
-    Route::get('/suppliers', [SupplierController::class, 'getSuppliers']);
-    Route::post('/suppliers', [SupplierController::class, 'store']);
-    Route::put('/suppliers/{id}', [SupplierController::class, 'update']);
-    Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy']);
     
     // Reports
     Route::get('/reports/sales', [ReportController::class, 'salesReport']);
