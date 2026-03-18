@@ -54,7 +54,7 @@ class AuthController extends Controller
 
         // Find user
         $user = User::where('username', $request->username)
-                    ->whereIn('role', ['admin', 'staff'])
+                    ->whereIn('role', ['super_admin', 'admin', 'staff'])
                     ->first();
 
         // Verify password with Hash::check

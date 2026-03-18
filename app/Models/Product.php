@@ -37,11 +37,6 @@ class Product extends Model
         return $this->hasMany(SaleItem::class, 'product_id', 'product_id');
     }
 
-    public function stockTransactions()
-    {
-        return $this->hasMany(StockTransaction::class, 'product_id', 'product_id');
-    }
-
     public function cartItems()
     {
         return $this->hasMany(ShoppingCart::class, 'product_id', 'product_id');

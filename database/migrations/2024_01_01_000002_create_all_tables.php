@@ -1,17 +1,13 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // Products table (NO supplier_id)
+        // Products
         Schema::create('products', function (Blueprint $table) {
             $table->id('product_id');
             $table->string('product_name', 200);
@@ -25,7 +21,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Inventory table
+        // Inventory
         Schema::create('inventory', function (Blueprint $table) {
             $table->id('inventory_id');
             $table->foreignId('product_id')->constrained('products', 'product_id')->onDelete('cascade');
@@ -34,7 +30,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Sales table
+        // Sales
         Schema::create('sales', function (Blueprint $table) {
             $table->id('sale_id');
             $table->foreignId('user_id')->constrained('users', 'user_id');
@@ -43,7 +39,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Sale Items table
+        // Sale Items
         Schema::create('sale_items', function (Blueprint $table) {
             $table->id('sale_item_id');
             $table->foreignId('sale_id')->constrained('sales', 'sale_id')->onDelete('cascade');
@@ -54,7 +50,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Stock Transactions table
+        // Stock Transactions
         Schema::create('stock_transactions', function (Blueprint $table) {
             $table->id('transaction_id');
             $table->foreignId('product_id')->constrained('products', 'product_id');
@@ -67,7 +63,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Customer Profiles table
+        // Customer Profiles
         Schema::create('customer_profiles', function (Blueprint $table) {
             $table->id('profile_id');
             $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
@@ -77,7 +73,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Shopping Cart table
+        // Shopping Cart
         Schema::create('shopping_cart', function (Blueprint $table) {
             $table->id('cart_id');
             $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
@@ -86,7 +82,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Activity Logs table
+        // Activity Logs
         Schema::create('activity_logs', function (Blueprint $table) {
             $table->id('log_id');
             $table->foreignId('user_id')->constrained('users', 'user_id');
@@ -97,9 +93,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('activity_logs');

@@ -11,17 +11,21 @@ class User extends Authenticatable
 
     protected $primaryKey = 'user_id';
     
-    protected $fillable = ['username', 'password', 'full_name', 'role'];
+    protected $fillable = [
+        'username', 
+        'password', 
+        'full_name', 
+        'role',
+        'is_active'
+    ];
     
     protected $hidden = ['password'];
 
-    /**
-     * Auto-hash passwords when setting
-     */
     protected function casts(): array
     {
         return [
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -46,19 +50,45 @@ class User extends Authenticatable
         return $this->hasMany(ActivityLog::class, 'user_id', 'user_id');
     }
 
-    public function stockTransactions()
+    // Role checks
+    public function isSuperAdmin()
     {
-        return $this->hasMany(StockTransaction::class, 'user_id', 'user_id');
+        return $this->role === 'super_admin' && $this->is_active;
     }
 
-    // Helper methods
     public function isAdmin()
     {
-        return in_array($this->role, ['admin', 'staff']);
+        return in_array($this->role, ['super_admin', 'admin']) && $this->is_active;
     }
 
     public function isCustomer()
     {
-        return $this->role === 'customer';
+        return $this->role === 'customer' && $this->is_active;
+    }
+    
+    // Permissions
+    public function canManageUsers()
+    {
+        return $this->isSuperAdmin();
+    }
+
+    public function canManageProducts()
+    {
+        return $this->isAdmin();
+    }
+
+    public function canManageInventory()
+    {
+        return $this->isAdmin();
+    }
+
+    public function canCreateSales()
+    {
+        return $this->isAdmin();
+    }
+
+    public function canViewReports()
+    {
+        return $this->isAdmin();
     }
 }
