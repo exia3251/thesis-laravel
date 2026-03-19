@@ -16,7 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             // Role-based middleware
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'super_admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
             'customer' => \App\Http\Middleware\CustomerMiddleware::class,
+            'active_session' => \App\Http\Middleware\EnforceSingleSessionMiddleware::class,
             
             // Permission-based middleware (NEW!)
             'permission' => \App\Http\Middleware\PermissionMiddleware::class,

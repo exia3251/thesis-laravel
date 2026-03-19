@@ -41,7 +41,7 @@ class CartController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,product_id',
-            'quantity' => 'integer|min:1'
+            'quantity' => 'nullable|integer|min:1|max:999'
         ]);
 
         $quantity = $request->quantity ?? 1;
@@ -92,7 +92,7 @@ class CartController extends Controller
     public function updateCart(Request $request, $cartId)
     {
         $request->validate([
-            'quantity' => 'required|integer|min:1'
+            'quantity' => 'required|integer|min:1|max:999'
         ]);
 
         $cartItem = ShoppingCart::where('cart_id', $cartId)
@@ -108,6 +108,13 @@ class CartController extends Controller
 
         // Check stock
         $inventory = Inventory::where('product_id', $cartItem->product_id)->first();
+        if (!$inventory) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Inventory record not found for this product.'
+            ], 400);
+        }
+
         if ($request->quantity > $inventory->quantity) {
             return response()->json([
                 'success' => false,

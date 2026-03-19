@@ -26,12 +26,22 @@ class OrderController extends Controller
         return view('customer.orders');
     }
 
+    public function show($saleId)
+    {
+        $sale = Sale::with(['items.product', 'user'])
+            ->where('sale_id', $saleId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        return view('customer.order-details', compact('sale'));
+    }
+
     // Place order
     public function placeOrder(Request $request)
     {
         $request->validate([
-            'payment_method' => 'required|string',
-            'notes' => 'nullable|string'
+            'payment_method' => 'required|in:cash_on_delivery,gcash,cash,other',
+            'notes' => 'nullable|string|max:500'
         ]);
 
         DB::beginTransaction();
@@ -59,6 +69,13 @@ class OrderController extends Controller
             // Get customer profile
             $profile = CustomerProfile::where('user_id', auth()->id())->first();
 
+            if (!$profile || blank($profile->address) || blank($profile->phone)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please complete your profile address and phone before placing an order.'
+                ], 422);
+            }
+
             // Calculate total
             $total = $cartItems->sum(function ($item) {
                 return $item->product->price * $item->quantity;
@@ -70,7 +87,10 @@ class OrderController extends Controller
                 'user_id' => auth()->id(),
                 'total_amount' => $total,
                 'payment_method' => $request->payment_method,
-                'status' => 'Pending',
+                'payment_status' => 'unpaid',
+                'paid_amount' => 0,
+                'balance_due' => $total,
+                'delivery_status' => 'to_receive',
                 'sale_date' => now()
             ]);
 
@@ -91,7 +111,7 @@ class OrderController extends Controller
                 // Log transaction
                 StockTransaction::logTransaction(
                     $item->product_id,
-                    'SALE',
+                    'stock_out',
                     $item->quantity,
                     'ORDER-' . $sale->sale_id,
                     'Customer order'
@@ -131,7 +151,10 @@ class OrderController extends Controller
                     'sale_date' => $sale->sale_date,
                     'total_amount' => $sale->total_amount,
                     'payment_method' => $sale->payment_method,
-                    'status' => $sale->status,
+                    'payment_status' => $sale->payment_status,
+                    'paid_amount' => $sale->paid_amount,
+                    'balance_due' => $sale->balance_due,
+                    'delivery_status' => $sale->delivery_status,
                     'item_count' => $sale->items->count()
                 ];
             });

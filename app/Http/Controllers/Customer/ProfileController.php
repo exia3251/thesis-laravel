@@ -86,6 +86,13 @@ class ProfileController extends Controller
         $user->password = $request->new_password;
         $user->save();
 
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
+            $user->forceFill([
+                'current_session_id' => $request->session()->getId(),
+            ])->save();
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Password changed successfully'

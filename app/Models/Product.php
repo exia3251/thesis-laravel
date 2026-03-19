@@ -19,7 +19,8 @@ class Product extends Model
         'unit',
         'price',
         'reorder_level',
-        'description'
+        'description',
+        'image_path',
     ];
 
     protected $casts = [

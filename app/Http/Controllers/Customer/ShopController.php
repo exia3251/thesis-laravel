@@ -30,7 +30,8 @@ class ShopController extends Controller
                     'unit' => $product->unit,
                     'price' => $product->price,
                     'description' => $product->description,
-                    'quantity' => $product->inventory->quantity ?? 0
+                    'quantity' => $product->inventory->quantity ?? 0,
+                    'image_url' => $product->image_path ? asset('storage/' . $product->image_path) : null,
                 ];
             });
 

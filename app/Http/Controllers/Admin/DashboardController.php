@@ -58,6 +58,28 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        $lowStockProducts = Product::with('inventory')
+            ->get()
+            ->filter(function ($product) {
+                return ($product->inventory->quantity ?? 0) <= $product->reorder_level;
+            })
+            ->sortBy(function ($product) {
+                return $product->inventory->quantity ?? 0;
+            })
+            ->take(5)
+            ->values()
+            ->map(function ($product) {
+                return [
+                    'product_id' => $product->product_id,
+                    'product_name' => $product->product_name,
+                    'quantity' => $product->inventory->quantity ?? 0,
+                    'reorder_level' => $product->reorder_level,
+                ];
+            });
+
+        $pendingDeliveries = Sale::whereIn('delivery_status', ['to_deliver', 'to_receive'])->count();
+        $unpaidSales = Sale::whereIn('payment_status', ['unpaid', 'partial'])->count();
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -67,7 +89,10 @@ class DashboardController extends Controller
                 'sales_count' => $salesStats->count ?? 0,
                 'sales_revenue' => $salesStats->revenue ?? 0,
                 'sales_trend' => $salesTrend,
-                'top_products' => $topProducts
+                'top_products' => $topProducts,
+                'low_stock_products' => $lowStockProducts,
+                'pending_deliveries' => $pendingDeliveries,
+                'unpaid_sales' => $unpaidSales,
             ]
         ]);
     }

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
+use App\Models\ActivityLog;
 
 class AuthController extends Controller
 {
@@ -35,8 +36,8 @@ class AuthController extends Controller
     public function adminLogin(Request $request)
     {
         $request->validate([
-            'username' => 'required|string',
-            'password' => 'required|string'
+            'username' => 'required|string|max:50',
+            'password' => 'required|string|max:255'
         ]);
 
         // Rate limiting key
@@ -54,15 +55,35 @@ class AuthController extends Controller
 
         // Find user
         $user = User::where('username', $request->username)
-                    ->whereIn('role', ['super_admin', 'admin', 'staff'])
+                    ->whereIn('role', ['super_admin', 'admin'])
                     ->first();
 
         // Verify password with Hash::check
         if ($user && Hash::check($request->password, $user->password)) {
             // Clear rate limiter on success
             RateLimiter::clear($key);
-            
+            $previousSessionId = $user->current_session_id;
+
             Auth::login($user);
+
+            if ($request->hasSession()) {
+                $request->session()->regenerate();
+            }
+
+            $user->forceFill([
+                'current_session_id' => $request->session()->getId(),
+            ])->save();
+
+            ActivityLog::logAction($user->user_id, 'admin_login', 'Admin logged in', $request->ip());
+
+            if ($previousSessionId && $previousSessionId !== $request->session()->getId()) {
+                ActivityLog::logAction(
+                    $user->user_id,
+                    'single_session_replaced',
+                    'Previous active session was replaced by a new admin login.',
+                    $request->ip()
+                );
+            }
             
             return response()->json([
                 'success' => true,
@@ -85,8 +106,8 @@ class AuthController extends Controller
     public function customerLogin(Request $request)
     {
         $request->validate([
-            'username' => 'required|string',
-            'password' => 'required|string'
+            'username' => 'required|string|max:50',
+            'password' => 'required|string|max:255'
         ]);
 
         // Rate limiting key
@@ -111,8 +132,28 @@ class AuthController extends Controller
         if ($user && Hash::check($request->password, $user->password)) {
             // Clear rate limiter on success
             RateLimiter::clear($key);
-            
+            $previousSessionId = $user->current_session_id;
+
             Auth::login($user);
+
+            if ($request->hasSession()) {
+                $request->session()->regenerate();
+            }
+
+            $user->forceFill([
+                'current_session_id' => $request->session()->getId(),
+            ])->save();
+
+            ActivityLog::logAction($user->user_id, 'customer_login', 'Customer logged in', $request->ip());
+
+            if ($previousSessionId && $previousSessionId !== $request->session()->getId()) {
+                ActivityLog::logAction(
+                    $user->user_id,
+                    'single_session_replaced',
+                    'Previous active session was replaced by a new customer login.',
+                    $request->ip()
+                );
+            }
             
             return response()->json([
                 'success' => true,
@@ -145,7 +186,7 @@ class AuthController extends Controller
             'full_name' => 'required|max:100',
             'phone' => 'required|max:20',
             'email' => 'nullable|email|max:100',
-            'address' => 'required'
+            'address' => 'required|string|max:500'
         ]);
 
         DB::beginTransaction();
@@ -185,9 +226,27 @@ class AuthController extends Controller
     /**
      * Logout
      */
-    public function logout()
+    public function logout(Request $request)
     {
+        $user = auth()->user();
+        $userId = $user?->user_id;
+
+        if ($user && $request->hasSession() && $user->current_session_id === $request->session()->getId()) {
+            $user->forceFill([
+                'current_session_id' => null,
+            ])->save();
+        }
+
         Auth::logout();
+
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        if ($userId) {
+            ActivityLog::logAction($userId, 'logout', 'User logged out', $request->ip());
+        }
         
         return response()->json([
             'success' => true,

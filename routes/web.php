@@ -1,16 +1,21 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\InventoryController;
-use App\Http\Controllers\Admin\SalesController;
+use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SalesController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Customer\CartController;
+use App\Http\Controllers\Customer\OrderController;
+use App\Http\Controllers\Customer\ProfileController;
+use App\Http\Controllers\Customer\ShopController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Web Routes - Frontend Views
 |--------------------------------------------------------------------------
 */
 
@@ -19,31 +24,99 @@ Route::get('/', function () {
     return redirect('/shop');
 });
 
-// Auth Routes
-Route::get('/admin/login', [AuthController::class, 'adminLoginPage'])->name('admin.login');
-Route::get('/shop/login', [AuthController::class, 'customerLoginPage'])->name('customer.login');
+// Admin authentication
+Route::middleware('guest')->group(function () {
+    Route::get('/admin/login', function () {
+        return view('admin.login');
+    })->name('admin.login');
+});
 
-// Admin Routes (Protected by admin middleware)
-Route::middleware(['admin'])->prefix('admin')->group(function () {
+Route::post('/admin/login', [AuthController::class, 'adminLogin'])->name('admin.login.submit');
+Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
+
+// Admin pages
+Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
-    
-    // Products
     Route::get('/products', [ProductController::class, 'index'])->name('admin.products');
-    Route::get('/products/create', [ProductController::class, 'create'])->name('admin.products.create');
-    Route::get('/products/{id}/edit', [ProductController::class, 'edit'])->name('admin.products.edit');
-    
-    // Inventory
     Route::get('/inventory', [InventoryController::class, 'index'])->name('admin.inventory');
-    Route::get('/inventory/stock-in', [InventoryController::class, 'stockInForm'])->name('admin.inventory.stock-in');
-    Route::get('/inventory/stock-out', [InventoryController::class, 'stockOutForm'])->name('admin.inventory.stock-out');
-    
-    // Sales
     Route::get('/sales', [SalesController::class, 'index'])->name('admin.sales');
-    Route::get('/sales/create', [SalesController::class, 'create'])->name('admin.sales.create');
-    Route::get('/sales/{id}', [SalesController::class, 'show'])->name('admin.sales.show');
-    
-    // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports');
-    Route::get('/reports/sales', [ReportController::class, 'sales'])->name('admin.reports.sales');
-    Route::get('/reports/inventory', [ReportController::class, 'inventory'])->name('admin.reports.inventory');
+});
+
+Route::middleware(['admin', 'super_admin', 'active_session'])->prefix('admin')->group(function () {
+    Route::get('/users', [UserManagementController::class, 'index'])->name('admin.users');
+});
+
+// Session-backed admin endpoints
+Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(function () {
+    Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
+    Route::get('/products', [ProductController::class, 'getProducts']);
+    Route::get('/products/{id}', [ProductController::class, 'getProduct']);
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::post('/products/{id}', [ProductController::class, 'update']);
+    Route::put('/products/{id}', [ProductController::class, 'update']);
+    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+
+    Route::get('/inventory', [InventoryController::class, 'getInventory']);
+    Route::post('/inventory/stock-in', [InventoryController::class, 'stockIn']);
+    Route::post('/inventory/stock-out', [InventoryController::class, 'stockOut']);
+    Route::get('/inventory/transactions/{productId}', [InventoryController::class, 'getTransactions']);
+
+    Route::get('/sales', [SalesController::class, 'getSales']);
+    Route::get('/sales/{id}', [SalesController::class, 'getSale']);
+    Route::post('/sales', [SalesController::class, 'store']);
+    Route::put('/sales/{id}/status', [SalesController::class, 'updateStatus']);
+    Route::get('/sales/products/list', [SalesController::class, 'getProducts']);
+    Route::get('/reports/sales', [ReportController::class, 'salesReport']);
+    Route::get('/reports/inventory', [ReportController::class, 'inventoryReport']);
+    Route::get('/reports/sales/export', [ReportController::class, 'exportSalesCsv']);
+    Route::get('/reports/inventory/export', [ReportController::class, 'exportInventoryCsv']);
+});
+
+Route::middleware(['admin', 'super_admin', 'active_session'])->prefix('admin-api')->group(function () {
+    Route::get('/users', [UserManagementController::class, 'getUsers']);
+    Route::post('/users', [UserManagementController::class, 'store']);
+    Route::put('/users/{id}', [UserManagementController::class, 'update']);
+    Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
+    Route::get('/logs', [UserManagementController::class, 'getLogs']);
+});
+
+// Customer authentication
+Route::middleware('guest')->group(function () {
+    Route::get('/shop/login', function () {
+        return view('customer.login');
+    })->name('customer.login');
+});
+
+Route::post('/shop/login', [AuthController::class, 'customerLogin'])->name('customer.login.submit');
+Route::post('/shop/logout', [AuthController::class, 'logout'])->name('customer.logout');
+
+// Customer pages
+Route::get('/shop', [ShopController::class, 'index'])->name('shop');
+
+Route::middleware(['customer', 'active_session'])->group(function () {
+    Route::get('/cart', function () {
+        return view('customer.cart');
+    })->name('cart');
+
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders');
+    Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
+});
+
+// Session-backed customer endpoints
+Route::middleware(['customer', 'active_session'])->prefix('shop-api')->group(function () {
+    Route::get('/cart', [CartController::class, 'getCart']);
+    Route::post('/cart/add', [CartController::class, 'addToCart']);
+    Route::put('/cart/{id}', [CartController::class, 'updateCart']);
+    Route::delete('/cart/{id}', [CartController::class, 'removeFromCart']);
+    Route::delete('/cart/clear', [CartController::class, 'clearCart']);
+
+    Route::post('/orders', [OrderController::class, 'placeOrder']);
+    Route::get('/orders', [OrderController::class, 'getOrders']);
+    Route::get('/orders/{id}', [OrderController::class, 'getOrderDetails']);
+
+    Route::get('/profile', [ProfileController::class, 'getProfile']);
+    Route::put('/profile', [ProfileController::class, 'updateProfile']);
+    Route::post('/profile/password', [ProfileController::class, 'changePassword']);
 });

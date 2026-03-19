@@ -20,7 +20,7 @@ class InventoryController extends Controller
     // Get all inventory
     public function getInventory()
     {
-        $inventory = Product::with(['inventory', 'supplier'])
+        $inventory = Product::with('inventory')
             ->orderBy('product_name')
             ->get()
             ->map(function ($product) {
@@ -31,7 +31,6 @@ class InventoryController extends Controller
                     'unit' => $product->unit,
                     'quantity' => $product->inventory->quantity ?? 0,
                     'reorder_level' => $product->reorder_level,
-                    'supplier_name' => $product->supplier->supplier_name ?? 'N/A'
                 ];
             });
 

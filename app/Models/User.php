@@ -16,10 +16,11 @@ class User extends Authenticatable
         'password', 
         'full_name', 
         'role',
-        'is_active'
+        'is_active',
+        'current_session_id',
     ];
     
-    protected $hidden = ['password'];
+    protected $hidden = ['password', 'current_session_id'];
 
     protected function casts(): array
     {
