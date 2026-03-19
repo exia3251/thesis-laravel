@@ -34,6 +34,7 @@ Route::middleware('throttle:60,1')->group(function () {
 // Public routes (60 requests per minute)
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/products', [ShopController::class, 'getProducts']);
+    Route::get('/products/{id}', [ShopController::class, 'getProduct']);
 });
 
 // Admin API routes (100 requests per minute for admin operations)

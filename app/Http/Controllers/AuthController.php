@@ -9,11 +9,64 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Validation\ValidationException;
 use App\Models\ActivityLog;
 
 class AuthController extends Controller
 {
+    protected function loginRules(): array
+    {
+        return [
+            'username' => ['required', 'string', 'min:3', 'max:30', 'regex:/^[A-Za-z][A-Za-z0-9._-]*$/'],
+            'password' => ['required', 'string', 'min:6', 'max:255'],
+        ];
+    }
+
+    protected function loginMessages(): array
+    {
+        return [
+            'username.required' => 'Username is required.',
+            'username.min' => 'Username must be at least 3 characters.',
+            'username.max' => 'Username must not exceed 30 characters.',
+            'username.regex' => 'Username must start with a letter and may only contain letters, numbers, dots, underscores, or hyphens.',
+            'password.required' => 'Password is required.',
+            'password.min' => 'Password must be at least 6 characters.',
+        ];
+    }
+
+    protected function customerRegistrationRules(): array
+    {
+        return [
+            'username' => ['required', 'string', 'min:3', 'max:30', 'unique:users,username', 'regex:/^[A-Za-z][A-Za-z0-9._-]*$/'],
+            'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
+            'full_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[A-Za-z][A-Za-z\s\'.-]*$/'],
+            'phone' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
+            'email' => ['nullable', 'email', 'max:100'],
+            'address' => ['required', 'string', 'min:10', 'max:500'],
+        ];
+    }
+
+    protected function customerRegistrationMessages(): array
+    {
+        return [
+            'username.required' => 'Username is required.',
+            'username.min' => 'Username must be at least 3 characters.',
+            'username.max' => 'Username must not exceed 30 characters.',
+            'username.unique' => 'That username is already taken.',
+            'username.regex' => 'Username must start with a letter and may only contain letters, numbers, dots, underscores, or hyphens.',
+            'password.required' => 'Password is required.',
+            'password.min' => 'Password must be at least 8 characters.',
+            'password.confirmed' => 'Password confirmation does not match.',
+            'full_name.required' => 'Full name is required.',
+            'full_name.min' => 'Full name must be at least 2 characters.',
+            'full_name.regex' => 'Full name may only contain letters, spaces, apostrophes, periods, and hyphens.',
+            'phone.required' => 'Phone number is required.',
+            'phone.regex' => 'Phone number must be a valid Philippine mobile number such as 09XXXXXXXXX or +639XXXXXXXXX.',
+            'email.email' => 'Email address must be valid.',
+            'address.required' => 'Address is required.',
+            'address.min' => 'Address must be at least 10 characters long.',
+        ];
+    }
+
     /**
      * Admin login page
      */
@@ -35,10 +88,7 @@ class AuthController extends Controller
      */
     public function adminLogin(Request $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:50',
-            'password' => 'required|string|max:255'
-        ]);
+        $request->validate($this->loginRules(), $this->loginMessages());
 
         // Rate limiting key
         $key = 'admin-login:' . $request->ip();
@@ -105,10 +155,7 @@ class AuthController extends Controller
      */
     public function customerLogin(Request $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:50',
-            'password' => 'required|string|max:255'
-        ]);
+        $request->validate($this->loginRules(), $this->loginMessages());
 
         // Rate limiting key
         $key = 'customer-login:' . $request->ip();
@@ -180,14 +227,7 @@ class AuthController extends Controller
      */
     public function customerRegister(Request $request)
     {
-        $request->validate([
-            'username' => 'required|unique:users,username|max:50',
-            'password' => 'required|min:6|confirmed', // requires password_confirmation field
-            'full_name' => 'required|max:100',
-            'phone' => 'required|max:20',
-            'email' => 'nullable|email|max:100',
-            'address' => 'required|string|max:500'
-        ]);
+        $request->validate($this->customerRegistrationRules(), $this->customerRegistrationMessages());
 
         DB::beginTransaction();
         try {

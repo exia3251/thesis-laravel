@@ -86,7 +86,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Paid Amount</label>
-                    <input type="number" id="paid_amount" min="0" step="0.01" class="mt-1 block w-full rounded-md border px-3 py-2" value="0">
+                    <input type="number" id="paid_amount" min="0" step="1" class="mt-1 block w-full rounded-md border px-3 py-2" value="0">
                 </div>
             </div>
 
@@ -139,12 +139,15 @@
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         let saleProducts = [];
         let saleItems = [];
+        let messageTimeout;
 
         function showMessage(text, type = 'success') {
             const box = document.getElementById('message');
             box.textContent = text;
             box.className = `mb-4 px-4 py-3 rounded ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
             box.classList.remove('hidden');
+            clearTimeout(messageTimeout);
+            messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
         }
 
         function formatCurrency(value) {
@@ -184,7 +187,7 @@
                             </select>
                         </td>
                         <td class="px-6 py-4">
-                            <input id="paid_amount_${sale.sale_id}" type="number" min="0" step="0.01" value="${Number(sale.paid_amount || 0).toFixed(2)}" class="w-28 rounded border px-2 py-1">
+                            <input id="paid_amount_${sale.sale_id}" type="number" min="0" step="1" value="${Math.round(Number(sale.paid_amount || 0))}" class="w-28 rounded border px-2 py-1">
                         </td>
                         <td class="px-6 py-4">${formatCurrency(sale.total_amount)}</td>
                         <td class="px-6 py-4">

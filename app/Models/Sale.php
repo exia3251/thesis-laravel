@@ -8,6 +8,8 @@ class Sale extends Model
     protected $fillable = [
         'user_id',
         'customer_name',
+        'delivery_address',
+        'contact_phone',
         'total_amount',
         'payment_method',
         'payment_status',

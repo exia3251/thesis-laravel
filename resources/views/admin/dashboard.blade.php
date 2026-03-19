@@ -42,6 +42,23 @@
                 <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-300">A fuel-retail inspired command center for engine oil inventory, sales activity, and reorder monitoring.</p>
             </div>
 
+            <div class="mb-6 rounded-[1.5rem] bg-white p-5 shadow-lg">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-4 md:items-end">
+                    <div>
+                        <label class="text-sm font-medium text-slate-700">Date From</label>
+                        <input id="dateFrom" type="date" class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-700">Date To</label>
+                        <input id="dateTo" type="date" class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3">
+                    </div>
+                    <div class="md:col-span-2 flex gap-3">
+                        <button type="button" onclick="applyDateFilter()" class="rounded-full bg-[var(--brand-red)] px-5 py-3 text-sm font-bold text-white transition hover:brightness-110">Apply Filter</button>
+                        <button type="button" onclick="resetDateFilter()" class="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:border-slate-400">Reset</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-lg">
                     <div class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Total Products</div>
@@ -132,8 +149,24 @@
 
         async function loadDashboard() {
             try {
+                const params = new URLSearchParams();
+                const dateFrom = document.getElementById('dateFrom').value;
+                const dateTo = document.getElementById('dateTo').value;
+
+                if (dateFrom) {
+                    params.set('date_from', dateFrom);
+                }
+
+                if (dateTo) {
+                    params.set('date_to', dateTo);
+                }
+
+                const statsUrl = params.toString()
+                    ? `/admin-api/dashboard/stats?${params.toString()}`
+                    : '/admin-api/dashboard/stats';
+
                 const [statsResponse, productsResponse] = await Promise.all([
-                    fetch('/admin-api/dashboard/stats', { headers: { Accept: 'application/json' } }),
+                    fetch(statsUrl, { headers: { Accept: 'application/json' } }),
                     fetch('/admin-api/products', { headers: { Accept: 'application/json' } })
                 ]);
 
@@ -216,6 +249,16 @@
             if (response.ok) {
                 window.location.href = '/admin/login';
             }
+        }
+
+        function applyDateFilter() {
+            loadDashboard();
+        }
+
+        function resetDateFilter() {
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            loadDashboard();
         }
 
         loadDashboard();

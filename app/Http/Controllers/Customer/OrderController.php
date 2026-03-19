@@ -41,39 +41,42 @@ class OrderController extends Controller
     {
         $request->validate([
             'payment_method' => 'required|in:cash_on_delivery,gcash,cash,other',
-            'notes' => 'nullable|string|max:500'
         ]);
+
+        // Get cart items
+        $cartItems = ShoppingCart::with('product')
+            ->where('user_id', auth()->id())
+            ->get();
+
+        if ($cartItems->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cart is empty.'
+            ], 400);
+        }
+
+        // Get customer profile before opening a transaction
+        $profile = CustomerProfile::where('user_id', auth()->id())->first();
+
+        if (!$profile || blank($profile->address) || blank($profile->phone)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please complete your profile address and phone before placing an order.'
+            ], 422);
+        }
 
         DB::beginTransaction();
         try {
-            // Get cart items
-            $cartItems = ShoppingCart::with('product')
-                ->where('user_id', auth()->id())
-                ->get();
-
-            if ($cartItems->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cart is empty'
-                ], 400);
-            }
-
             // Check stock for all items
             foreach ($cartItems as $item) {
+                if (!$item->product) {
+                    throw new \Exception('One or more items in your cart are no longer available.');
+                }
+
                 $inventory = Inventory::where('product_id', $item->product_id)->first();
                 if (!$inventory || $inventory->quantity < $item->quantity) {
                     throw new \Exception("Insufficient stock for: " . $item->product->product_name);
                 }
-            }
-
-            // Get customer profile
-            $profile = CustomerProfile::where('user_id', auth()->id())->first();
-
-            if (!$profile || blank($profile->address) || blank($profile->phone)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Please complete your profile address and phone before placing an order.'
-                ], 422);
             }
 
             // Calculate total
@@ -85,6 +88,8 @@ class OrderController extends Controller
             $sale = Sale::create([
                 'customer_name' => auth()->user()->full_name,
                 'user_id' => auth()->id(),
+                'delivery_address' => $profile->address,
+                'contact_phone' => $profile->phone,
                 'total_amount' => $total,
                 'payment_method' => $request->payment_method,
                 'payment_status' => 'unpaid',
@@ -125,7 +130,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Order placed successfully',
+                'message' => 'Order placed successfully.',
                 'data' => ['order_id' => $sale->sale_id]
             ]);
 
@@ -155,7 +160,10 @@ class OrderController extends Controller
                     'paid_amount' => $sale->paid_amount,
                     'balance_due' => $sale->balance_due,
                     'delivery_status' => $sale->delivery_status,
-                    'item_count' => $sale->items->count()
+                    'item_count' => $sale->items->count(),
+                    'status_group' => $sale->payment_status !== 'paid'
+                        ? 'to_pay'
+                        : ($sale->delivery_status === 'delivered' ? 'delivered' : 'to_receive'),
                 ];
             });
 

@@ -53,6 +53,7 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
     Route::get('/products', [ProductController::class, 'getProducts']);
     Route::get('/products/{id}', [ProductController::class, 'getProduct']);
     Route::post('/products', [ProductController::class, 'store']);
+    Route::post('/products/import', [ProductController::class, 'importCatalog']);
     Route::post('/products/{id}', [ProductController::class, 'update']);
     Route::put('/products/{id}', [ProductController::class, 'update']);
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
@@ -86,13 +87,18 @@ Route::middleware('guest')->group(function () {
     Route::get('/shop/login', function () {
         return view('customer.login');
     })->name('customer.login');
+    Route::get('/shop/register', function () {
+        return view('customer.register');
+    })->name('customer.register');
 });
 
 Route::post('/shop/login', [AuthController::class, 'customerLogin'])->name('customer.login.submit');
+Route::post('/shop/register', [AuthController::class, 'customerRegister'])->name('customer.register.submit');
 Route::post('/shop/logout', [AuthController::class, 'logout'])->name('customer.logout');
 
 // Customer pages
 Route::get('/shop', [ShopController::class, 'index'])->name('shop');
+Route::get('/shop/products/{id}', [ShopController::class, 'show'])->name('shop.products.show');
 
 Route::middleware(['customer', 'active_session'])->group(function () {
     Route::get('/cart', function () {

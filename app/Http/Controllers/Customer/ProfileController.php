@@ -41,7 +41,7 @@ class ProfileController extends Controller
         $request->validate([
             'phone' => 'required|max:20',
             'email' => 'nullable|email|max:100',
-            'address' => 'required'
+            'address' => 'required|string|max:500'
         ]);
 
         $profile = CustomerProfile::where('user_id', auth()->id())->first();

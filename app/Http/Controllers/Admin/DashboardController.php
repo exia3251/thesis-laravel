@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\Inventory;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,9 +19,24 @@ class DashboardController extends Controller
 
     public function getStats(Request $request)
     {
-        $days = $request->get('days', 30);
-        $dateFrom = now()->subDays($days)->startOfDay();
-        $dateTo = now()->endOfDay();
+        $request->validate([
+            'days' => 'nullable|integer|min:1|max:365',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
+
+        if ($request->filled('date_from') || $request->filled('date_to')) {
+            $dateFrom = $request->filled('date_from')
+                ? Carbon::parse($request->date_from)->startOfDay()
+                : now()->subDays(30)->startOfDay();
+            $dateTo = $request->filled('date_to')
+                ? Carbon::parse($request->date_to)->endOfDay()
+                : now()->endOfDay();
+        } else {
+            $days = $request->get('days', 30);
+            $dateFrom = now()->subDays($days)->startOfDay();
+            $dateTo = now()->endOfDay();
+        }
 
         // Total products
         $totalProducts = Product::count();

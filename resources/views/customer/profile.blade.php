@@ -4,73 +4,139 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Profile - Engine Oil Shop</title>
+    <title>Profile - RANEY LUBRICANTS TRADING</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --surface: #f6f8fb;
+            --card: rgba(255, 255, 255, 0.82);
+            --card-solid: #ffffff;
+            --ink: #16202a;
+            --muted: #6f7d8c;
+            --line: rgba(21, 35, 54, 0.1);
+            --primary: #148a67;
+            --primary-soft: rgba(20, 138, 103, 0.1);
+            --accent: #d9b14a;
+            --accent-soft: rgba(217, 177, 74, 0.12);
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
-    <div class="container mx-auto px-4 py-8">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Profile Settings</h1>
-                <p class="text-gray-600">Update your contact details and password.</p>
-            </div>
-            <div class="flex gap-4">
-                <a href="/shop" class="text-blue-600 hover:text-blue-800">Shop</a>
-                <a href="/orders" class="text-blue-600 hover:text-blue-800">Orders</a>
-            </div>
-        </div>
+<body class="bg-[var(--surface)] text-[var(--ink)]">
+    <div class="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(20,138,103,0.09),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(217,177,74,0.10),_transparent_24%),linear-gradient(180deg,_#fbfcfe_0%,_#f3f6f9_100%)]">
+        <header class="sticky top-0 z-50 border-b border-[var(--line)] bg-[rgba(246,248,251,0.84)] backdrop-blur-xl">
+            <div class="container mx-auto px-4 sm:px-6">
+                <div class="flex min-h-16 flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+                    <a href="/shop" class="group block">
+                        <div class="text-lg font-black tracking-tight sm:text-xl">
+                            <span class="text-[var(--primary)]">RANEY</span>
+                            <span class="text-[var(--accent)]"> LUBRICANTS</span>
+                        </div>
+                        <div class="text-[10px] uppercase tracking-[0.28em] text-[var(--muted)]">Trading</div>
+                    </a>
 
-        <div id="message" class="hidden mb-4 px-4 py-3 rounded"></div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Contact Information</h2>
-                <form id="profileForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Phone</label>
-                        <input type="text" id="phone" class="mt-1 block w-full rounded-md border px-3 py-2">
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <a href="/shop" class="rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">Shop</a>
+                        <a href="/cart" class="rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">Cart</a>
+                        <a href="/orders" class="rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">Orders</a>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" id="email" class="mt-1 block w-full rounded-md border px-3 py-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Address</label>
-                        <textarea id="address" rows="4" class="mt-1 block w-full rounded-md border px-3 py-2"></textarea>
-                    </div>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save Profile</button>
-                </form>
+                </div>
             </div>
+        </header>
 
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Change Password</h2>
-                <form id="passwordForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Current Password</label>
-                        <input type="password" id="current_password" class="mt-1 block w-full rounded-md border px-3 py-2">
+        <main class="container mx-auto px-4 py-8 sm:px-6">
+            <section class="mb-8 rounded-[2rem] border border-[var(--line)] bg-[linear-gradient(135deg,_rgba(255,255,255,0.84),_rgba(255,255,255,0.7))] px-6 py-7 shadow-xl backdrop-blur-xl sm:px-8">
+                <div class="max-w-3xl">
+                    <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">Account Settings</div>
+                    <h1 class="mt-5 text-3xl font-black leading-tight text-[var(--ink)] sm:text-4xl">Manage your delivery details and account security.</h1>
+                    <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Keep your profile complete so receipts, delivery coordination, and future checkouts stay accurate.</p>
+                </div>
+            </section>
+
+            <div id="message" class="hidden mb-4 rounded-2xl px-4 py-3"></div>
+
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <section class="rounded-[2rem] border border-[var(--line)] bg-[var(--card)] p-6 shadow-xl backdrop-blur">
+                    <div class="mb-4">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--primary)]">Customer Details</div>
+                        <h2 class="mt-2 text-xl font-semibold text-[var(--ink)]">Contact Information</h2>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">New Password</label>
-                        <input type="password" id="new_password" class="mt-1 block w-full rounded-md border px-3 py-2">
+                    <form id="profileForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-[var(--ink)]">Phone</label>
+                            <input type="text" id="phone" class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-[var(--ink)]">Email</label>
+                            <input type="email" id="email" class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-[var(--ink)]">Address</label>
+                            <textarea id="address" rows="6" class="mt-2 block w-full resize-none rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]"></textarea>
+                        </div>
+                        <button type="submit" class="rounded-xl bg-[var(--primary)] px-5 py-3 text-sm font-bold text-white transition hover:brightness-110">Save Profile</button>
+                    </form>
+                </section>
+
+                <section class="rounded-[2rem] border border-[var(--line)] bg-[var(--card)] p-6 shadow-xl backdrop-blur">
+                    <div class="mb-4">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">Security</div>
+                        <h2 class="mt-2 text-xl font-semibold text-[var(--ink)]">Change Password</h2>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Confirm Password</label>
-                        <input type="password" id="new_password_confirmation" class="mt-1 block w-full rounded-md border px-3 py-2">
-                    </div>
-                    <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">Change Password</button>
-                </form>
+                    <form id="passwordForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-[var(--ink)]">Current Password</label>
+                            <input type="password" id="current_password" class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-[var(--ink)]">New Password</label>
+                            <input type="password" id="new_password" class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-[var(--ink)]">Confirm Password</label>
+                            <input type="password" id="new_password_confirmation" class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                        </div>
+                        <button type="submit" class="rounded-xl bg-[var(--ink)] px-5 py-3 text-sm font-bold text-white transition hover:brightness-110">Change Password</button>
+                    </form>
+                </section>
             </div>
-        </div>
+        </main>
+
+        <footer class="border-t border-[var(--line)] bg-[rgba(255,255,255,0.82)] backdrop-blur">
+            <div class="container mx-auto grid gap-6 px-4 py-8 md:grid-cols-4">
+                <div>
+                    <h3 class="text-sm font-black uppercase tracking-[0.22em] text-[var(--ink)]">RANEY LUBRICANTS TRADING</h3>
+                    <p class="mt-3 text-sm leading-6 text-[var(--muted)]">Maintain your delivery address, contact details, and account security for future orders.</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-[var(--ink)]">Customer Service</h4>
+                    <p class="mt-3 text-sm text-[var(--muted)]">Keep your profile complete so checkout and receipt details stay accurate.</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-[var(--ink)]">Payments & Logistics</h4>
+                    <p class="mt-3 text-sm text-[var(--muted)]">Saved contact information is used for order confirmation, receipts, and delivery coordination.</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-[var(--ink)]">About</h4>
+                    <p class="mt-3 text-sm text-[var(--muted)]">This account area supports secure profile management for lubricant ecommerce customers.</p>
+                </div>
+            </div>
+            <div class="border-t border-[var(--line)] px-4 py-4 text-center text-sm text-[var(--muted)]">
+                &copy; {{ now()->year }} RANEY LUBRICANTS TRADING. All rights reserved.
+            </div>
+        </footer>
     </div>
 
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        let messageTimeout;
 
         function showMessage(text, type = 'success') {
             const box = document.getElementById('message');
             box.textContent = text;
-            box.className = `hidden mb-4 px-4 py-3 rounded ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            box.className = `mb-4 rounded-2xl px-4 py-3 ${type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`;
             box.classList.remove('hidden');
+            clearTimeout(messageTimeout);
+            messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
         }
 
         async function loadProfile() {

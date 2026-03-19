@@ -32,9 +32,14 @@
                     <h1 class="text-3xl font-bold text-gray-900">Products</h1>
                     <p class="text-gray-600">Create, update, and remove products from the catalog.</p>
                 </div>
-                <button onclick="openForm()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                    Add Product
-                </button>
+                <div class="flex gap-3">
+                    <button onclick="openImportModal()" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900">
+                        Bulk Import
+                    </button>
+                    <button onclick="openForm()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Add Product
+                    </button>
+                </div>
             </div>
 
             <div id="message" class="hidden mb-4 px-4 py-3 rounded"></div>
@@ -69,47 +74,60 @@
                 <h3 id="modalTitle" class="text-lg font-bold">Add Product</h3>
                 <button type="button" onclick="closeForm()" class="text-gray-500 hover:text-gray-700">Close</button>
             </div>
+            <div id="formErrors" class="hidden mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
             <form id="productForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input type="hidden" id="productId">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Product Name</label>
                     <input type="text" id="product_name" required class="mt-1 block w-full rounded-md border px-3 py-2">
+                    <p id="error_product_name" class="mt-1 hidden text-sm text-red-600"></p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Brand</label>
                     <input type="text" id="brand" required class="mt-1 block w-full rounded-md border px-3 py-2">
+                    <p id="error_brand" class="mt-1 hidden text-sm text-red-600"></p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Oil Type</label>
+                    <label class="block text-sm font-medium text-gray-700">Product Type</label>
                     <select id="oil_type" required class="mt-1 block w-full rounded-md border px-3 py-2">
                         <option value="Synthetic">Synthetic</option>
                         <option value="Semi-Synthetic">Semi-Synthetic</option>
                         <option value="Mineral">Mineral</option>
+                        <option value="Coolant">Coolant</option>
+                        <option value="Other">Other</option>
                     </select>
+                    <p id="error_oil_type" class="mt-1 hidden text-sm text-red-600"></p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Viscosity Grade</label>
                     <input type="text" id="viscosity_grade" class="mt-1 block w-full rounded-md border px-3 py-2" placeholder="5W-40">
+                    <p id="error_viscosity_grade" class="mt-1 hidden text-sm text-red-600"></p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Unit</label>
                     <input type="text" id="unit" class="mt-1 block w-full rounded-md border px-3 py-2" value="1 Liter">
+                    <p id="error_unit" class="mt-1 hidden text-sm text-red-600"></p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Price</label>
-                    <input type="number" id="price" step="0.01" required class="mt-1 block w-full rounded-md border px-3 py-2">
+                    <input type="number" id="price" min="0" step="1" required class="mt-1 block w-full rounded-md border px-3 py-2">
+                    <p id="error_price" class="mt-1 hidden text-sm text-red-600"></p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Reorder Level</label>
                     <input type="number" id="reorder_level" min="0" class="mt-1 block w-full rounded-md border px-3 py-2" value="10">
+                    <p id="error_reorder_level" class="mt-1 hidden text-sm text-red-600"></p>
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea id="description" rows="3" class="mt-1 block w-full rounded-md border px-3 py-2"></textarea>
+                    <textarea id="description" rows="4" class="mt-1 block w-full resize-none rounded-md border px-3 py-2"></textarea>
+                    <p id="error_description" class="mt-1 hidden text-sm text-red-600"></p>
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700">Product Image</label>
                     <input type="file" id="image" accept="image/*" class="mt-1 block w-full rounded-md border px-3 py-2">
+                    <p class="mt-1 text-xs text-gray-500">Accepted: JPG, JPEG, PNG, WEBP. Max file size: 2 MB.</p>
+                    <p id="error_image" class="mt-1 hidden text-sm text-red-600"></p>
                     <div id="imagePreviewWrapper" class="mt-3 hidden">
                         <img id="imagePreview" src="" alt="Product preview" class="h-28 w-28 rounded border object-cover">
                     </div>
@@ -122,15 +140,45 @@
         </div>
     </div>
 
+    <div id="importModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-bold">Bulk Import Product List</h3>
+                    <p class="text-sm text-gray-500">Paste brand headings with product lines. Optional format: `Product Name | Price | Stock | Reorder`</p>
+                </div>
+                <button type="button" onclick="closeImportModal()" class="text-gray-500 hover:text-gray-700">Close</button>
+            </div>
+
+            <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <p class="font-semibold">Example:</p>
+                <pre class="mt-2 whitespace-pre-wrap text-xs">CANROYAL PRODUCTS
+Fully Synthetic Gasoline/Diesel Engine Oil SAE 5W30 API SN/CJ-4 1L | 450 | 20 | 5
+Diesel Engine Oil SAE 15W40 API CI4/SJ 5L | 1500 | 8 | 3</pre>
+            </div>
+
+            <textarea id="catalog_text" rows="16" class="w-full resize-none rounded-lg border border-slate-300 px-4 py-3 font-mono text-sm" placeholder="Paste your brand headings and product list here..."></textarea>
+            <div id="importSummary" class="hidden mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
+
+            <div class="mt-4 flex justify-end gap-2">
+                <button type="button" onclick="closeImportModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+                <button type="button" onclick="submitCatalogImport()" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900">Import Catalog</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         let products = [];
+        let messageTimeout;
 
         function showMessage(text, type = 'success') {
             const box = document.getElementById('message');
             box.textContent = text;
             box.className = `mb-4 px-4 py-3 rounded ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
             box.classList.remove('hidden');
+            clearTimeout(messageTimeout);
+            messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
         }
 
         function resetForm() {
@@ -140,11 +188,70 @@
             document.getElementById('reorder_level').value = '10';
             document.getElementById('imagePreview').src = '';
             document.getElementById('imagePreviewWrapper').classList.add('hidden');
+            clearFormErrors();
+        }
+
+        function clearFormErrors() {
+            const errorBox = document.getElementById('formErrors');
+            errorBox.classList.add('hidden');
+            errorBox.innerHTML = '';
+
+            ['product_name', 'brand', 'oil_type', 'viscosity_grade', 'unit', 'price', 'reorder_level', 'description', 'image'].forEach((field) => {
+                const errorText = document.getElementById(`error_${field}`);
+                const input = document.getElementById(field);
+
+                if (errorText) {
+                    errorText.classList.add('hidden');
+                    errorText.textContent = '';
+                }
+
+                if (input) {
+                    input.classList.remove('border-red-500', 'ring-2', 'ring-red-100');
+                }
+            });
+        }
+
+        function showFormErrors(errors = {}) {
+            clearFormErrors();
+
+            const entries = Object.entries(errors);
+            if (!entries.length) {
+                return;
+            }
+
+            const errorBox = document.getElementById('formErrors');
+            errorBox.innerHTML = entries.map(([, messages]) => `<div>${messages[0]}</div>`).join('');
+            errorBox.classList.remove('hidden');
+
+            entries.forEach(([field, messages]) => {
+                const errorText = document.getElementById(`error_${field}`);
+                const input = document.getElementById(field);
+
+                if (errorText) {
+                    errorText.textContent = messages[0];
+                    errorText.classList.remove('hidden');
+                }
+
+                if (input) {
+                    input.classList.add('border-red-500', 'ring-2', 'ring-red-100');
+                }
+            });
         }
 
         function closeForm() {
             document.getElementById('productModal').classList.add('hidden');
             resetForm();
+        }
+
+        function openImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+            document.getElementById('importSummary').classList.add('hidden');
+            document.getElementById('importSummary').innerHTML = '';
+            document.getElementById('catalog_text').value = '';
         }
 
         function openForm(product = null) {
@@ -271,6 +378,12 @@
             });
 
             const data = await response.json();
+            if (!response.ok && data.errors) {
+                showFormErrors(data.errors);
+            } else {
+                clearFormErrors();
+            }
+
             showMessage(data.message || 'Product saved.', response.ok ? 'success' : 'error');
 
             if (response.ok) {
@@ -293,6 +406,43 @@
             };
             reader.readAsDataURL(file);
         });
+
+        async function submitCatalogImport() {
+            const catalogText = document.getElementById('catalog_text').value.trim();
+
+            if (!catalogText) {
+                showMessage('Paste a product list before importing.', 'error');
+                return;
+            }
+
+            const response = await fetch('/admin-api/products/import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ catalog_text: catalogText })
+            });
+
+            const data = await response.json();
+            showMessage(data.message || 'Catalog import completed.', response.ok ? 'success' : 'error');
+
+            if (!response.ok) {
+                return;
+            }
+
+            const summary = document.getElementById('importSummary');
+            const skipped = data.data?.skipped || [];
+            summary.innerHTML = `
+                <div>Added: <strong>${data.data?.imported ?? 0}</strong></div>
+                <div>Updated: <strong>${data.data?.updated ?? 0}</strong></div>
+                ${skipped.length ? `<div class="mt-2"><strong>Skipped:</strong><br>${skipped.join('<br>')}</div>` : ''}
+            `;
+            summary.classList.remove('hidden');
+
+            loadProducts();
+        }
 
         async function logout() {
             const response = await fetch('/admin/logout', {

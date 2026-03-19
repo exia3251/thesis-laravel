@@ -56,14 +56,57 @@
         </div>
     </div>
 
+    <div id="stockModal" class="hidden fixed inset-0 bg-gray-900/60 p-4">
+        <div class="mx-auto mt-16 w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 id="stockModalTitle" class="text-xl font-bold text-slate-900">Stock Adjustment</h2>
+                    <p id="stockModalSubtitle" class="text-sm text-slate-500">Record inventory movement.</p>
+                </div>
+                <button type="button" onclick="closeStockModal()" class="text-slate-500 hover:text-slate-700">Close</button>
+            </div>
+
+            <form id="stockForm" class="mt-6 space-y-4">
+                <input type="hidden" id="stock_action" value="stock-in">
+                <input type="hidden" id="stock_product_id">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Product</label>
+                    <input type="text" id="stock_product_name" class="mt-1 block w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-slate-700" readonly>
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Quantity</label>
+                        <input type="number" id="stock_quantity" min="1" step="1" required class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3" value="1">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Reference No.</label>
+                        <input type="text" id="stock_reference_no" maxlength="100" class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="Optional reference">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Notes</label>
+                    <textarea id="stock_notes" rows="4" class="mt-1 block w-full resize-none rounded-xl border border-slate-300 px-3 py-3" placeholder="Optional notes"></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeStockModal()" class="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Cancel</button>
+                    <button type="submit" class="rounded-full bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-black">Save Adjustment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        let inventoryItems = [];
+        let messageTimeout;
 
         function showMessage(text, type = 'success') {
             const box = document.getElementById('message');
             box.textContent = text;
             box.className = `mb-4 px-4 py-3 rounded ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
             box.classList.remove('hidden');
+            clearTimeout(messageTimeout);
+            messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
         }
 
         async function loadInventory() {
@@ -78,6 +121,7 @@
                 const data = await response.json();
                 const tbody = document.getElementById('inventoryBody');
                 const items = data.data || [];
+                inventoryItems = items;
 
                 tbody.innerHTML = items.length
                     ? items.map((item) => {
@@ -113,37 +157,29 @@
             }
         }
 
-        async function adjustStock(productId, action) {
-            const quantity = prompt(`Enter quantity to ${action === 'stock-in' ? 'add' : 'remove'}:`);
+        function adjustStock(productId, action) {
+            const item = inventoryItems.find((entry) => entry.product_id === productId);
 
-            if (!quantity) {
+            if (!item) {
+                showMessage('Inventory item not found.', 'error');
                 return;
             }
 
-            const referenceNo = prompt('Reference number (optional):') || '';
-            const notes = prompt('Notes (optional):') || '';
+            document.getElementById('stock_action').value = action;
+            document.getElementById('stock_product_id').value = productId;
+            document.getElementById('stock_product_name').value = `${item.product_name} (${item.brand})`;
+            document.getElementById('stock_quantity').value = 1;
+            document.getElementById('stock_reference_no').value = '';
+            document.getElementById('stock_notes').value = '';
+            document.getElementById('stockModalTitle').textContent = action === 'stock-in' ? 'Stock In' : 'Stock Out';
+            document.getElementById('stockModalSubtitle').textContent = action === 'stock-in'
+                ? 'Add new inventory units to this product.'
+                : 'Record stock removed from this product.';
+            document.getElementById('stockModal').classList.remove('hidden');
+        }
 
-            const response = await fetch(`/admin-api/inventory/${action}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                    quantity,
-                    reference_no: referenceNo,
-                    notes
-                })
-            });
-
-            const data = await response.json();
-            showMessage(data.message || 'Inventory updated.', response.ok ? 'success' : 'error');
-
-            if (response.ok) {
-                loadInventory();
-            }
+        function closeStockModal() {
+            document.getElementById('stockModal').classList.add('hidden');
         }
 
         async function logout() {
@@ -159,6 +195,34 @@
                 window.location.href = '/admin/login';
             }
         }
+
+        document.getElementById('stockForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const action = document.getElementById('stock_action').value;
+            const response = await fetch(`/admin-api/inventory/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_id: Number(document.getElementById('stock_product_id').value),
+                    quantity: Number(document.getElementById('stock_quantity').value),
+                    reference_no: document.getElementById('stock_reference_no').value,
+                    notes: document.getElementById('stock_notes').value
+                })
+            });
+
+            const data = await response.json();
+            showMessage(data.message || 'Inventory updated.', response.ok ? 'success' : 'error');
+
+            if (response.ok) {
+                closeStockModal();
+                loadInventory();
+            }
+        });
 
         loadInventory();
     </script>

@@ -17,16 +17,33 @@ class CartController extends Controller
             ->where('user_id', auth()->id())
             ->get()
             ->map(function ($item) {
+                $product = $item->product;
+                $stock = $product?->inventory->quantity ?? 0;
+                $isInactive = !$product || $stock <= 0 || $item->quantity > $stock;
+
+                if (!$product) {
+                    $inactiveReason = 'This product is no longer available.';
+                } elseif ($stock <= 0) {
+                    $inactiveReason = 'This product is out of stock.';
+                } elseif ($item->quantity > $stock) {
+                    $inactiveReason = 'Only ' . $stock . ' item(s) are currently available.';
+                } else {
+                    $inactiveReason = null;
+                }
+
                 return [
                     'cart_id' => $item->cart_id,
                     'product_id' => $item->product_id,
-                    'product_name' => $item->product->product_name,
-                    'brand' => $item->product->brand,
-                    'unit' => $item->product->unit,
-                    'price' => $item->product->price,
+                    'product_name' => $product?->product_name ?? 'Unavailable Product',
+                    'brand' => $product?->brand ?? 'N/A',
+                    'unit' => $product?->unit ?? '',
+                    'price' => $product?->price ?? 0,
                     'quantity' => $item->quantity,
-                    'stock' => $item->product->inventory->quantity ?? 0,
-                    'subtotal' => $item->product->price * $item->quantity
+                    'stock' => $stock,
+                    'subtotal' => ($product?->price ?? 0) * $item->quantity,
+                    'image_url' => $product?->image_path ? asset('storage/' . $product->image_path) : null,
+                    'is_inactive' => $isInactive,
+                    'inactive_reason' => $inactiveReason,
                 ];
             });
 
@@ -51,7 +68,7 @@ class CartController extends Controller
         if (!$inventory || $inventory->quantity < $quantity) {
             return response()->json([
                 'success' => false,
-                'message' => 'Insufficient stock'
+                'message' => 'Insufficient stock.'
             ], 400);
         }
 
@@ -67,7 +84,7 @@ class CartController extends Controller
             if ($newQuantity > $inventory->quantity) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cannot add more than available stock'
+                    'message' => 'Cannot add more than available stock.'
                 ], 400);
             }
 
@@ -84,7 +101,7 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Added to cart'
+            'message' => 'Added to cart.'
         ]);
     }
 
@@ -102,7 +119,7 @@ class CartController extends Controller
         if (!$cartItem) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cart item not found'
+                'message' => 'Cart item not found.'
             ], 404);
         }
 
@@ -127,7 +144,7 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cart updated'
+            'message' => 'Cart updated.'
         ]);
     }
 
@@ -141,7 +158,7 @@ class CartController extends Controller
         if (!$cartItem) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cart item not found'
+                'message' => 'Cart item not found.'
             ], 404);
         }
 
@@ -149,7 +166,7 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Item removed from cart'
+            'message' => 'Item removed from cart.'
         ]);
     }
 
