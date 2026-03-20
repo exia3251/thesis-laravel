@@ -422,29 +422,31 @@
                                 Unavailable Products
                             </div>
                         ` : ''}
-                        <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group cursor-pointer overflow-hidden rounded-[1.75rem] border border-[var(--line)] ${unavailable ? 'bg-slate-100/90 opacity-80' : 'bg-[var(--card-solid)]'} shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                        <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group flex flex-col cursor-pointer overflow-hidden rounded-[1.75rem] border border-[var(--line)] ${unavailable ? 'bg-slate-100/90 opacity-80' : 'bg-[var(--card-solid)]'} shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                             ${product.image_url
-                                ? `<div class="relative"><img src="${product.image_url}" alt="${product.product_name}" class="h-64 w-full object-cover ${unavailable ? 'grayscale' : ''}"></div>`
-                                : `<div class="relative flex h-64 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))] ${unavailable ? 'grayscale' : ''}"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
-                            <div class="p-5">
-                                <div class="mb-3 flex items-start justify-between gap-3">
-                                    <div>
-                                        <h3 class="mb-1 text-lg font-black text-[var(--ink)]">${product.product_name}</h3>
-                                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${product.brand}</p>
+                                ? `<div class="flex-shrink-0"><img src="${product.image_url}" alt="${product.product_name}" class="h-60 w-full object-cover ${unavailable ? 'grayscale' : ''}"></div>`
+                                : `<div class="flex-shrink-0 flex h-60 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))] ${unavailable ? 'grayscale' : ''}"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
+                            <div class="flex flex-1 flex-col p-5">
+                                <div class="mb-2 flex items-start justify-between gap-2">
+                                    <div class="min-w-0 flex-1">
+                                        <h3 class="mb-1 line-clamp-2 text-base font-black leading-snug text-[var(--ink)]">${product.product_name}</h3>
+                                        <p class="truncate text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${product.brand}</p>
                                     </div>
-                                    <span class="rounded-full bg-[var(--primary-soft)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--primary)]">${product.oil_type}</span>
+                                    <span class="flex-shrink-0 rounded-full bg-[var(--primary-soft)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--primary)]">${product.oil_type}</span>
                                 </div>
-                                <p class="mb-4 text-sm text-[var(--muted)]">${product.viscosity_grade || 'Standard'} | ${product.unit}</p>
-                                <div class="mb-4 flex items-center justify-between">
-                                    <span class="text-2xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</span>
-                                    <span class="rounded-full ${unavailable ? 'bg-slate-200 text-slate-600' : 'bg-[#f3f6f8] text-[var(--muted)]'} px-3 py-1 text-xs font-semibold">Stock: ${stock}</span>
-                                </div>
-                                <div class="h-px bg-[var(--line)]"></div>
-                                <div class="mt-4 flex items-center justify-between gap-3">
-                                    <span class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted)] group-hover:text-[var(--primary)]">View Details</span>
-                                    <button onclick="event.stopPropagation(); addToCart(${product.product_id})" class="rounded-xl ${unavailable ? 'cursor-not-allowed bg-slate-400' : 'bg-[var(--primary)]'} px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 ${!isCustomer ? 'opacity-60 cursor-not-allowed' : ''}" ${unavailable ? 'disabled' : ''}>
-                                        Add to Cart
-                                    </button>
+                                <p class="mb-3 truncate text-sm text-[var(--muted)]">${product.viscosity_grade || 'Standard'} | ${product.unit}</p>
+                                <div class="mt-auto">
+                                    <div class="mb-3 flex items-center justify-between">
+                                        <span class="text-xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</span>
+                                        <span class="rounded-full ${unavailable ? 'bg-slate-200 text-slate-600' : 'bg-[#f3f6f8] text-[var(--muted)]'} px-3 py-1 text-xs font-semibold">Stock: ${stock}</span>
+                                    </div>
+                                    <div class="h-px bg-[var(--line)]"></div>
+                                    <div class="mt-3 flex items-center justify-between gap-3">
+                                        <span class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted)] group-hover:text-[var(--primary)]">View Details</span>
+                                        <button onclick="event.stopPropagation(); addToCart(${product.product_id})" class="rounded-xl ${unavailable ? 'cursor-not-allowed bg-slate-400' : 'bg-[var(--primary)]'} px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 ${!isCustomer ? 'opacity-60 cursor-not-allowed' : ''}" ${unavailable ? 'disabled' : ''}>
+                                            Add to Cart
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </article>
