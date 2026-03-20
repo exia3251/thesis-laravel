@@ -24,7 +24,6 @@
 <body class="bg-[var(--surface)] text-[var(--ink)]">
     <div class="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top_right,_rgba(20,138,103,0.09),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(217,177,74,0.10),_transparent_24%),linear-gradient(180deg,_#fbfcfe_0%,_#f3f6f9_100%)] px-4 py-10 sm:px-6">
         <div class="w-full max-w-md">
-
             <div class="mb-8 text-center">
                 <a href="/shop">
                     <div class="text-3xl font-black tracking-tight sm:text-4xl">
@@ -34,58 +33,43 @@
                     <div class="mt-1 text-[11px] uppercase tracking-[0.32em] text-[var(--muted)]">Trading</div>
                 </a>
             </div>
-
             <section class="rounded-[2rem] border border-[var(--line)] bg-[var(--card)] p-8 shadow-2xl backdrop-blur">
                 <div class="text-center">
                     <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">Customer Access</div>
                     <h2 class="mt-4 text-3xl font-extrabold text-[var(--ink)]">Customer Login</h2>
                     <p class="mt-2 text-sm font-semibold tracking-[0.2em] text-[var(--muted)]">RANEY LUBRICANTS TRADING</p>
                 </div>
-
                 <div id="error-message" class="hidden mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700"></div>
-
                 <form id="loginForm" class="mt-8 space-y-6">
                     <div class="space-y-4">
                         <div>
                             <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Username</label>
-                            <input id="username" name="username" type="text" required
-                                   minlength="3" maxlength="30" pattern="[A-Za-z][A-Za-z0-9._-]*" title="Username must start with a letter and may contain letters, numbers, dots, underscores, or hyphens."
+                            <input id="username" name="username" type="text" required minlength="3" maxlength="30" pattern="[A-Za-z][A-Za-z0-9._-]*" title="Username must start with a letter and may contain letters, numbers, dots, underscores, or hyphens."
                                    class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]"
                                    placeholder="Enter your username">
                         </div>
                         <div>
                             <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Password</label>
-                            <input id="password" name="password" type="password" required
-                                   minlength="6" maxlength="255"
+                            <input id="password" name="password" type="password" required minlength="6" maxlength="255"
                                    class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]"
                                    placeholder="Enter your password">
                         </div>
                     </div>
-
-                    <div>
-                        <button type="submit" class="flex w-full justify-center rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110">
-                            Sign in
-                        </button>
-                    </div>
-
+                    <button type="submit" class="flex w-full justify-center rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110">Sign in</button>
                     <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-sm text-[var(--muted)]">
                         Test Account: <span class="font-semibold text-[var(--ink)]">customer / customer123</span>
                     </div>
                 </form>
-
                 <div class="mt-6 text-center">
                     <a href="/shop" class="text-sm font-semibold text-[var(--primary)] hover:underline">Continue as Guest</a>
                 </div>
                 <div class="mt-3 text-center text-sm text-[var(--muted)]">
-                    New customer?
-                    <a href="/shop/register" class="font-semibold text-[var(--primary)] hover:underline">Create an account</a>
+                    New customer? <a href="/shop/register" class="font-semibold text-[var(--primary)] hover:underline">Create an account</a>
                 </div>
             </section>
-
             <p class="mt-6 text-center text-xs text-[var(--muted)]">&copy; {{ now()->year }} RANEY LUBRICANTS TRADING. All rights reserved.</p>
         </div>
     </div>
-
 
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
