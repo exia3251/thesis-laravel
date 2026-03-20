@@ -22,38 +22,22 @@
     </style>
 </head>
 <body class="bg-[var(--surface)] text-[var(--ink)]">
-    <div class="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(20,138,103,0.09),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(217,177,74,0.10),_transparent_24%),linear-gradient(180deg,_#fbfcfe_0%,_#f3f6f9_100%)] px-4 py-10 sm:px-6">
-        <div class="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-            <section class="rounded-[2rem] border border-[var(--line)] bg-[linear-gradient(135deg,_rgba(255,255,255,0.84),_rgba(255,255,255,0.7))] p-8 shadow-xl backdrop-blur-xl sm:p-10">
-                <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">Customer Access</div>
-                <a href="/shop" class="mt-6 block">
+    <div class="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top_right,_rgba(20,138,103,0.09),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(217,177,74,0.10),_transparent_24%),linear-gradient(180deg,_#fbfcfe_0%,_#f3f6f9_100%)] px-4 py-10 sm:px-6">
+        <div class="w-full max-w-md">
+
+            <div class="mb-8 text-center">
+                <a href="/shop">
                     <div class="text-3xl font-black tracking-tight sm:text-4xl">
                         <span class="text-[var(--primary)]">RANEY</span>
                         <span class="text-[var(--accent)]"> LUBRICANTS</span>
                     </div>
                     <div class="mt-1 text-[11px] uppercase tracking-[0.32em] text-[var(--muted)]">Trading</div>
                 </a>
-                <h1 class="mt-6 max-w-2xl text-4xl font-black leading-tight text-[var(--ink)] md:text-5xl">Sign in to place orders, track deliveries, and manage your lubricant purchases.</h1>
-                <p class="mt-4 max-w-xl text-sm leading-7 text-[var(--muted)]">Access your cart, receipts, profile details, and order history from one customer account built for lubricant ecommerce operations.</p>
-                <div class="mt-8 grid gap-4 sm:grid-cols-3">
-                    <div class="rounded-2xl border border-[var(--line)] bg-white/70 p-4 shadow-sm">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Order Tracking</div>
-                        <div class="mt-2 text-sm text-[var(--ink)]">Follow payment and delivery stages from one dashboard.</div>
-                    </div>
-                    <div class="rounded-2xl border border-[var(--line)] bg-white/70 p-4 shadow-sm">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Secure Access</div>
-                        <div class="mt-2 text-sm text-[var(--ink)]">Session-based login with validation and account protection.</div>
-                    </div>
-                    <div class="rounded-2xl border border-[var(--line)] bg-white/70 p-4 shadow-sm">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Ready to Buy</div>
-                        <div class="mt-2 text-sm text-[var(--ink)]">Jump straight from login to the storefront and active cart.</div>
-                    </div>
-                </div>
-            </section>
+            </div>
 
-            <section class="mx-auto w-full max-w-md rounded-[2rem] border border-[var(--line)] bg-[var(--card)] p-8 shadow-2xl backdrop-blur">
+            <section class="rounded-[2rem] border border-[var(--line)] bg-[var(--card)] p-8 shadow-2xl backdrop-blur">
                 <div class="text-center">
-                    <div class="text-[11px] font-semibold uppercase tracking-[0.32em] text-[var(--primary)]">Customer Portal</div>
+                    <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">Customer Access</div>
                     <h2 class="mt-4 text-3xl font-extrabold text-[var(--ink)]">Customer Login</h2>
                     <p class="mt-2 text-sm font-semibold tracking-[0.2em] text-[var(--muted)]">RANEY LUBRICANTS TRADING</p>
                 </div>
@@ -97,32 +81,11 @@
                     <a href="/shop/register" class="font-semibold text-[var(--primary)] hover:underline">Create an account</a>
                 </div>
             </section>
+
+            <p class="mt-6 text-center text-xs text-[var(--muted)]">&copy; {{ now()->year }} RANEY LUBRICANTS TRADING. All rights reserved.</p>
         </div>
     </div>
 
-    <footer class="border-t border-[var(--line)] bg-[rgba(255,255,255,0.82)] backdrop-blur">
-        <div class="max-w-5xl mx-auto grid gap-6 px-4 py-8 md:grid-cols-4">
-            <div>
-                <h3 class="text-sm font-black uppercase tracking-[0.22em] text-[var(--ink)]">RANEY LUBRICANTS TRADING</h3>
-                <p class="mt-3 text-sm leading-6 text-[var(--muted)]">Customer access for ordering engine oils, coolants, and lubricant products online.</p>
-            </div>
-            <div>
-                <h4 class="text-sm font-semibold text-[var(--ink)]">Customer Service</h4>
-                <p class="mt-3 text-sm text-[var(--muted)]">Use your account to place orders, update profile details, and monitor deliveries.</p>
-            </div>
-            <div>
-                <h4 class="text-sm font-semibold text-[var(--ink)]">Payments & Logistics</h4>
-                <p class="mt-3 text-sm text-[var(--muted)]">Login provides access to cart, receipts, and order tracking across your account history.</p>
-            </div>
-            <div>
-                <h4 class="text-sm font-semibold text-[var(--ink)]">About</h4>
-                <p class="mt-3 text-sm text-[var(--muted)]">Built as an ecommerce and operational management platform for lubricant retail services.</p>
-            </div>
-        </div>
-        <div class="border-t border-[var(--line)] px-4 py-4 text-center text-sm text-[var(--muted)]">
-            &copy; {{ now()->year }} RANEY LUBRICANTS TRADING. All rights reserved.
-        </div>
-    </footer>
 
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
