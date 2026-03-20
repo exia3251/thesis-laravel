@@ -1,59 +1,140 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# RANEY LUBRICANTS TRADING
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel-based ecommerce and admin management system for engine oil and lubricant retail operations.
 
-## About Laravel
+## Core Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Customer product catalog with search and filtering
+- Product details, cart, checkout, and order history
+- Admin dashboard, product management, inventory, sales, and reports
+- Super admin user management and activity logs
+- Partial payment and GCash payment-request flow
+- Single-session login enforcement
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.2+
+- Composer
+- MySQL / MariaDB
+- Node.js and npm
+- XAMPP or equivalent local web stack
 
-## Learning Laravel
+## Installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+1. Clone the repository
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+git clone <your-github-repository-url>
+cd engine-oil-laravel
+```
 
-## Laravel Sponsors
+2. Install PHP dependencies
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+composer install
+```
 
-### Premium Partners
+3. Install frontend dependencies
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+npm install
+```
 
-## Contributing
+4. Create environment file
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+copy .env.example .env
+```
 
-## Code of Conduct
+5. Generate application key
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan key:generate
+```
 
-## Security Vulnerabilities
+6. Configure database in `.env`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Example:
 
-## License
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=engine_oil_laravel
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+7. Run migrations and seeders
+
+```bash
+php artisan migrate --seed
+```
+
+8. Create storage link
+
+```bash
+php artisan storage:link
+```
+
+9. Run Laravel server
+
+```bash
+php artisan serve
+```
+
+10. Optional: run frontend watcher if needed
+
+```bash
+npm run dev
+```
+
+## Demo Notes
+
+- Root URL redirects to `/shop`
+- Customer login/register is under `/shop/login` and `/shop/register`
+- Admin login is under `/admin/login`
+- If GCash is selected during checkout, the user is redirected to the order payment section
+- Replace `public/images/gcash-qr-placeholder.svg` with the real staff GCash QR before the demo if available
+
+## Suggested Demo Accounts
+
+Create accounts in the database or via seeders for:
+
+- `super_admin`
+- `admin`
+- `customer`
+
+If needed, I can help you generate a final demo seeder for those accounts.
+
+## Important Directories
+
+- `app/Http/Controllers/Admin`:
+  admin backend logic
+- `app/Http/Controllers/Customer`:
+  customer storefront logic
+- `app/Models`:
+  database models
+- `resources/views/admin`:
+  admin UI pages
+- `resources/views/customer`:
+  customer UI pages
+- `routes/web.php`:
+  session-backed web routes
+- `routes/api.php`:
+  API routes used by some frontend fetch calls
+- `database/migrations`:
+  database schema history
+- `database/seeders`:
+  demo and initial data seeders
+
+## Presentation Focus
+
+Recommended demo sequence:
+
+1. Customer browses products
+2. Customer adds to cart and checks out
+3. Customer submits GCash payment request
+4. Admin approves payment request
+5. Super admin views staff action logs
+6. Admin shows reports and inventory

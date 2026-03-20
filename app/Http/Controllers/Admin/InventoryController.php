@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Product;
 use App\Models\Inventory;
 use App\Models\StockTransaction;
@@ -64,6 +65,14 @@ class InventoryController extends Controller
                 $request->notes
             );
 
+            $product = Product::find($request->product_id);
+            ActivityLog::logAction(
+                auth()->id(),
+                'inventory_stock_in',
+                "Stocked in {$request->quantity} units for {$product?->product_name}",
+                $request->ip()
+            );
+
             DB::commit();
 
             return response()->json([
@@ -111,6 +120,14 @@ class InventoryController extends Controller
                 $request->quantity,
                 $request->reference_no,
                 $request->notes
+            );
+
+            $product = Product::find($request->product_id);
+            ActivityLog::logAction(
+                auth()->id(),
+                'inventory_stock_out',
+                "Stocked out {$request->quantity} units for {$product?->product_name}",
+                $request->ip()
             );
 
             DB::commit();

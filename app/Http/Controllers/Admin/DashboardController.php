@@ -53,11 +53,13 @@ class DashboardController extends Controller
 
         // Sales stats for period
         $salesStats = Sale::whereBetween('sale_date', [$dateFrom, $dateTo])
+            ->whereIn('payment_status', ['paid', 'partial'])
             ->selectRaw('COUNT(*) as count, SUM(total_amount) as revenue')
             ->first();
 
         // Sales trend
         $salesTrend = Sale::whereBetween('sale_date', [$dateFrom, $dateTo])
+            ->whereIn('payment_status', ['paid', 'partial'])
             ->selectRaw('DATE(sale_date) as date, COUNT(*) as count, SUM(total_amount) as revenue')
             ->groupBy('date')
             ->orderBy('date')

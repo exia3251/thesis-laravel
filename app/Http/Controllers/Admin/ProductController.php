@@ -123,6 +123,13 @@ class ProductController extends Controller
             'quantity' => 0
         ]);
 
+        ActivityLog::logAction(
+            auth()->id(),
+            'product_created',
+            "Created product {$product->product_name}",
+            $request->ip()
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Product added successfully',
@@ -166,6 +173,13 @@ class ProductController extends Controller
             'image_path' => $imagePath,
         ]);
 
+        ActivityLog::logAction(
+            auth()->id(),
+            'product_updated',
+            "Updated product {$product->product_name}",
+            $request->ip()
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Product updated successfully',
@@ -197,7 +211,15 @@ class ProductController extends Controller
             Storage::disk('public')->delete($product->image_path);
         }
 
+        $productName = $product->product_name;
         $product->delete();
+
+        ActivityLog::logAction(
+            auth()->id(),
+            'product_deleted',
+            "Deleted product {$productName}",
+            request()->ip()
+        );
 
         return response()->json([
             'success' => true,

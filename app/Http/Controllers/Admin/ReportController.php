@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Sale;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -56,6 +57,13 @@ class ReportController extends Controller
             ->orderBy('sale_date', 'desc')
             ->get();
 
+        ActivityLog::logAction(
+            auth()->id(),
+            'sales_report_exported',
+            'Exported sales report CSV',
+            $request->ip()
+        );
+
         $filename = 'sales-report-' . now()->format('Y-m-d-His') . '.csv';
 
         return response()->streamDownload(function () use ($sales) {
@@ -99,6 +107,13 @@ class ReportController extends Controller
     {
         $inventory = $this->inventoryRows();
         $filename = 'inventory-report-' . now()->format('Y-m-d-His') . '.csv';
+
+        ActivityLog::logAction(
+            auth()->id(),
+            'inventory_report_exported',
+            'Exported inventory report CSV',
+            request()->ip()
+        );
 
         return response()->streamDownload(function () use ($inventory) {
             $handle = fopen('php://output', 'w');

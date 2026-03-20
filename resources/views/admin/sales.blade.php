@@ -30,7 +30,7 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">Sales</h1>
-                    <p class="text-gray-600">Create sales, record partial payments, and review sales history.</p>
+                    <p class="text-gray-600">Review sales history, confirm customer payment requests, and manage delivery progress.</p>
                 </div>
                 <button onclick="openSaleModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                     Create New Sale
@@ -186,7 +186,7 @@
                         .filter((request) => request.status === 'processing')
                         .map((request) => `
                             <div class="rounded-lg border border-sky-200 bg-sky-50 p-2 text-xs text-sky-900">
-                                <div class="font-semibold">Payment request: ${formatCurrency(request.amount)}</div>
+                                <div class="font-semibold">Customer GCash request: ${formatCurrency(request.amount)}</div>
                                 <div class="mt-1">${request.payment_method}${request.reference_no ? ` | Ref: ${request.reference_no}` : ''}</div>
                                 ${request.proof_image_path ? `<a href="/storage/${request.proof_image_path}" target="_blank" class="mt-1 inline-block font-semibold text-sky-700 hover:underline">View proof</a>` : ''}
                                 <div class="mt-2 flex gap-2">
@@ -204,7 +204,7 @@
                         <td class="px-6 py-4">
                             <select id="payment_status_${sale.sale_id}" class="rounded border px-2 py-1">
                                 <option value="unpaid" ${sale.payment_status === 'unpaid' ? 'selected' : ''}>Unpaid</option>
-                                <option value="processing" ${sale.payment_status === 'processing' ? 'selected' : ''}>Processing</option>
+                                <option value="processing" ${sale.payment_status === 'processing' ? 'selected' : ''}>Awaiting Payment Confirmation</option>
                                 <option value="partial" ${sale.payment_status === 'partial' ? 'selected' : ''}>Partial</option>
                                 <option value="paid" ${sale.payment_status === 'paid' ? 'selected' : ''}>Paid</option>
                             </select>
@@ -420,3 +420,4 @@
     </script>
 </body>
 </html>
+

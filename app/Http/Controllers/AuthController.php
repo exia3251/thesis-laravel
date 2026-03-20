@@ -110,6 +110,15 @@ class AuthController extends Controller
 
         // Verify password with Hash::check
         if ($user && Hash::check($request->password, $user->password)) {
+
+            // Block deactivated admin accounts (super_admin is exempt)
+            if ($user->role === 'admin' && !$user->is_active) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your admin account has been deactivated. Please contact the super admin.'
+                ], 403);
+            }
+
             // Clear rate limiter on success
             RateLimiter::clear($key);
             $previousSessionId = $user->current_session_id;
@@ -177,6 +186,15 @@ class AuthController extends Controller
 
         // Verify password with Hash::check
         if ($user && Hash::check($request->password, $user->password)) {
+
+            // Reject deactivated accounts before creating a session
+            if (!$user->is_active) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account has been deactivated. Please contact support.'
+                ], 403);
+            }
+
             // Clear rate limiter on success
             RateLimiter::clear($key);
             $previousSessionId = $user->current_session_id;

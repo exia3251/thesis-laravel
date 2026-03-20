@@ -178,26 +178,25 @@ class SalesController extends Controller
             'paid_amount' => 'nullable|numeric|min:0',
         ]);
 
+        $total = (float) $sale->total_amount;
         $paidAmount = (float) ($request->paid_amount ?? $sale->paid_amount ?? 0);
-        $paidAmount = min($paidAmount, (float) $sale->total_amount);
+        $paidAmount = min(max($paidAmount, 0), $total);
+        $balanceDue = max($total - $paidAmount, 0);
 
-        $sale->payment_status = $request->payment_status;
+        // Derive payment status from the actual paid amount.
+        // Only allow 'processing' to pass through if explicitly set in the request.
+        if ($paidAmount <= 0) {
+            $paymentStatus = $request->payment_status === 'processing' ? 'processing' : 'unpaid';
+        } elseif ($balanceDue <= 0) {
+            $paymentStatus = 'paid';
+        } else {
+            $paymentStatus = $request->payment_status === 'processing' ? 'processing' : 'partial';
+        }
+
+        $sale->payment_status = $paymentStatus;
         $sale->delivery_status = $request->delivery_status;
         $sale->paid_amount = $paidAmount;
-        $sale->balance_due = max((float) $sale->total_amount - $paidAmount, 0);
-
-        if ($sale->balance_due <= 0 && $sale->payment_status !== 'paid') {
-            $sale->payment_status = 'paid';
-        }
-
-        if ($sale->payment_status === 'unpaid') {
-            $sale->paid_amount = 0;
-            $sale->balance_due = (float) $sale->total_amount;
-        }
-
-        if ($sale->payment_status === 'processing' && $sale->balance_due <= 0) {
-            $sale->payment_status = 'paid';
-        }
+        $sale->balance_due = $balanceDue;
 
         $sale->save();
 
