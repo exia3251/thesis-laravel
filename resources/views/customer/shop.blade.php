@@ -77,62 +77,29 @@
         </header>
 
         <main class="container mx-auto px-4 py-8 sm:px-6">
-            <section class="relative mb-8 overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[linear-gradient(135deg,_rgba(255,255,255,0.84),_rgba(255,255,255,0.7))] px-8 py-10 shadow-xl backdrop-blur-xl">
-                <div class="absolute -right-16 top-8 h-56 w-56 rounded-full bg-[radial-gradient(circle,_rgba(20,138,103,0.16)_0%,_rgba(20,138,103,0)_72%)]"></div>
-                <div class="absolute bottom-0 left-1/3 h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgba(217,177,74,0.18)_0%,_rgba(217,177,74,0)_72%)]"></div>
-                <div class="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
-                    <div>
-                        <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">Lubricants Storefront</div>
-                        <h1 class="mt-6 max-w-3xl text-4xl font-black leading-tight text-[var(--ink)] md:text-5xl">Premium engine oils, coolants, and lubricant essentials for daily and heavy-duty use.</h1>
-                        <p class="mt-4 max-w-2xl text-sm leading-7 text-[var(--muted)]">Discover a cleaner storefront experience for browsing, filtering, and ordering lubricant products with stock-aware checkout and product detail visibility.</p>
-                        <div class="mt-8 flex flex-wrap gap-3">
-                            <a href="#catalog" class="rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">Browse Catalog</a>
-                            <a href="#featuredProducts" class="rounded-xl border border-[var(--line)] bg-white/70 px-6 py-3 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)]">Featured Picks</a>
-                        </div>
-                        <div class="mt-8 grid gap-4 sm:grid-cols-3">
-                            <div class="rounded-2xl border border-[var(--line)] bg-white/70 p-4 shadow-sm">
-                                <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Inventory-Aware</div>
-                                <div class="mt-2 text-sm text-[var(--ink)]">Catalog and cart validation stay aligned with current stock availability.</div>
-                            </div>
-                            <div class="rounded-2xl border border-[var(--line)] bg-white/70 p-4 shadow-sm">
-                                <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Business-Ready</div>
-                                <div class="mt-2 text-sm text-[var(--ink)]">Structured for lubricant retail sales, order records, and customer management.</div>
-                            </div>
-                            <div class="rounded-2xl border border-[var(--line)] bg-white/70 p-4 shadow-sm">
-                                <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Customer-Focused</div>
-                                <div class="mt-2 text-sm text-[var(--ink)]">Search, filter, cart, and order tracking built into the customer flow.</div>
-                            </div>
+            <section class="relative mb-8 overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,_#0d1f18_0%,_#163d2c_55%,_#1a3020_100%)] px-8 py-12 shadow-2xl text-white">
+                {{-- Decorative blobs --}}
+                <div class="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,_rgba(20,138,103,0.35)_0%,_rgba(20,138,103,0)_70%)]"></div>
+                <div class="pointer-events-none absolute -bottom-16 left-1/4 h-56 w-56 rounded-full bg-[radial-gradient(circle,_rgba(217,177,74,0.22)_0%,_rgba(217,177,74,0)_70%)]"></div>
+                <div class="pointer-events-none absolute right-1/3 top-1/2 h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgba(20,138,103,0.18)_0%,_rgba(20,138,103,0)_70%)]"></div>
+
+                <div class="relative flex flex-col items-start gap-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="max-w-2xl">
+                        <div class="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--accent)]">RANEY LUBRICANTS TRADING</div>
+                        <h1 class="mt-5 text-4xl font-black leading-tight md:text-5xl">Premium engine oils &amp; lubricants for every engine.</h1>
+                        <p class="mt-4 max-w-xl text-sm leading-7 text-white/70">From daily drivers to heavy-duty machinery — find the right oil, coolant, or fluid for your needs.</p>
+                        <div class="mt-7 flex flex-wrap gap-3">
+                            <a href="#catalog" class="rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[var(--primary-dark)]">Browse Catalog</a>
+                            <a href="#featuredProducts" class="rounded-xl border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">Top Products</a>
                         </div>
                     </div>
-                    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-                        <div class="rounded-[2rem] border border-[var(--line)] bg-[var(--card)] p-6 shadow-lg backdrop-blur">
-                            <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--primary)]">Store Snapshot</div>
-                            <div class="mt-6 grid grid-cols-2 gap-4">
-                                <div>
-                                    <div class="text-3xl font-black" id="heroProductCount">0</div>
-                                    <div class="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Products</div>
-                                </div>
-                                <div>
-                                    <div class="text-3xl font-black" id="heroBrandCount">0</div>
-                                    <div class="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Brands</div>
-                                </div>
-                                <div>
-                                    <div class="text-3xl font-black" id="heroAvailableCount">0</div>
-                                    <div class="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Available</div>
-                                </div>
-                                <div>
-                                    <div class="text-3xl font-black" id="heroTypeCount">0</div>
-                                    <div class="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Types</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="rounded-[2rem] bg-[var(--card-solid)] p-6 shadow-lg ring-1 ring-[var(--line)]">
-                            <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--primary)]">Why Buy Here</div>
-                            <ul class="mt-4 space-y-3 text-sm leading-6 text-[var(--muted)]">
-                                <li>Clear product details for lubricant selection and packaging size.</li>
-                                <li>Consistent catalog structure for oils, coolants, and related automotive fluids.</li>
-                                <li>Stock-conscious ordering flow that reduces invalid checkout attempts.</li>
-                            </ul>
+
+                    <div class="flex-shrink-0">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/50 mb-3">Shop by Brand</div>
+                        <div class="flex flex-wrap gap-3">
+                            <button type="button" onclick="quickFilterBrand('SOLAR')" class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur transition hover:bg-[var(--primary)] hover:border-[var(--primary)]">SOLAR</button>
+                            <button type="button" onclick="quickFilterBrand('CANROYAL')" class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur transition hover:bg-[var(--primary)] hover:border-[var(--primary)]">CANROYAL</button>
+                            <button type="button" onclick="quickFilterBrand('PATROL')" class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur transition hover:bg-[var(--primary)] hover:border-[var(--primary)]">PATROL</button>
                         </div>
                     </div>
                 </div>
@@ -164,7 +131,7 @@
                 <div class="mb-5 flex items-end justify-between gap-4">
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--primary)]">Featured Products</div>
-                        <h2 class="mt-2 text-3xl font-black text-[var(--ink)]">Top products in the catalog</h2>
+                        <h2 class="mt-2 text-3xl font-black text-[var(--ink)]">Top Products</h2>
                     </div>
                     <a href="#catalog" class="text-sm font-semibold text-[var(--muted)] hover:text-[var(--primary)]">Jump to full catalog</a>
                 </div>
@@ -325,11 +292,6 @@
             const types = [...new Set(products.map((product) => product.oil_type))];
             const availableCount = products.filter((product) => getProductStock(product) > 0).length;
 
-            document.getElementById('heroProductCount').textContent = products.length;
-            document.getElementById('heroBrandCount').textContent = brands.length;
-            document.getElementById('heroAvailableCount').textContent = availableCount;
-            document.getElementById('heroTypeCount').textContent = types.length;
-
             document.getElementById('brandShowcase').innerHTML = brands.length
                 ? brands.map((brand) => `<button type="button" onclick="quickFilterBrand('${brand.replace(/'/g, "\\'")}')" class="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">${brand}</button>`).join('')
                 : '<span class="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">No brands yet</span>';
@@ -339,47 +301,51 @@
                 : '<span class="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">No types yet</span>';
         }
 
-        function renderFeaturedProducts() {
-            const featured = [...products]
-                .filter((product) => getProductStock(product) > 0)
-                .sort((a, b) => {
-                    const stockDiff = getProductStock(b) - getProductStock(a);
-                    if (stockDiff !== 0) {
-                        return stockDiff;
-                    }
+        async function loadFeaturedProducts() {
+            try {
+                const response = await fetch('/shop-api/featured-products');
+                const data = await response.json();
+                const featured = data.data || [];
 
-                    return Number(b.price || 0) - Number(a.price || 0);
-                })
-                .slice(0, 3);
-
-            document.getElementById('featuredGrid').innerHTML = featured.length
+                document.getElementById('featuredGrid').innerHTML = featured.length
                 ? featured.map((product, index) => `
-                    <div class="rounded-[1.85rem] bg-[var(--card-solid)] shadow-xl ring-1 ring-[var(--line)]">
-                        <div class="relative overflow-hidden rounded-t-[1.85rem]">
+                    <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group flex flex-col cursor-pointer overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--card-solid)] shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                        <div class="relative flex-shrink-0">
                             ${product.image_url
-                                ? `<img src="${product.image_url}" alt="${product.product_name}" class="h-56 w-full object-cover">`
-                                : `<div class="flex h-56 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))]"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">Featured Product</span></div>`}
+                                ? `<img src="${product.image_url}" alt="${product.product_name}" class="h-64 w-full object-cover">`
+                                : `<div class="flex h-64 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))]"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
                             <div class="absolute left-4 top-4 rounded-full bg-[rgba(22,32,42,0.82)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">Pick ${index + 1}</div>
                         </div>
-                        <div class="p-6">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${product.brand}</div>
-                                    <h3 class="mt-2 text-xl font-black text-[var(--ink)]">${product.product_name}</h3>
+                        <div class="flex flex-1 flex-col p-5">
+                            <div class="mb-2 flex items-start justify-between gap-2">
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="mb-1 line-clamp-2 text-lg font-black leading-snug text-[var(--ink)]">${product.product_name}</h3>
+                                    <p class="truncate text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${product.brand}</p>
                                 </div>
-                                <span class="rounded-full bg-[var(--primary-soft)] px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[var(--primary)]">${product.oil_type}</span>
+                                <span class="flex-shrink-0 rounded-full bg-[var(--primary-soft)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--primary)]">${product.oil_type}</span>
                             </div>
-                            <div class="mt-5 flex items-center justify-between">
-                                <div>
-                                    <div class="text-2xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</div>
-                                    <div class="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">${product.viscosity_grade || 'Standard'} | ${product.unit}</div>
+                            <p class="mb-3 truncate text-sm text-[var(--muted)]">${product.viscosity_grade || 'Standard'} | ${product.unit}</p>
+                            <div class="mt-auto">
+                                <div class="mb-3 flex items-center justify-between">
+                                    <span class="text-2xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</span>
+                                    <span class="rounded-full bg-[#f3f6f8] px-3 py-1 text-xs font-semibold text-[var(--muted)]">Stock: ${product.quantity}</span>
                                 </div>
-                                <a href="/shop/products/${product.product_id}" class="rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">View</a>
+                                <div class="h-px bg-[var(--line)]"></div>
+                                <div class="mt-3 flex items-center justify-between gap-3">
+                                    <span class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted)] group-hover:text-[var(--primary)]">View Details</span>
+                                    <button onclick="event.stopPropagation(); addToCart(${product.product_id})" class="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-bold text-white transition hover:brightness-110">
+                                        Add to Cart
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </article>
                 `).join('')
                 : '<div class="rounded-[1.75rem] bg-white p-6 text-center text-[var(--muted)] shadow-lg">No featured products available yet.</div>';
+            } catch (error) {
+                document.getElementById('featuredGrid').innerHTML =
+                    '<div class="rounded-[1.75rem] bg-white p-6 text-center text-red-500 shadow-lg">Failed to load featured products.</div>';
+            }
         }
 
         function renderProducts() {
@@ -479,7 +445,7 @@
                         '<option value="">All Brands</option>' +
                         brands.map((brand) => `<option value="${brand}">${brand}</option>`).join('');
                     renderShowcase();
-                    renderFeaturedProducts();
+                    loadFeaturedProducts();
                     renderProducts();
                 }
             } catch (error) {

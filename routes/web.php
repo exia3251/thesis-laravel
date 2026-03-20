@@ -101,6 +101,7 @@ Route::post('/shop/logout', [AuthController::class, 'logout'])->name('customer.l
 // Customer pages
 Route::get('/shop', [ShopController::class, 'index'])->name('shop');
 Route::get('/shop/products/{id}', [ShopController::class, 'show'])->name('shop.products.show');
+Route::get('/shop-api/featured-products', [ShopController::class, 'getFeaturedProducts']);
 
 Route::middleware(['customer', 'active_session'])->group(function () {
     Route::get('/cart', function () {
