@@ -45,6 +45,9 @@
             <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
             <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap gap-3 items-center">
+                    <input type="text" id="productSearch" oninput="renderProducts()" placeholder="Search product, brand, or type..." class="rounded border border-gray-300 px-3 py-2 text-sm w-72 focus:outline-none focus:border-blue-400">
+                </div>
                 <table class="min-w-full">
                     <thead class="bg-gray-50">
                         <tr>
@@ -291,40 +294,46 @@ Diesel Engine Oil SAE 15W40 API CI4/SJ 5L | 1500 | 8 | 3</pre>
             }
         }
 
+        function renderProducts() {
+            const search = document.getElementById('productSearch').value.toLowerCase();
+            const tbody = document.getElementById('productsBody');
+
+            const filtered = products.filter(p =>
+                p.product_name.toLowerCase().includes(search) ||
+                p.brand.toLowerCase().includes(search) ||
+                p.oil_type.toLowerCase().includes(search)
+            );
+
+            tbody.innerHTML = filtered.length
+                ? filtered.map((product) => `
+                    <tr>
+                        <td class="px-6 py-4">
+                            ${product.image_url
+                                ? `<img src="${product.image_url}" alt="${product.product_name}" class="h-14 w-14 rounded border object-cover">`
+                                : '<div class="h-14 w-14 rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-400">No image</div>'}
+                        </td>
+                        <td class="px-6 py-4">${product.product_name}</td>
+                        <td class="px-6 py-4">${product.brand}</td>
+                        <td class="px-6 py-4">${product.oil_type}</td>
+                        <td class="px-6 py-4">${product.unit || '1 Liter'}</td>
+                        <td class="px-6 py-4">PHP ${Number(product.price).toFixed(2)}</td>
+                        <td class="px-6 py-4">${product.inventory ? product.inventory.quantity : 0}</td>
+                        <td class="px-6 py-4 space-x-3">
+                            <button type="button" onclick="editProduct(${product.product_id})" class="text-blue-600 hover:text-blue-900">Edit</button>
+                            <button type="button" onclick="deleteProduct(${product.product_id})" class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
+                    </tr>
+                `).join('')
+                : '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No matching products found.</td></tr>';
+        }
+
         async function loadProducts() {
             try {
                 const response = await fetch('/admin-api/products', { headers: { Accept: 'application/json' } });
-
-                if (response.status === 401) {
-                    window.location.href = '/admin/login';
-                    return;
-                }
-
+                if (response.status === 401) { window.location.href = '/admin/login'; return; }
                 const data = await response.json();
                 products = data.data || [];
-
-                const tbody = document.getElementById('productsBody');
-                tbody.innerHTML = products.length
-                    ? products.map((product) => `
-                        <tr>
-                            <td class="px-6 py-4">
-                                ${product.image_url
-                                    ? `<img src="${product.image_url}" alt="${product.product_name}" class="h-14 w-14 rounded border object-cover">`
-                                    : '<div class="h-14 w-14 rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-400">No image</div>'}
-                            </td>
-                            <td class="px-6 py-4">${product.product_name}</td>
-                            <td class="px-6 py-4">${product.brand}</td>
-                            <td class="px-6 py-4">${product.oil_type}</td>
-                            <td class="px-6 py-4">${product.unit || '1 Liter'}</td>
-                            <td class="px-6 py-4">PHP ${Number(product.price).toFixed(2)}</td>
-                            <td class="px-6 py-4">${product.inventory ? product.inventory.quantity : 0}</td>
-                            <td class="px-6 py-4 space-x-3">
-                                <button type="button" onclick="editProduct(${product.product_id})" class="text-blue-600 hover:text-blue-900">Edit</button>
-                                <button type="button" onclick="deleteProduct(${product.product_id})" class="text-red-600 hover:text-red-900">Delete</button>
-                            </td>
-                        </tr>
-                    `).join('')
-                    : '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No products available.</td></tr>';
+                renderProducts();
             } catch (error) {
                 showMessage('Failed to load products.', 'error');
             }

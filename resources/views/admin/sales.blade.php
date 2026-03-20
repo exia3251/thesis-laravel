@@ -40,6 +40,16 @@
             <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
             <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap gap-3 items-center">
+                    <input type="text" id="salesSearch" oninput="renderSales()" placeholder="Search customer or sale ID..." class="rounded border border-gray-300 px-3 py-2 text-sm w-64 focus:outline-none focus:border-blue-400">
+                    <div class="flex gap-2 text-sm">
+                        <button onclick="setPaymentFilter('all')" id="payFilter-all" class="pay-filter-btn px-3 py-1.5 rounded border font-medium bg-gray-900 text-white border-gray-900">All</button>
+                        <button onclick="setPaymentFilter('paid')" id="payFilter-paid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Paid</button>
+                        <button onclick="setPaymentFilter('partial')" id="payFilter-partial" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Partial</button>
+                        <button onclick="setPaymentFilter('unpaid')" id="payFilter-unpaid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Unpaid</button>
+                        <button onclick="setPaymentFilter('processing')" id="payFilter-processing" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Awaiting</button>
+                    </div>
+                </div>
                 <table class="min-w-full">
                     <thead class="bg-gray-50">
                         <tr>
@@ -185,17 +195,33 @@
             return `PHP ${Number(value || 0).toFixed(2)}`;
         }
 
-        async function loadSales() {
-            const response = await fetch('/admin-api/sales', { headers: { Accept: 'application/json' } });
+        let allSales = [];
+        let activePaymentFilter = 'all';
 
-            if (response.status === 401) {
-                window.location.href = '/admin/login';
-                return;
+        function setPaymentFilter(filter) {
+            activePaymentFilter = filter;
+            document.querySelectorAll('.pay-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-gray-900', 'text-white', 'border-gray-900');
+                btn.classList.add('text-gray-600', 'border-gray-300');
+            });
+            const active = document.getElementById('payFilter-' + filter);
+            if (active) {
+                active.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
+                active.classList.remove('text-gray-600', 'border-gray-300');
             }
+            renderSales();
+        }
 
-            const data = await response.json();
-            const sales = data.data || [];
+        function renderSales() {
+            const search = document.getElementById('salesSearch').value.toLowerCase();
             const tbody = document.getElementById('salesBody');
+
+            const sales = allSales.filter(sale => {
+                const customerName = (sale.customer_name || (sale.user && sale.user.full_name) || '').toLowerCase();
+                const matchSearch = customerName.includes(search) || String(sale.sale_id).includes(search);
+                const matchFilter = activePaymentFilter === 'all' || sale.payment_status === activePaymentFilter;
+                return matchSearch && matchFilter;
+            });
 
             tbody.innerHTML = sales.length
                 ? sales.map((sale) => {
@@ -230,7 +256,7 @@
                             </select>
                         </td>
                         <td class="px-6 py-4">
-                            <input id="paid_amount_${sale.sale_id}" type="number" min="0" step="1" max="${Math.round(Number(sale.total_amount))}" value="${Math.round(Number(sale.paid_amount || 0))}" class="w-28 rounded border px-2 py-1">
+                            <input id="paid_amount_${sale.sale_id}" type="number" min="0" step="1" value="${Math.round(Number(sale.paid_amount || 0))}" class="w-28 rounded border px-2 py-1">
                         </td>
                         <td class="px-6 py-4">${formatCurrency(sale.total_amount)}</td>
                         <td class="px-6 py-4">
@@ -242,7 +268,15 @@
                     </tr>
                 `;
                 }).join('')
-                : '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No sales records yet.</td></tr>';
+                : '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No matching sales records.</td></tr>';
+        }
+
+        async function loadSales() {
+            const response = await fetch('/admin-api/sales', { headers: { Accept: 'application/json' } });
+            if (response.status === 401) { window.location.href = '/admin/login'; return; }
+            const data = await response.json();
+            allSales = data.data || [];
+            renderSales();
         }
 
         async function loadSaleProducts() {

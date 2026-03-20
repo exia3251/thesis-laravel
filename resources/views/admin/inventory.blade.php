@@ -35,6 +35,15 @@
             <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
             <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap gap-3 items-center">
+                    <input type="text" id="inventorySearch" oninput="renderInventory()" placeholder="Search product or brand..." class="rounded border border-gray-300 px-3 py-2 text-sm w-64 focus:outline-none focus:border-blue-400">
+                    <div class="flex gap-2 text-sm">
+                        <button onclick="setStockFilter('all')" id="stockFilter-all" class="stock-filter-btn px-3 py-1.5 rounded border font-medium bg-gray-900 text-white border-gray-900">All</button>
+                        <button onclick="setStockFilter('in_stock')" id="stockFilter-in_stock" class="stock-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">In Stock</button>
+                        <button onclick="setStockFilter('low_stock')" id="stockFilter-low_stock" class="stock-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Low Stock</button>
+                        <button onclick="setStockFilter('out_of_stock')" id="stockFilter-out_of_stock" class="stock-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Out of Stock</button>
+                    </div>
+                </div>
                 <table class="min-w-full">
                     <thead class="bg-gray-50">
                         <tr>
@@ -73,9 +82,19 @@
                     <label class="block text-sm font-medium text-slate-700">Product</label>
                     <input type="text" id="stock_product_name" class="mt-1 block w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-slate-700" readonly>
                 </div>
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Quantity</label>
+                        <input type="number" id="stock_quantity" min="1" step="1" required class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3" value="1">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Reference No.</label>
+                        <input type="text" id="stock_reference_no" maxlength="100" class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="Optional reference">
+                    </div>
+                </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700">Quantity</label>
-                    <input type="number" id="stock_quantity" min="1" step="1" required class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3" value="1">
+                    <label class="block text-sm font-medium text-slate-700">Notes</label>
+                    <textarea id="stock_notes" rows="4" class="mt-1 block w-full resize-none rounded-xl border border-slate-300 px-3 py-3" placeholder="Optional notes"></textarea>
                 </div>
                 <div class="flex justify-end gap-3">
                     <button type="button" onclick="closeStockModal()" class="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Cancel</button>
@@ -112,49 +131,67 @@
             messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
         }
 
+        let activeStockFilter = 'all';
+
+        function setStockFilter(filter) {
+            activeStockFilter = filter;
+            document.querySelectorAll('.stock-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-gray-900', 'text-white', 'border-gray-900');
+                btn.classList.add('text-gray-600', 'border-gray-300');
+            });
+            const active = document.getElementById('stockFilter-' + filter);
+            if (active) {
+                active.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
+                active.classList.remove('text-gray-600', 'border-gray-300');
+            }
+            renderInventory();
+        }
+
+        function renderInventory() {
+            const search = document.getElementById('inventorySearch').value.toLowerCase();
+            const tbody = document.getElementById('inventoryBody');
+
+            let items = inventoryItems.filter(item => {
+                const matchSearch = item.product_name.toLowerCase().includes(search) || item.brand.toLowerCase().includes(search);
+                const stock = item.quantity || 0;
+                const matchFilter =
+                    activeStockFilter === 'all' ||
+                    (activeStockFilter === 'in_stock' && stock > item.reorder_level / 2) ||
+                    (activeStockFilter === 'low_stock' && stock > 0 && stock <= item.reorder_level / 2) ||
+                    (activeStockFilter === 'out_of_stock' && stock === 0);
+                return matchSearch && matchFilter;
+            });
+
+            tbody.innerHTML = items.length
+                ? items.map((item) => {
+                    const stock = item.quantity || 0;
+                    let statusColor = 'text-green-600';
+                    let statusText = 'In Stock';
+                    if (stock === 0) { statusColor = 'text-red-600'; statusText = 'Out of Stock'; }
+                    else if (stock <= item.reorder_level / 2) { statusColor = 'text-orange-600'; statusText = 'Low Stock'; }
+                    return `
+                        <tr>
+                            <td class="px-6 py-4">${item.product_name}</td>
+                            <td class="px-6 py-4">${item.brand}</td>
+                            <td class="px-6 py-4 font-semibold">${stock}</td>
+                            <td class="px-6 py-4">${item.reorder_level}</td>
+                            <td class="px-6 py-4 ${statusColor}">${statusText}</td>
+                            <td class="px-6 py-4 space-x-3">
+                                <button type="button" onclick="adjustStock(${item.product_id}, 'stock-in')" class="text-blue-600 hover:text-blue-900">Stock In</button>
+                                <button type="button" onclick="adjustStock(${item.product_id}, 'stock-out')" class="text-red-600 hover:text-red-900">Stock Out</button>
+                            </td>
+                        </tr>`;
+                }).join('')
+                : '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No matching inventory records.</td></tr>';
+        }
+
         async function loadInventory() {
             try {
                 const response = await fetch('/admin-api/inventory', { headers: { Accept: 'application/json' } });
-
-                if (response.status === 401) {
-                    window.location.href = '/admin/login';
-                    return;
-                }
-
+                if (response.status === 401) { window.location.href = '/admin/login'; return; }
                 const data = await response.json();
-                const tbody = document.getElementById('inventoryBody');
-                const items = data.data || [];
-                inventoryItems = items;
-
-                tbody.innerHTML = items.length
-                    ? items.map((item) => {
-                        const stock = item.quantity || 0;
-                        let statusColor = 'text-green-600';
-                        let statusText = 'In Stock';
-
-                        if (stock === 0) {
-                            statusColor = 'text-red-600';
-                            statusText = 'Out of Stock';
-                        } else if (stock <= item.reorder_level) {
-                            statusColor = 'text-orange-600';
-                            statusText = 'Low Stock';
-                        }
-
-                        return `
-                            <tr>
-                                <td class="px-6 py-4">${item.product_name}</td>
-                                <td class="px-6 py-4">${item.brand}</td>
-                                <td class="px-6 py-4 font-semibold">${stock}</td>
-                                <td class="px-6 py-4">${item.reorder_level}</td>
-                                <td class="px-6 py-4 ${statusColor}">${statusText}</td>
-                                <td class="px-6 py-4 space-x-3">
-                                    <button type="button" onclick="adjustStock(${item.product_id}, 'stock-in')" class="text-blue-600 hover:text-blue-900">Stock In</button>
-                                    <button type="button" onclick="adjustStock(${item.product_id}, 'stock-out')" class="text-red-600 hover:text-red-900">Stock Out</button>
-                                </td>
-                            </tr>
-                        `;
-                    }).join('')
-                    : '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No inventory records yet.</td></tr>';
+                inventoryItems = data.data || [];
+                renderInventory();
             } catch (error) {
                 showMessage('Failed to load inventory.', 'error');
             }
@@ -172,7 +209,8 @@
             document.getElementById('stock_product_id').value = productId;
             document.getElementById('stock_product_name').value = `${item.product_name} (${item.brand})`;
             document.getElementById('stock_quantity').value = 1;
-
+            document.getElementById('stock_reference_no').value = '';
+            document.getElementById('stock_notes').value = '';
             document.getElementById('stockModalTitle').textContent = action === 'stock-in' ? 'Stock In' : 'Stock Out';
             document.getElementById('stockModalSubtitle').textContent = action === 'stock-in'
                 ? 'Add new inventory units to this product.'
@@ -212,7 +250,8 @@
                 body: JSON.stringify({
                     product_id: Number(document.getElementById('stock_product_id').value),
                     quantity: Number(document.getElementById('stock_quantity').value),
-
+                    reference_no: document.getElementById('stock_reference_no').value,
+                    notes: document.getElementById('stock_notes').value
                 })
             });
 
