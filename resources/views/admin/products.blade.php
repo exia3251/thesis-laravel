@@ -4,39 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Products - Engine Oil Inventory</title>
+    <title>RANEY LUBRICANTS TRADING — Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary:       #148a67;
+            --primary-dark:  #0f6b50;
+            --primary-soft:  rgba(20,138,103,0.10);
+            --accent:        #d9b14a;
+            --accent-soft:   rgba(217,177,74,0.12);
+            --ink:           #16202a;
+            --muted:         #6f7d8c;
+            --surface:       #f3f6f9;
+            --card:          #ffffff;
+            --line:          rgba(21,35,54,0.10);
+            --sidebar-bg:    #0d1f18;
+            --sidebar-hover: rgba(20,138,103,0.18);
+            --sidebar-active:rgba(20,138,103,0.28);
+        }
+        body { background: var(--surface); color: var(--ink); }
+        input, select, textarea {
+            border-color: var(--line) !important;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary) !important;
+            outline: none;
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+    </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-[var(--surface)]">
     <div class="min-h-screen">
-        <div class="fixed inset-y-0 left-0 w-64 bg-gray-800">
-            <div class="flex items-center justify-center h-16 bg-gray-900">
-                <span class="text-white font-bold text-xl">Admin Panel</span>
+        <div class="fixed inset-y-0 left-0 w-64 bg-[var(--sidebar-bg)] shadow-2xl">
+            <div class="flex h-20 items-center justify-center border-b border-white/10 bg-[linear-gradient(135deg,_rgba(20,138,103,0.15),_transparent)]">
+                <div class="text-center">
+                    <div class="text-lg font-black tracking-tight leading-tight">
+                        <span style="color:#148a67;">RANEY</span><span style="color:#d9b14a;"> LUBRICANTS</span>
+                    </div>
+                    <div class="text-[10px] uppercase tracking-[0.28em] text-white/50 mt-0.5">Trading</div>
+                </div>
             </div>
-            <nav class="mt-5">
-                <a href="/admin/dashboard" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Dashboard</a>
-                <a href="/admin/products" class="flex items-center px-6 py-3 text-gray-100 bg-gray-900">Products</a>
-                <a href="/admin/inventory" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Inventory</a>
-                <a href="/admin/sales" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Sales</a>
-                <a href="/admin/reports" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Reports</a>
+            <nav class="mt-6 space-y-1 px-3">
+                <a href="/admin/dashboard" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Dashboard</a>
+                <a href="/admin/products" class="flex items-center rounded-2xl px-4 py-3 font-semibold text-white bg-[var(--sidebar-active)] ring-1 ring-white/10">Products</a>
+                <a href="/admin/inventory" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Inventory</a>
+                <a href="/admin/sales" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Sales</a>
+                <a href="/admin/reports" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Reports</a>
                 @if(auth()->user()->isSuperAdmin())
-                    <a href="/admin/users" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Users</a>
+                    <a href="/admin/users" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Users</a>
                 @endif
-                <button type="button" onclick="logout()" class="w-full text-left px-6 py-3 text-gray-300 hover:bg-gray-700">Logout</button>
+                <button type="button" onclick="logout()" class="w-full rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Logout</button>
             </nav>
         </div>
 
         <div class="ml-64 p-8">
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Products</h1>
-                    <p class="text-gray-600">Create, update, and remove products from the catalog.</p>
+                    <h1 class="text-3xl font-black text-[var(--ink)]">Products</h1>
+                    <p class="text-[var(--muted)]">Create, update, and remove products from the catalog.</p>
                 </div>
                 <div class="flex gap-3">
                     <button onclick="openImportModal()" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900">
                         Bulk Import
                     </button>
-                    <button onclick="openForm()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    <button onclick="openForm()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
                         Add Product
                     </button>
                 </div>
@@ -44,24 +75,24 @@
 
             <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap gap-3 items-center">
-                    <input type="text" id="productSearch" oninput="renderProducts()" placeholder="Search product, brand, or type..." class="rounded border border-gray-300 px-3 py-2 text-sm w-72 focus:outline-none focus:border-blue-400">
+            <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+                <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
+                    <input type="text" id="productSearch" oninput="renderProducts()" placeholder="Search product, brand, or type..." class="rounded-xl border border-[var(--line)] px-3 py-2 text-sm w-72 focus:outline-none">
                 </div>
                 <table class="min-w-full">
-                    <thead class="bg-gray-50">
+                    <thead class="bg-[var(--surface)]">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Image</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Brand</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Image</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Product Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Brand</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Unit</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Stock</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="productsBody" class="bg-white divide-y divide-gray-200">
+                    <tbody id="productsBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
                         <tr>
                             <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading products...</td>
                         </tr>
@@ -137,7 +168,7 @@
                 </div>
                 <div class="md:col-span-2 flex gap-2 justify-end">
                     <button type="button" onclick="closeForm()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save Product</button>
+                    <button type="submit" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">Save Product</button>
                 </div>
             </form>
         </div>
@@ -297,13 +328,11 @@ Diesel Engine Oil SAE 15W40 API CI4/SJ 5L | 1500 | 8 | 3</pre>
         function renderProducts() {
             const search = document.getElementById('productSearch').value.toLowerCase();
             const tbody = document.getElementById('productsBody');
-
             const filtered = products.filter(p =>
                 p.product_name.toLowerCase().includes(search) ||
                 p.brand.toLowerCase().includes(search) ||
                 p.oil_type.toLowerCase().includes(search)
             );
-
             tbody.innerHTML = filtered.length
                 ? filtered.map((product) => `
                     <tr>
@@ -319,12 +348,12 @@ Diesel Engine Oil SAE 15W40 API CI4/SJ 5L | 1500 | 8 | 3</pre>
                         <td class="px-6 py-4">PHP ${Number(product.price).toFixed(2)}</td>
                         <td class="px-6 py-4">${product.inventory ? product.inventory.quantity : 0}</td>
                         <td class="px-6 py-4 space-x-3">
-                            <button type="button" onclick="editProduct(${product.product_id})" class="text-blue-600 hover:text-blue-900">Edit</button>
+                            <button type="button" onclick="editProduct(${product.product_id})" class="text-[var(--primary)] hover:text-[var(--primary-dark)]">Edit</button>
                             <button type="button" onclick="deleteProduct(${product.product_id})" class="text-red-600 hover:text-red-900">Delete</button>
                         </td>
                     </tr>
                 `).join('')
-                : '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No matching products found.</td></tr>';
+                : '<tr><td colspan="8" class="px-6 py-4 text-center text-[var(--muted)]">No matching products found.</td></tr>';
         }
 
         async function loadProducts() {

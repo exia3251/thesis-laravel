@@ -4,43 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Sales - Engine Oil Inventory</title>
+    <title>RANEY LUBRICANTS TRADING — Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary:       #148a67;
+            --primary-dark:  #0f6b50;
+            --primary-soft:  rgba(20,138,103,0.10);
+            --accent:        #d9b14a;
+            --accent-soft:   rgba(217,177,74,0.12);
+            --ink:           #16202a;
+            --muted:         #6f7d8c;
+            --surface:       #f3f6f9;
+            --card:          #ffffff;
+            --line:          rgba(21,35,54,0.10);
+            --sidebar-bg:    #0d1f18;
+            --sidebar-hover: rgba(20,138,103,0.18);
+            --sidebar-active:rgba(20,138,103,0.28);
+        }
+        body { background: var(--surface); color: var(--ink); }
+        input, select, textarea {
+            border-color: var(--line) !important;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary) !important;
+            outline: none;
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+    </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-[var(--surface)]">
     <div class="min-h-screen">
-        <div class="fixed inset-y-0 left-0 w-64 bg-gray-800">
-            <div class="flex items-center justify-center h-16 bg-gray-900">
-                <span class="text-white font-bold text-xl">Admin Panel</span>
+        <div class="fixed inset-y-0 left-0 w-64 bg-[var(--sidebar-bg)] shadow-2xl">
+            <div class="flex h-20 items-center justify-center border-b border-white/10 bg-[linear-gradient(135deg,_rgba(20,138,103,0.15),_transparent)]">
+                <div class="text-center">
+                    <div class="text-lg font-black tracking-tight leading-tight">
+                        <span style="color:#148a67;">RANEY</span><span style="color:#d9b14a;"> LUBRICANTS</span>
+                    </div>
+                    <div class="text-[10px] uppercase tracking-[0.28em] text-white/50 mt-0.5">Trading</div>
+                </div>
             </div>
-            <nav class="mt-5">
-                <a href="/admin/dashboard" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Dashboard</a>
-                <a href="/admin/products" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Products</a>
-                <a href="/admin/inventory" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Inventory</a>
-                <a href="/admin/sales" class="flex items-center px-6 py-3 text-gray-100 bg-gray-900">Sales</a>
-                <a href="/admin/reports" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Reports</a>
+            <nav class="mt-6 space-y-1 px-3">
+                <a href="/admin/dashboard" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Dashboard</a>
+                <a href="/admin/products" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Products</a>
+                <a href="/admin/inventory" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Inventory</a>
+                <a href="/admin/sales" class="flex items-center rounded-2xl px-4 py-3 font-semibold text-white bg-[var(--sidebar-active)] ring-1 ring-white/10">Sales</a>
+                <a href="/admin/reports" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Reports</a>
                 @if(auth()->user()->isSuperAdmin())
-                    <a href="/admin/users" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Users</a>
+                    <a href="/admin/users" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Users</a>
                 @endif
-                <button type="button" onclick="logout()" class="w-full text-left px-6 py-3 text-gray-300 hover:bg-gray-700">Logout</button>
+                <button type="button" onclick="logout()" class="w-full rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Logout</button>
             </nav>
         </div>
 
         <div class="ml-64 p-8">
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Sales</h1>
-                    <p class="text-gray-600">Create sales, record partial payments, and review sales history.</p>
+                    <h1 class="text-3xl font-black text-[var(--ink)]">Sales</h1>
+                    <p class="text-[var(--muted)]">Create sales, record partial payments, and review sales history.</p>
                 </div>
-                <button onclick="openSaleModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                <button onclick="openSaleModal()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
                     Create New Sale
                 </button>
             </div>
 
             <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap gap-3 items-center">
+            <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+                <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
                     <input type="text" id="salesSearch" oninput="renderSales()" placeholder="Search customer or sale ID..." class="rounded border border-gray-300 px-3 py-2 text-sm w-64 focus:outline-none focus:border-blue-400">
                     <div class="flex gap-2 text-sm">
                         <button onclick="setPaymentFilter('all')" id="payFilter-all" class="pay-filter-btn px-3 py-1.5 rounded border font-medium bg-gray-900 text-white border-gray-900">All</button>
@@ -51,19 +82,19 @@
                     </div>
                 </div>
                 <table class="min-w-full">
-                    <thead class="bg-gray-50">
+                    <thead class="bg-[var(--surface)]">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sale ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delivery</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid Amount</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Sale ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Payment</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Delivery</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Paid Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Total Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="salesBody" class="bg-white divide-y divide-gray-200">
+                    <tbody id="salesBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
                         <tr>
                             <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading sales...</td>
                         </tr>
@@ -73,73 +104,84 @@
         </div>
     </div>
 
-    <div id="saleModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-        <div class="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold">Create New Sale</h3>
-                <button type="button" onclick="closeSaleModal()" class="text-gray-500 hover:text-gray-700">Close</button>
+    <div id="saleModal" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto">
+        <div class="relative mx-auto my-10 w-full max-w-4xl rounded-2xl bg-white shadow-2xl">
+
+            {{-- Modal Header --}}
+            <div class="flex items-center justify-between border-b border-slate-200 px-7 py-5">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900">Create New Sale</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Fill in customer details, add products, then save.</p>
+                </div>
+                <button type="button" onclick="closeSaleModal()" class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600">&#10005;</button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Customer Name</label>
-                    <input type="text" id="customer_name" class="mt-1 block w-full rounded-md border px-3 py-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Payment Method</label>
-                    <select id="payment_method" class="mt-1 block w-full rounded-md border px-3 py-2">
-                        <option value="cash">Cash</option>
-                        <option value="gcash">GCash</option>
-                        <option value="cash_on_delivery">Cash on Delivery</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Paid Amount</label>
-                    <input type="number" id="paid_amount" min="0" step="1" class="mt-1 block w-full rounded-md border px-3 py-2" value="0">
-                </div>
-            </div>
+            <div class="p-7 space-y-6">
 
-            <div class="border rounded-lg p-4 mb-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Product</label>
-                        <select id="product_select" class="mt-1 block w-full rounded-md border px-3 py-2"></select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Quantity</label>
-                        <input type="number" id="product_quantity" min="1" class="mt-1 block w-full rounded-md border px-3 py-2" value="1">
-                    </div>
-                    <div>
-                        <button type="button" onclick="addSaleItem()" class="w-full bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">Add Item</button>
+                {{-- Customer Details --}}
+                <div>
+                    <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Customer Details</div>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Customer Name</label>
+                            <input type="text" id="customer_name" placeholder="Walk-in Customer" required class="block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400">
+                        </div>
+                        <input type="hidden" id="payment_method" value="cash">
+                        <input type="hidden" id="paid_amount" value="0">
                     </div>
                 </div>
+
+                {{-- Add Product --}}
+                <div>
+                    <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Add Product</div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Product</label>
+                                <select id="product_select" class="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"></select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
+                                <input type="number" id="product_quantity" min="1" value="1" class="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400">
+                            </div>
+                            <div>
+                                <button type="button" onclick="addSaleItem()" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black transition">+ Add Item</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Items Table --}}
+                <div>
+                    <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Order Items</div>
+                    <div class="rounded-xl border border-slate-200 overflow-hidden">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 w-1/2">Product</th>
+                                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 w-16">Qty</th>
+                                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 w-28">Price</th>
+                                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 w-28">Subtotal</th>
+                                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 w-20">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="saleItemsBody" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="5" class="py-6 text-center text-slate-400 text-sm">No items added yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="mb-4">
-                <table class="min-w-full">
-                    <thead>
-                        <tr class="border-b">
-                            <th class="text-left py-2">Product</th>
-                            <th class="text-left py-2">Qty</th>
-                            <th class="text-left py-2">Price</th>
-                            <th class="text-left py-2">Subtotal</th>
-                            <th class="text-left py-2">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="saleItemsBody">
-                        <tr>
-                            <td colspan="5" class="py-3 text-center text-gray-500">No items added yet.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex justify-between items-center">
-                <div class="text-lg font-semibold">Total: <span id="saleTotal">PHP 0.00</span></div>
-                <div class="flex gap-2">
-                    <button type="button" onclick="closeSaleModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
-                    <button type="button" onclick="submitSale()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save Sale</button>
+            {{-- Modal Footer --}}
+            <div class="flex items-center justify-between border-t border-slate-200 px-7 py-5">
+                <div class="text-lg font-bold text-slate-900">Total: <span id="saleTotal" class="text-blue-600">PHP 0.00</span></div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeSaleModal()" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                    <button type="button" onclick="submitSale()" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)]">Save Sale</button>
                 </div>
             </div>
         </div>
@@ -302,7 +344,7 @@
             saleItems = [];
             document.getElementById('customer_name').value = '';
             document.getElementById('payment_method').value = 'cash';
-            document.getElementById('paid_amount').value = '0';
+            document.getElementById('paid_amount').value = 0;
             renderSaleItems();
         }
 
@@ -345,24 +387,34 @@
 
             tbody.innerHTML = saleItems.length
                 ? saleItems.map((item) => `
-                    <tr class="border-b">
-                        <td class="py-2">${item.product_name}</td>
-                        <td class="py-2">${item.quantity}</td>
-                        <td class="py-2">${formatCurrency(item.price)}</td>
-                        <td class="py-2">${formatCurrency(item.price * item.quantity)}</td>
-                        <td class="py-2">
-                            <button type="button" onclick="removeSaleItem(${item.product_id})" class="text-red-600 hover:text-red-900">Remove</button>
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-4 py-3 text-slate-800 font-medium">${item.product_name}</td>
+                        <td class="px-4 py-3 text-center text-slate-600">${item.quantity}</td>
+                        <td class="px-4 py-3 text-right text-slate-600">${formatCurrency(item.price)}</td>
+                        <td class="px-4 py-3 text-right font-semibold text-slate-800">${formatCurrency(item.price * item.quantity)}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button type="button" onclick="removeSaleItem(${item.product_id})" class="rounded-full px-3 py-1 text-xs font-semibold text-red-600 border border-red-200 hover:bg-red-50 transition">Remove</button>
                         </td>
                     </tr>
                 `).join('')
-                : '<tr><td colspan="5" class="py-3 text-center text-gray-500">No items added yet.</td></tr>';
+                : '<tr><td colspan="5" class="py-6 text-center text-slate-400 text-sm">No items added yet.</td></tr>';
         }
 
         async function submitSale() {
+            const customerName = document.getElementById('customer_name').value.trim();
+            if (!customerName) {
+                showMessage('Customer name is required.', 'error');
+                document.getElementById('customer_name').focus();
+                return;
+            }
+
             if (saleItems.length === 0) {
                 showMessage('Add at least one sale item.', 'error');
                 return;
             }
+
+            const total = saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            document.getElementById('paid_amount').value = total;
 
             const response = await fetch('/admin-api/sales', {
                 method: 'POST',

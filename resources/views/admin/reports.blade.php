@@ -4,35 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Reports - Engine Oil Inventory</title>
+    <title>RANEY LUBRICANTS TRADING — Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary:       #148a67;
+            --primary-dark:  #0f6b50;
+            --primary-soft:  rgba(20,138,103,0.10);
+            --accent:        #d9b14a;
+            --accent-soft:   rgba(217,177,74,0.12);
+            --ink:           #16202a;
+            --muted:         #6f7d8c;
+            --surface:       #f3f6f9;
+            --card:          #ffffff;
+            --line:          rgba(21,35,54,0.10);
+            --sidebar-bg:    #0d1f18;
+            --sidebar-hover: rgba(20,138,103,0.18);
+            --sidebar-active:rgba(20,138,103,0.28);
+        }
+        body { background: var(--surface); color: var(--ink); }
+        input, select, textarea {
+            border-color: var(--line) !important;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary) !important;
+            outline: none;
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+    </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-[var(--surface)]">
     <div class="min-h-screen">
-        <div class="fixed inset-y-0 left-0 w-64 bg-gray-800">
-            <div class="flex items-center justify-center h-16 bg-gray-900">
-                <span class="text-white font-bold text-xl">Admin Panel</span>
+        <div class="fixed inset-y-0 left-0 w-64 bg-[var(--sidebar-bg)] shadow-2xl">
+            <div class="flex h-20 items-center justify-center border-b border-white/10 bg-[linear-gradient(135deg,_rgba(20,138,103,0.15),_transparent)]">
+                <div class="text-center">
+                    <div class="text-lg font-black tracking-tight leading-tight">
+                        <span style="color:#148a67;">RANEY</span><span style="color:#d9b14a;"> LUBRICANTS</span>
+                    </div>
+                    <div class="text-[10px] uppercase tracking-[0.28em] text-white/50 mt-0.5">Trading</div>
+                </div>
             </div>
-            <nav class="mt-5">
-                <a href="/admin/dashboard" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Dashboard</a>
-                <a href="/admin/products" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Products</a>
-                <a href="/admin/inventory" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Inventory</a>
-                <a href="/admin/sales" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Sales</a>
-                <a href="/admin/reports" class="flex items-center px-6 py-3 text-gray-100 bg-gray-900">Reports</a>
+            <nav class="mt-6 space-y-1 px-3">
+                <a href="/admin/dashboard" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Dashboard</a>
+                <a href="/admin/products" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Products</a>
+                <a href="/admin/inventory" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Inventory</a>
+                <a href="/admin/sales" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Sales</a>
+                <a href="/admin/reports" class="flex items-center rounded-2xl px-4 py-3 font-semibold text-white bg-[var(--sidebar-active)] ring-1 ring-white/10">Reports</a>
                 @if(auth()->user()->isSuperAdmin())
-                    <a href="/admin/users" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700">Users</a>
+                    <a href="/admin/users" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Users</a>
                 @endif
-                <button type="button" onclick="logout()" class="w-full text-left px-6 py-3 text-gray-300 hover:bg-gray-700">Logout</button>
+                <button type="button" onclick="logout()" class="w-full rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Logout</button>
             </nav>
         </div>
 
         <div class="ml-64 p-8 space-y-8">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">Reports</h1>
-                <p class="text-gray-600">Review operational summaries and export CSV reports for defense or backup purposes.</p>
+                <h1 class="text-3xl font-black text-[var(--ink)]">Reports</h1>
+                <p class="text-[var(--muted)]">Review operational summaries and export CSV reports for defense or backup purposes.</p>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="rounded-2xl bg-[var(--card)] shadow-lg p-6 border border-[var(--line)]">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">From</label>
@@ -62,26 +93,26 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-3 mt-4">
-                    <button onclick="loadSalesReport()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Refresh Sales Report</button>
+                    <button onclick="loadSalesReport()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">Refresh Sales Report</button>
                     <button onclick="downloadSalesCsv()" class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">Download Sales CSV</button>
                     <button onclick="downloadInventoryCsv()" class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">Download Inventory CSV</button>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900">Sales Report</h2>
+                <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+                    <div class="px-6 py-4 border-b border-[var(--line)]">
+                        <h2 class="text-xl font-bold text-[var(--ink)]">Sales Report</h2>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-[var(--surface)]">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sale ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delivery</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Sale ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Customer</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Payment</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Delivery</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Total</th>
                                 </tr>
                             </thead>
                             <tbody id="salesReportBody">
@@ -91,18 +122,18 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900">Inventory Report</h2>
+                <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+                    <div class="px-6 py-4 border-b border-[var(--line)]">
+                        <h2 class="text-xl font-bold text-[var(--ink)]">Inventory Report</h2>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-[var(--surface)]">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Product</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Stock</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Value</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="inventoryReportBody">

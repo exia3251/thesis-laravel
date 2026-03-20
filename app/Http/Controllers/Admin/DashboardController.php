@@ -46,18 +46,23 @@ class DashboardController extends Controller
             ->selectRaw('SUM(products.price * inventory.quantity) as total')
             ->value('total') ?? 0;
 
-        // Low stock count
+        // Out of stock count
         $lowStockCount = Product::join('inventory', 'products.product_id', '=', 'inventory.product_id')
-            ->whereRaw('inventory.quantity <= products.reorder_level')
+            ->whereRaw('inventory.quantity = 0')
             ->count();
 
-        // Sales stats for period
+        // Low stock count (stock > 0 but <= half of reorder level)
+        $lowStockItemsCount = Product::join('inventory', 'products.product_id', '=', 'inventory.product_id')
+            ->whereRaw('inventory.quantity > 0 AND inventory.quantity <= products.reorder_level / 2')
+            ->count();
+
+        // Sales stats for period (paid and partial only)
         $salesStats = Sale::whereBetween('sale_date', [$dateFrom, $dateTo])
             ->whereIn('payment_status', ['paid', 'partial'])
             ->selectRaw('COUNT(*) as count, SUM(total_amount) as revenue')
             ->first();
 
-        // Sales trend
+        // Sales trend (paid and partial only)
         $salesTrend = Sale::whereBetween('sale_date', [$dateFrom, $dateTo])
             ->whereIn('payment_status', ['paid', 'partial'])
             ->selectRaw('DATE(sale_date) as date, COUNT(*) as count, SUM(total_amount) as revenue')
@@ -79,7 +84,28 @@ class DashboardController extends Controller
         $lowStockProducts = Product::with('inventory')
             ->get()
             ->filter(function ($product) {
-                return ($product->inventory->quantity ?? 0) <= $product->reorder_level;
+                return ($product->inventory->quantity ?? 0) === 0;
+            })
+            ->sortBy(function ($product) {
+                return $product->inventory->quantity ?? 0;
+            })
+            ->take(5)
+            ->values()
+            ->map(function ($product) {
+                return [
+                    'product_id' => $product->product_id,
+                    'product_name' => $product->product_name,
+                    'quantity' => $product->inventory->quantity ?? 0,
+                    'reorder_level' => $product->reorder_level,
+                ];
+            });
+
+        // Low stock products (stock > 0 but <= half of reorder level)
+        $lowStockAlerts = Product::with('inventory')
+            ->get()
+            ->filter(function ($product) {
+                $qty = $product->inventory->quantity ?? 0;
+                return $qty > 0 && $qty <= $product->reorder_level / 2;
             })
             ->sortBy(function ($product) {
                 return $product->inventory->quantity ?? 0;
@@ -104,11 +130,13 @@ class DashboardController extends Controller
                 'total_products' => $totalProducts,
                 'inventory_value' => $inventoryValue,
                 'low_stock_count' => $lowStockCount,
+                'low_stock_items_count' => $lowStockItemsCount,
                 'sales_count' => $salesStats->count ?? 0,
                 'sales_revenue' => $salesStats->revenue ?? 0,
                 'sales_trend' => $salesTrend,
                 'top_products' => $topProducts,
                 'low_stock_products' => $lowStockProducts,
+                'low_stock_alerts' => $lowStockAlerts,
                 'pending_deliveries' => $pendingDeliveries,
                 'unpaid_sales' => $unpaidSales,
             ]
