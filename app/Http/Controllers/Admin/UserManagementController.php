@@ -67,7 +67,7 @@ class UserManagementController extends Controller
             ActivityLog::logAction(
                 auth()->id(),
                 'user_created',
-                "Created {$user->role} account: {$user->username}",
+                "" . auth()->user()->full_name . " created {$user->role} account: {$user->full_name} (@{$user->username})",
                 $request->ip()
             );
 
@@ -144,7 +144,7 @@ class UserManagementController extends Controller
             ActivityLog::logAction(
                 auth()->id(),
                 'user_updated',
-                "Updated {$user->role} account: {$user->username}",
+                "" . auth()->user()->full_name . " updated {$user->role} account: {$user->full_name} (@{$user->username})",
                 $request->ip()
             );
 
@@ -187,7 +187,7 @@ class UserManagementController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'user_deleted',
-            "Deleted {$role} account: {$username}",
+            "" . auth()->user()->full_name . " deleted {$role} account: {$fullName} (@{$username})",
             $request->ip()
         );
 
@@ -197,12 +197,24 @@ class UserManagementController extends Controller
         ]);
     }
 
-    public function getLogs()
+    public function getLogs(Request $request)
     {
-        $logs = ActivityLog::with('user')
-            ->orderByDesc('log_id')
-            ->limit(100)
-            ->get();
+        $type = $request->get('type', 'all');
+
+        $adminActions   = ['admin_login', 'logout', 'single_session_replaced', 'session_invalidated', 'user_created', 'user_updated', 'user_deleted', 'product_created', 'product_updated', 'product_deleted', 'product_catalog_imported', 'stock_in', 'stock_out', 'sale_created', 'sale_status_updated', 'payment_request_approved', 'payment_request_rejected'];
+        $customerActions = ['customer_login', 'logout', 'single_session_replaced', 'session_invalidated', 'customer_registered', 'order_placed', 'payment_request_submitted', 'profile_updated', 'password_changed'];
+
+        $query = ActivityLog::with('user')->orderByDesc('log_id')->limit(200);
+
+        if ($type === 'admin') {
+            $query->whereIn('action', $adminActions)
+                  ->whereHas('user', fn($q) => $q->whereIn('role', ['admin', 'super_admin']));
+        } elseif ($type === 'customer') {
+            $query->whereIn('action', $customerActions)
+                  ->whereHas('user', fn($q) => $q->where('role', 'customer'));
+        }
+
+        $logs = $query->get();
 
         return response()->json([
             'success' => true,

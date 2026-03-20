@@ -53,8 +53,13 @@
             </div>
 
             <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                     <h2 class="text-xl font-semibold text-gray-900">Recent Activity Logs</h2>
+                    <div class="flex gap-2 text-sm">
+                        <button onclick="loadLogs('all')" id="tab-all" class="log-tab px-3 py-1 rounded-full border font-medium bg-gray-900 text-white border-gray-900">All</button>
+                        <button onclick="loadLogs('admin')" id="tab-admin" class="log-tab px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Admin</button>
+                        <button onclick="loadLogs('customer')" id="tab-customer" class="log-tab px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Customer</button>
+                    </div>
                 </div>
                 <div class="p-6">
                     <div id="logsList" class="space-y-3 text-sm text-gray-700">
@@ -213,20 +218,86 @@
             if (response.ok) loadUsers();
         }
 
-        async function loadLogs() {
-            const response = await fetch('/admin-api/logs', { headers: { Accept: 'application/json' } });
+        function formatLogDate(dateStr) {
+            if (!dateStr) return 'No date';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
+                + ' ' + d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        async function loadLogs(type = 'all') {
+            // Update active tab styles
+            document.querySelectorAll('.log-tab').forEach(btn => {
+                btn.classList.remove('bg-gray-900', 'text-white', 'border-gray-900');
+                btn.classList.add('text-gray-600', 'border-gray-300');
+            });
+            const activeTab = document.getElementById('tab-' + type);
+            if (activeTab) {
+                activeTab.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
+                activeTab.classList.remove('text-gray-600', 'border-gray-300');
+            }
+
+            const container = document.getElementById('logsList');
+            container.innerHTML = '<p class="text-gray-500">Loading logs...</p>';
+
+            const response = await fetch(`/admin-api/logs?type=${type}`, { headers: { Accept: 'application/json' } });
             const data = await response.json();
             const logs = data.data || [];
-            const container = document.getElementById('logsList');
+
+            const actionColors = {
+                // Auth
+                admin_login: 'bg-blue-100 text-blue-800',
+                customer_login: 'bg-blue-100 text-blue-800',
+                customer_registered: 'bg-green-100 text-green-800',
+                logout: 'bg-gray-100 text-gray-700',
+                single_session_replaced: 'bg-yellow-100 text-yellow-800',
+                session_invalidated: 'bg-yellow-100 text-yellow-800',
+                // Users
+                user_created: 'bg-green-100 text-green-800',
+                user_updated: 'bg-indigo-100 text-indigo-800',
+                user_deleted: 'bg-red-100 text-red-800',
+                // Products
+                product_created: 'bg-green-100 text-green-800',
+                product_updated: 'bg-indigo-100 text-indigo-800',
+                product_deleted: 'bg-red-100 text-red-800',
+                product_catalog_imported: 'bg-purple-100 text-purple-800',
+                // Inventory
+                stock_in: 'bg-green-100 text-green-800',
+                stock_out: 'bg-orange-100 text-orange-800',
+                // Sales
+                sale_created: 'bg-green-100 text-green-800',
+                sale_status_updated: 'bg-indigo-100 text-indigo-800',
+                payment_request_approved: 'bg-green-100 text-green-800',
+                payment_request_rejected: 'bg-red-100 text-red-800',
+                // Customer
+                order_placed: 'bg-blue-100 text-blue-800',
+                payment_request_submitted: 'bg-yellow-100 text-yellow-800',
+                profile_updated: 'bg-indigo-100 text-indigo-800',
+                password_changed: 'bg-orange-100 text-orange-800',
+            };
 
             container.innerHTML = logs.length
-                ? logs.map((log) => `
+                ? logs.map((log) => {
+                    const badgeClass = actionColors[log.action] || 'bg-gray-100 text-gray-700';
+                    const label = log.action.replaceAll('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const logDate = log.created_at
+                        ? new Date(log.created_at).toLocaleString('en-PH', {
+                            year: 'numeric', month: 'short', day: 'numeric',
+                            hour: '2-digit', minute: '2-digit', second: '2-digit',
+                            hour12: true
+                          })
+                        : 'No date';
+                    return `
                     <div class="border rounded px-3 py-2">
-                        <div class="font-semibold">${log.action.replaceAll('_', ' ')}</div>
-                        <div>${log.description || 'No description provided.'}</div>
-                        <div class="text-xs text-gray-500">${log.user ? log.user.full_name : 'System'} | ${log.ip_address || 'No IP recorded'}</div>
-                    </div>
-                `).join('')
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${badgeClass}">${label}</span>
+                            <span class="text-xs text-gray-500 font-medium">${log.user ? log.user.full_name : 'System'}</span>
+                            <span class="text-xs text-gray-400">&bull; ${log.ip_address || 'No IP'}</span>
+                            <span class="text-xs text-gray-400 ml-auto">${logDate}</span>
+                        </div>
+                        <div class="text-gray-600">${log.description || 'No description provided.'}</div>
+                    </div>`;
+                }).join('')
                 : '<p class="text-gray-500">No activity logs yet.</p>';
         }
 

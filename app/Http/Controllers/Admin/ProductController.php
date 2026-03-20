@@ -126,8 +126,8 @@ class ProductController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'product_created',
-            "Created product {$product->product_name}",
-            $request->ip()
+            "Created product: {$product->product_name} by " . auth()->user()->full_name,
+            request()->ip()
         );
 
         return response()->json([
@@ -176,8 +176,8 @@ class ProductController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'product_updated',
-            "Updated product {$product->product_name}",
-            $request->ip()
+            "Updated product: {$product->product_name} by " . auth()->user()->full_name,
+            request()->ip()
         );
 
         return response()->json([
@@ -212,12 +212,13 @@ class ProductController extends Controller
         }
 
         $productName = $product->product_name;
+        $productId   = $product->product_id;
         $product->delete();
 
         ActivityLog::logAction(
             auth()->id(),
             'product_deleted',
-            "Deleted product {$productName}",
+            "Deleted product: {$productName} by " . auth()->user()->full_name,
             request()->ip()
         );
 

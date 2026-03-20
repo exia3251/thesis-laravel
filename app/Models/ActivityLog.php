@@ -9,6 +9,8 @@ class ActivityLog extends Model
     protected $primaryKey = 'log_id';
     protected $fillable = ['user_id', 'action', 'description', 'ip_address'];
     public $timestamps = false;
+    protected $dates = ['created_at'];
+    protected $casts = ['created_at' => 'datetime'];
 
     public function user()
     {

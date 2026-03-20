@@ -73,19 +73,9 @@
                     <label class="block text-sm font-medium text-slate-700">Product</label>
                     <input type="text" id="stock_product_name" class="mt-1 block w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-slate-700" readonly>
                 </div>
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">Quantity</label>
-                        <input type="number" id="stock_quantity" min="1" step="1" required class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3" value="1">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">Reference No.</label>
-                        <input type="text" id="stock_reference_no" maxlength="100" class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="Optional reference">
-                    </div>
-                </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700">Notes</label>
-                    <textarea id="stock_notes" rows="4" class="mt-1 block w-full resize-none rounded-xl border border-slate-300 px-3 py-3" placeholder="Optional notes"></textarea>
+                    <label class="block text-sm font-medium text-slate-700">Quantity</label>
+                    <input type="number" id="stock_quantity" min="1" step="1" required class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3" value="1">
                 </div>
                 <div class="flex justify-end gap-3">
                     <button type="button" onclick="closeStockModal()" class="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Cancel</button>
@@ -182,8 +172,7 @@
             document.getElementById('stock_product_id').value = productId;
             document.getElementById('stock_product_name').value = `${item.product_name} (${item.brand})`;
             document.getElementById('stock_quantity').value = 1;
-            document.getElementById('stock_reference_no').value = '';
-            document.getElementById('stock_notes').value = '';
+
             document.getElementById('stockModalTitle').textContent = action === 'stock-in' ? 'Stock In' : 'Stock Out';
             document.getElementById('stockModalSubtitle').textContent = action === 'stock-in'
                 ? 'Add new inventory units to this product.'
@@ -223,8 +212,7 @@
                 body: JSON.stringify({
                     product_id: Number(document.getElementById('stock_product_id').value),
                     quantity: Number(document.getElementById('stock_quantity').value),
-                    reference_no: document.getElementById('stock_reference_no').value,
-                    notes: document.getElementById('stock_notes').value
+
                 })
             });
 

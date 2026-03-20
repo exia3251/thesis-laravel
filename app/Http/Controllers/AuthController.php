@@ -133,7 +133,7 @@ class AuthController extends Controller
                 'current_session_id' => $request->session()->getId(),
             ])->save();
 
-            ActivityLog::logAction($user->user_id, 'admin_login', 'Admin logged in', $request->ip());
+            ActivityLog::logAction($user->user_id, 'admin_login', "{$user->full_name} (@{$user->username}) logged in as {$user->role}", $request->ip());
 
             if ($previousSessionId && $previousSessionId !== $request->session()->getId()) {
                 ActivityLog::logAction(
@@ -209,7 +209,7 @@ class AuthController extends Controller
                 'current_session_id' => $request->session()->getId(),
             ])->save();
 
-            ActivityLog::logAction($user->user_id, 'customer_login', 'Customer logged in', $request->ip());
+            ActivityLog::logAction($user->user_id, 'customer_login', "{$user->full_name} (@{$user->username}) logged in", $request->ip());
 
             if ($previousSessionId && $previousSessionId !== $request->session()->getId()) {
                 ActivityLog::logAction(
@@ -267,6 +267,13 @@ class AuthController extends Controller
 
             DB::commit();
 
+            ActivityLog::logAction(
+                $user->user_id,
+                'customer_registered',
+                "New customer registered: {$user->full_name} (@{$user->username})",
+                $request->ip()
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Registration successful'
@@ -303,7 +310,7 @@ class AuthController extends Controller
         }
 
         if ($userId) {
-            ActivityLog::logAction($userId, 'logout', 'User logged out', $request->ip());
+            ActivityLog::logAction($userId, 'logout', ($user ? "{$user->full_name} (@{$user->username}) logged out" : 'User logged out'), $request->ip());
         }
         
         return response()->json([

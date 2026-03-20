@@ -30,7 +30,7 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">Sales</h1>
-                    <p class="text-gray-600">Review sales history, confirm customer payment requests, and manage delivery progress.</p>
+                    <p class="text-gray-600">Create sales, record partial payments, and review sales history.</p>
                 </div>
                 <button onclick="openSaleModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                     Create New Sale
@@ -163,6 +163,24 @@
             messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
         }
 
+        function getPaymentBadge(status) {
+            const styles = {
+                paid:       'bg-green-100 text-green-800',
+                partial:    'bg-yellow-100 text-yellow-800',
+                processing: 'bg-blue-100 text-blue-800',
+                unpaid:     'bg-red-100 text-red-800',
+            };
+            const labels = {
+                paid:       'Paid',
+                partial:    'Partial',
+                processing: 'Awaiting Confirmation',
+                unpaid:     'Unpaid',
+            };
+            const cls = styles[status] || 'bg-gray-100 text-gray-800';
+            const label = labels[status] || status;
+            return `<span class="inline-block rounded-full px-3 py-1 text-xs font-semibold ${cls}">${label}</span>`;
+        }
+
         function formatCurrency(value) {
             return `PHP ${Number(value || 0).toFixed(2)}`;
         }
@@ -186,7 +204,7 @@
                         .filter((request) => request.status === 'processing')
                         .map((request) => `
                             <div class="rounded-lg border border-sky-200 bg-sky-50 p-2 text-xs text-sky-900">
-                                <div class="font-semibold">Customer GCash request: ${formatCurrency(request.amount)}</div>
+                                <div class="font-semibold">Payment request: ${formatCurrency(request.amount)}</div>
                                 <div class="mt-1">${request.payment_method}${request.reference_no ? ` | Ref: ${request.reference_no}` : ''}</div>
                                 ${request.proof_image_path ? `<a href="/storage/${request.proof_image_path}" target="_blank" class="mt-1 inline-block font-semibold text-sky-700 hover:underline">View proof</a>` : ''}
                                 <div class="mt-2 flex gap-2">
@@ -202,22 +220,17 @@
                         <td class="px-6 py-4">${new Date(sale.sale_date).toLocaleString()}</td>
                         <td class="px-6 py-4">${sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in Customer'}</td>
                         <td class="px-6 py-4">
-                            <select id="payment_status_${sale.sale_id}" class="rounded border px-2 py-1">
-                                <option value="unpaid" ${sale.payment_status === 'unpaid' ? 'selected' : ''}>Unpaid</option>
-                                <option value="processing" ${sale.payment_status === 'processing' ? 'selected' : ''}>Awaiting Payment Confirmation</option>
-                                <option value="partial" ${sale.payment_status === 'partial' ? 'selected' : ''}>Partial</option>
-                                <option value="paid" ${sale.payment_status === 'paid' ? 'selected' : ''}>Paid</option>
-                            </select>
+                            ${getPaymentBadge(sale.payment_status)}
                         </td>
                         <td class="px-6 py-4">
                             <select id="delivery_status_${sale.sale_id}" class="rounded border px-2 py-1">
                                 <option value="to_deliver" ${sale.delivery_status === 'to_deliver' ? 'selected' : ''}>To Deliver</option>
                                 <option value="to_receive" ${sale.delivery_status === 'to_receive' ? 'selected' : ''}>To Receive</option>
-                                <option value="delivered" ${sale.delivery_status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                                <option value="delivered" ${sale.delivery_status === 'delivered' ? 'selected' : ''} ${sale.payment_status === 'unpaid' ? 'disabled' : ''}>Delivered</option>
                             </select>
                         </td>
                         <td class="px-6 py-4">
-                            <input id="paid_amount_${sale.sale_id}" type="number" min="0" step="1" value="${Math.round(Number(sale.paid_amount || 0))}" class="w-28 rounded border px-2 py-1">
+                            <input id="paid_amount_${sale.sale_id}" type="number" min="0" step="1" max="${Math.round(Number(sale.total_amount))}" value="${Math.round(Number(sale.paid_amount || 0))}" class="w-28 rounded border px-2 py-1">
                         </td>
                         <td class="px-6 py-4">${formatCurrency(sale.total_amount)}</td>
                         <td class="px-6 py-4">
@@ -350,7 +363,7 @@
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    payment_status: document.getElementById(`payment_status_${saleId}`).value,
+                    payment_status: 'derived',
                     delivery_status: document.getElementById(`delivery_status_${saleId}`).value,
                     paid_amount: document.getElementById(`paid_amount_${saleId}`).value || 0
                 })
@@ -420,4 +433,3 @@
     </script>
 </body>
 </html>
-

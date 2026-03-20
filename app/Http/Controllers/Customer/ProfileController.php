@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\CustomerProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -55,6 +56,13 @@ class ProfileController extends Controller
 
         $profile->update($request->only(['phone', 'email', 'address']));
 
+        ActivityLog::logAction(
+            auth()->id(),
+            'profile_updated',
+            "Customer {$profile->user->full_name} (@" . auth()->user()->username . ") updated their profile.",
+            $request->ip()
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully',
@@ -92,6 +100,13 @@ class ProfileController extends Controller
                 'current_session_id' => $request->session()->getId(),
             ])->save();
         }
+
+        ActivityLog::logAction(
+            auth()->id(),
+            'password_changed',
+            "Customer " . auth()->user()->full_name . " (@" . auth()->user()->username . ") changed their password.",
+            $request->ip()
+        );
 
         return response()->json([
             'success' => true,

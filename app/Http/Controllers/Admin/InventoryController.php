@@ -47,8 +47,7 @@ class InventoryController extends Controller
         $request->validate([
             'product_id' => 'required|exists:products,product_id',
             'quantity' => 'required|integer|min:1',
-            'reference_no' => 'nullable|string|max:100',
-            'notes' => 'nullable|string'
+
         ]);
 
         DB::beginTransaction();
@@ -61,15 +60,15 @@ class InventoryController extends Controller
                 $request->product_id,
                 'IN',
                 $request->quantity,
-                $request->reference_no,
-                $request->notes
+
             );
 
             $product = Product::find($request->product_id);
+
             ActivityLog::logAction(
                 auth()->id(),
-                'inventory_stock_in',
-                "Stocked in {$request->quantity} units for {$product?->product_name}",
+                'stock_in',
+                "Stock in: {$request->quantity} units of {$product->product_name} by " . auth()->user()->full_name,
                 $request->ip()
             );
 
@@ -95,8 +94,7 @@ class InventoryController extends Controller
         $request->validate([
             'product_id' => 'required|exists:products,product_id',
             'quantity' => 'required|integer|min:1',
-            'reference_no' => 'nullable|string|max:100',
-            'notes' => 'nullable|string'
+
         ]);
 
         DB::beginTransaction();
@@ -118,15 +116,15 @@ class InventoryController extends Controller
                 $request->product_id,
                 'OUT',
                 $request->quantity,
-                $request->reference_no,
-                $request->notes
+
             );
 
             $product = Product::find($request->product_id);
+
             ActivityLog::logAction(
                 auth()->id(),
-                'inventory_stock_out',
-                "Stocked out {$request->quantity} units for {$product?->product_name}",
+                'stock_out',
+                "Stock out: {$request->quantity} units of {$product->product_name} by " . auth()->user()->full_name,
                 $request->ip()
             );
 
