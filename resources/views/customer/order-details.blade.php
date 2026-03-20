@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Order Receipt - RANEY LUBRICANTS TRADING</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -33,6 +34,8 @@
 <body class="bg-[var(--surface)] text-[var(--ink)]">
     <div class="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(20,138,103,0.09),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(217,177,74,0.10),_transparent_24%),linear-gradient(180deg,_#fbfcfe_0%,_#f3f6f9_100%)]">
         <div class="max-w-5xl mx-auto px-4 py-8">
+            <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-[var(--line)] bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
+
             <div class="no-print mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <a href="/shop" class="group block">
@@ -128,13 +131,79 @@
                             </div>
                         </div>
                     </div>
-                    <div class="flex items-end justify-start md:justify-end">
-                        <div class="text-sm leading-7 text-[var(--muted)]">
-                            <p>Thank you for your purchase.</p>
-                            <p>Please keep this receipt for your records.</p>
+                    <div class="rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5">
+                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Payment Requests</p>
+                        <div class="mt-4 space-y-3">
+                            @forelse ($sale->paymentRequests as $paymentRequest)
+                                <div class="rounded-xl border border-[var(--line)] bg-white/80 p-4 text-sm">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div class="font-semibold text-[var(--ink)]">PHP {{ number_format((float) $paymentRequest->amount, 2) }}</div>
+                                            <div class="mt-1 text-[var(--muted)]">{{ ucwords(str_replace('_', ' ', $paymentRequest->payment_method)) }}</div>
+                                        </div>
+                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $paymentRequest->status === 'approved' ? 'bg-emerald-100 text-emerald-700' : ($paymentRequest->status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700') }}">
+                                            {{ ucfirst($paymentRequest->status) }}
+                                        </span>
+                                    </div>
+                                    @if ($paymentRequest->reference_no)
+                                        <div class="mt-2 text-xs text-[var(--muted)]">Reference: {{ $paymentRequest->reference_no }}</div>
+                                    @endif
+                                    @if ($paymentRequest->proof_image_path)
+                                        <a href="{{ asset('storage/' . $paymentRequest->proof_image_path) }}" target="_blank" class="mt-2 inline-block text-xs font-semibold text-[var(--primary)] hover:underline">View uploaded proof</a>
+                                    @endif
+                                </div>
+                            @empty
+                                <div class="text-sm leading-7 text-[var(--muted)]">
+                                    <p>No payment requests submitted yet.</p>
+                                    <p>Please keep this receipt for your records.</p>
+                                </div>
+                            @endforelse
                         </div>
                     </div>
                 </div>
+
+                @if ((float) $sale->balance_due > 0)
+                    <div id="payment-request" class="mt-8 rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5 no-print">
+                        <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                            <div class="max-w-xl">
+                                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Submit Payment Request</p>
+                                <h3 class="mt-2 text-xl font-bold text-[var(--ink)]">Pay the remaining balance for this order.</h3>
+                                <p class="mt-2 text-sm leading-7 text-[var(--muted)]">Payments are submitted for admin review first. If you choose GCash, use the QR below and upload proof with the reference number after payment.</p>
+                                <div class="mt-4 rounded-xl border border-[var(--accent-soft)] bg-[rgba(255,252,243,0.92)] p-4 text-sm text-[#715b1d]">
+                                    Remaining balance: <strong>PHP {{ number_format((float) $sale->balance_due, 2) }}</strong>
+                                </div>
+                            </div>
+                            <div id="gcashQrPanel" class="w-full max-w-xs rounded-[1.5rem] border border-[var(--line)] bg-white/85 p-4 text-center {{ $sale->payment_method === 'gcash' ? '' : 'hidden' }}">
+                                <img src="{{ asset('images/gcash-qr-placeholder.svg') }}" alt="GCash QR" class="mx-auto h-56 w-56 rounded-2xl border border-[var(--line)] object-cover">
+                                <p class="mt-3 text-xs uppercase tracking-[0.22em] text-[var(--muted)]">GCash QR</p>
+                                <p class="mt-2 text-sm text-[var(--muted)]">Replace this placeholder with the real staff QR later.</p>
+                            </div>
+                        </div>
+
+                        <form id="paymentRequestForm" class="mt-6 grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-[var(--ink)]">Payment Method</label>
+                                <input id="request_payment_method_label" type="text" value="GCash" class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-slate-100 px-4 py-3 text-slate-600" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-[var(--ink)]">Amount</label>
+                                <input id="request_amount" type="number" min="1" step="1" max="{{ (int) ceil((float) $sale->balance_due) }}" value="{{ (int) ceil((float) $sale->balance_due) }}" class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-[var(--ink)]">Reference Number</label>
+                                <input id="request_reference_no" type="text" maxlength="100" minlength="6" pattern="[A-Za-z0-9][A-Za-z0-9\-]{5,99}" title="Use at least 6 characters. Letters, numbers, and hyphens only." class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Required GCash reference number" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-[var(--ink)]">Proof Image</label>
+                                <input id="request_proof_image" type="file" accept="image/*" class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3">
+                                <p class="mt-2 text-xs text-[var(--muted)]">Accepted: JPG, JPEG, PNG, WEBP. Max file size: 2 MB.</p>
+                            </div>
+                            <div class="md:col-span-2 flex justify-end">
+                                <button type="submit" class="rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">Submit Payment Request</button>
+                            </div>
+                        </form>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -162,5 +231,78 @@
             </div>
         </footer>
     </div>
+
+    <script>
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        let messageTimeout;
+
+        function showMessage(text, type = 'success') {
+            const box = document.getElementById('message');
+            const isSuccess = type === 'success';
+            box.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="rounded-xl ${isSuccess ? 'bg-emerald-100' : 'bg-red-100'} p-2">
+                        ${isSuccess
+                            ? '<svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>'
+                            : '<svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>'}
+                    </div>
+                    <div>
+                        <div class="text-xs font-semibold uppercase tracking-[0.22em] ${isSuccess ? 'text-emerald-700' : 'text-red-700'}">${isSuccess ? 'Payment Request' : 'Action Needed'}</div>
+                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${text}</div>
+                    </div>
+                </div>
+            `;
+            box.classList.remove('hidden');
+            clearTimeout(messageTimeout);
+            messageTimeout = setTimeout(() => box.classList.add('hidden'), 3200);
+        }
+
+        const paymentRequestForm = document.getElementById('paymentRequestForm');
+        const referenceInput = document.getElementById('request_reference_no');
+        const gcashQrPanel = document.getElementById('gcashQrPanel');
+
+        function syncPaymentRequestUi() {
+            if (!referenceInput || !gcashQrPanel) {
+                return;
+            }
+
+            const isGcash = !gcashQrPanel.classList.contains('hidden');
+            referenceInput.required = isGcash;
+        }
+
+        if (paymentRequestForm) {
+            syncPaymentRequestUi();
+
+            paymentRequestForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const formData = new FormData();
+                formData.append('payment_method', 'gcash');
+                formData.append('amount', document.getElementById('request_amount').value);
+                formData.append('reference_no', document.getElementById('request_reference_no').value);
+
+                const proofFile = document.getElementById('request_proof_image').files[0];
+                if (proofFile) {
+                    formData.append('proof_image', proofFile);
+                }
+
+                const response = await fetch('/shop-api/orders/{{ $sale->sale_id }}/payment-requests', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                showMessage(data.message || 'Payment request submitted.', response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    setTimeout(() => window.location.reload(), 900);
+                }
+            });
+        }
+    </script>
 </body>
 </html>

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Orders - RANEY LUBRICANTS TRADING</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -34,9 +35,10 @@
                     </a>
 
                     <div class="flex flex-wrap gap-2 items-center">
-                        <a href="/shop" class="rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">Shop</a>
-                        <a href="/cart" class="rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">Cart</a>
-                        <a href="/profile" class="rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">Profile</a>
+                        <a href="/shop" class="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5M5.25 9.5V20a1 1 0 0 0 1 1h11.5a1 1 0 0 0 1-1V9.5"/></svg><span>Shop</span></a>
+                        <a href="/cart" class="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h2l.4 2m0 0L7 14h10l2-8H5.4ZM7 14l-1 5h12M9 20a1 1 0 1 0 0 .01M17 20a1 1 0 1 0 0 .01"/></svg><span>Cart</span></a>
+                        <a href="/profile" class="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19a4 4 0 0 0-8 0m8 0h4m-4 0H5m6-8a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/></svg><span>Profile</span></a>
+                        <button onclick="logout()" class="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H3"/></svg><span>Logout</span></button>
                     </div>
                 </div>
             </div>
@@ -109,6 +111,7 @@
     </div>
 
     <script>
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         let allOrders = [];
         let activeFilter = 'all';
 
@@ -147,9 +150,10 @@
                         <td class="px-6 py-4 font-semibold text-[var(--ink)]">#${order.sale_id}</td>
                         <td class="px-6 py-4 text-[var(--muted)]">${new Date(order.sale_date).toLocaleString()}</td>
                         <td class="px-6 py-4">
-                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ${order.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : order.payment_status === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}">
+                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ${order.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : order.payment_status === 'partial' ? 'bg-amber-100 text-amber-700' : order.payment_status === 'processing' ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-700'}">
                                 ${order.payment_status}
                             </span>
+                            ${order.processing_requests > 0 ? '<div class="mt-2 text-xs font-medium text-sky-700">Payment request under review</div>' : ''}
                         </td>
                         <td class="px-6 py-4 capitalize text-[var(--muted)]">${order.delivery_status.replaceAll('_', ' ')}</td>
                         <td class="px-6 py-4">${formatCurrency(order.balance_due)}</td>
@@ -167,6 +171,20 @@
             const data = await response.json();
             allOrders = data.data || [];
             renderOrders();
+        }
+
+        async function logout() {
+            const response = await fetch('/shop/logout', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                window.location.href = '/shop';
+            }
         }
 
         loadOrders();

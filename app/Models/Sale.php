@@ -34,4 +34,9 @@ class Sale extends Model
     {
         return $this->hasMany(SaleItem::class, 'sale_id', 'sale_id');
     }
+
+    public function paymentRequests()
+    {
+        return $this->hasMany(PaymentRequest::class, 'sale_id', 'sale_id')->latest();
+    }
 }

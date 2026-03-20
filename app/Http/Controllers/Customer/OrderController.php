@@ -9,6 +9,7 @@ use App\Models\ShoppingCart;
 use App\Models\Inventory;
 use App\Models\StockTransaction;
 use App\Models\CustomerProfile;
+use App\Models\PaymentRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -28,7 +29,7 @@ class OrderController extends Controller
 
     public function show($saleId)
     {
-        $sale = Sale::with(['items.product', 'user'])
+        $sale = Sale::with(['items.product', 'user', 'paymentRequests.reviewer'])
             ->where('sale_id', $saleId)
             ->where('user_id', auth()->id())
             ->firstOrFail();
@@ -40,7 +41,7 @@ class OrderController extends Controller
     public function placeOrder(Request $request)
     {
         $request->validate([
-            'payment_method' => 'required|in:cash_on_delivery,gcash,cash,other',
+            'payment_method' => 'required|in:cash_on_delivery,gcash',
         ]);
 
         // Get cart items
@@ -130,8 +131,13 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Order placed successfully.',
-                'data' => ['order_id' => $sale->sale_id]
+                'message' => $request->payment_method === 'gcash'
+                    ? 'Order placed. Continue to GCash payment instructions.'
+                    : 'Order placed successfully.',
+                'data' => [
+                    'order_id' => $sale->sale_id,
+                    'payment_method' => $request->payment_method,
+                ]
             ]);
 
         } catch (\Exception $e) {
@@ -146,7 +152,7 @@ class OrderController extends Controller
     // Get user's orders
     public function getOrders()
     {
-        $orders = Sale::with('items.product')
+        $orders = Sale::with(['items.product', 'paymentRequests'])
             ->where('user_id', auth()->id())
             ->orderBy('sale_date', 'desc')
             ->get()
@@ -161,6 +167,7 @@ class OrderController extends Controller
                     'balance_due' => $sale->balance_due,
                     'delivery_status' => $sale->delivery_status,
                     'item_count' => $sale->items->count(),
+                    'processing_requests' => $sale->paymentRequests->where('status', 'processing')->count(),
                     'status_group' => $sale->payment_status !== 'paid'
                         ? 'to_pay'
                         : ($sale->delivery_status === 'delivered' ? 'delivered' : 'to_receive'),
@@ -176,7 +183,7 @@ class OrderController extends Controller
     // Get order details
     public function getOrderDetails($saleId)
     {
-        $sale = Sale::with('items.product')
+        $sale = Sale::with(['items.product', 'paymentRequests.reviewer'])
             ->where('sale_id', $saleId)
             ->where('user_id', auth()->id())
             ->first();
@@ -191,6 +198,61 @@ class OrderController extends Controller
         return response()->json([
             'success' => true,
             'data' => $sale
+        ]);
+    }
+
+    public function submitPaymentRequest(Request $request, $saleId)
+    {
+        $sale = Sale::where('sale_id', $saleId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $request->validate([
+            'payment_method' => 'required|in:gcash',
+            'amount' => 'required|numeric|min:1',
+            'reference_no' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9][A-Za-z0-9\\-]{5,99}$/'],
+            'proof_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
+
+        if ((float) $sale->balance_due <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order is already fully paid.'
+            ], 422);
+        }
+
+        if ($sale->paymentRequests()->where('status', 'processing')->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A payment request is already processing for this order.'
+            ], 422);
+        }
+
+        $amount = min((float) $request->amount, (float) $sale->balance_due);
+
+        $proofPath = null;
+        if ($request->hasFile('proof_image')) {
+            $proofPath = $request->file('proof_image')->store('payment-proofs', 'public');
+        }
+
+        $paymentRequest = PaymentRequest::create([
+            'sale_id' => $sale->sale_id,
+            'user_id' => auth()->id(),
+            'payment_method' => $request->payment_method,
+            'amount' => $amount,
+            'status' => 'processing',
+            'reference_no' => $request->reference_no,
+            'proof_image_path' => $proofPath,
+        ]);
+
+        $sale->payment_method = $request->payment_method;
+        $sale->payment_status = 'processing';
+        $sale->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment request submitted. Please wait for admin confirmation.',
+            'data' => $paymentRequest,
         ]);
     }
 }

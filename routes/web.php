@@ -67,6 +67,8 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
     Route::get('/sales/{id}', [SalesController::class, 'getSale']);
     Route::post('/sales', [SalesController::class, 'store']);
     Route::put('/sales/{id}/status', [SalesController::class, 'updateStatus']);
+    Route::put('/payment-requests/{id}/approve', [SalesController::class, 'approvePaymentRequest']);
+    Route::put('/payment-requests/{id}/reject', [SalesController::class, 'rejectPaymentRequest']);
     Route::get('/sales/products/list', [SalesController::class, 'getProducts']);
     Route::get('/reports/sales', [ReportController::class, 'salesReport']);
     Route::get('/reports/inventory', [ReportController::class, 'inventoryReport']);
@@ -121,6 +123,7 @@ Route::middleware(['customer', 'active_session'])->prefix('shop-api')->group(fun
     Route::post('/orders', [OrderController::class, 'placeOrder']);
     Route::get('/orders', [OrderController::class, 'getOrders']);
     Route::get('/orders/{id}', [OrderController::class, 'getOrderDetails']);
+    Route::post('/orders/{id}/payment-requests', [OrderController::class, 'submitPaymentRequest']);
 
     Route::get('/profile', [ProfileController::class, 'getProfile']);
     Route::put('/profile', [ProfileController::class, 'updateProfile']);

@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Inventory;
 use App\Models\StockTransaction;
 use App\Models\ActivityLog;
+use App\Models\PaymentRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -23,7 +24,7 @@ class SalesController extends Controller
     // Get all sales
     public function getSales(Request $request)
     {
-        $query = Sale::with(['items.product', 'user']);
+        $query = Sale::with(['items.product', 'user', 'paymentRequests.user', 'paymentRequests.reviewer']);
 
         // Filter by date range if provided
         if ($request->has('from') && $request->has('to')) {
@@ -172,7 +173,7 @@ class SalesController extends Controller
         }
 
         $request->validate([
-            'payment_status' => 'required|in:unpaid,partial,paid',
+            'payment_status' => 'required|in:unpaid,processing,partial,paid',
             'delivery_status' => 'required|in:to_deliver,to_receive,delivered',
             'paid_amount' => 'nullable|numeric|min:0',
         ]);
@@ -194,6 +195,10 @@ class SalesController extends Controller
             $sale->balance_due = (float) $sale->total_amount;
         }
 
+        if ($sale->payment_status === 'processing' && $sale->balance_due <= 0) {
+            $sale->payment_status = 'paid';
+        }
+
         $sale->save();
 
         ActivityLog::logAction(
@@ -207,6 +212,95 @@ class SalesController extends Controller
             'success' => true,
             'message' => 'Sale status updated successfully.',
             'data' => $sale,
+        ]);
+    }
+
+    public function approvePaymentRequest(Request $request, int $id)
+    {
+        $paymentRequest = PaymentRequest::with('sale')->find($id);
+
+        if (!$paymentRequest || !$paymentRequest->sale) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment request not found.'
+            ], 404);
+        }
+
+        if ($paymentRequest->status !== 'processing') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only processing payment requests can be approved.'
+            ], 422);
+        }
+
+        $sale = $paymentRequest->sale;
+        $approvedAmount = min((float) $paymentRequest->amount, (float) $sale->balance_due);
+
+        $sale->paid_amount = min((float) $sale->paid_amount + $approvedAmount, (float) $sale->total_amount);
+        $sale->balance_due = max((float) $sale->total_amount - (float) $sale->paid_amount, 0);
+        $sale->payment_status = $sale->balance_due <= 0 ? 'paid' : 'partial';
+        $sale->payment_method = $paymentRequest->payment_method;
+        $sale->save();
+
+        $paymentRequest->status = 'approved';
+        $paymentRequest->admin_notes = $request->input('admin_notes');
+        $paymentRequest->reviewed_by = auth()->id();
+        $paymentRequest->reviewed_at = now();
+        $paymentRequest->save();
+
+        ActivityLog::logAction(
+            auth()->id(),
+            'payment_request_approved',
+            "Approved payment request #{$paymentRequest->id} for sale #{$sale->sale_id}",
+            $request->ip()
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment request approved successfully.',
+            'data' => $paymentRequest->fresh(['sale', 'user', 'reviewer']),
+        ]);
+    }
+
+    public function rejectPaymentRequest(Request $request, int $id)
+    {
+        $paymentRequest = PaymentRequest::with('sale')->find($id);
+
+        if (!$paymentRequest || !$paymentRequest->sale) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment request not found.'
+            ], 404);
+        }
+
+        if ($paymentRequest->status !== 'processing') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only processing payment requests can be rejected.'
+            ], 422);
+        }
+
+        $paymentRequest->status = 'rejected';
+        $paymentRequest->admin_notes = $request->input('admin_notes');
+        $paymentRequest->reviewed_by = auth()->id();
+        $paymentRequest->reviewed_at = now();
+        $paymentRequest->save();
+
+        $sale = $paymentRequest->sale;
+        $sale->payment_status = (float) $sale->paid_amount > 0 ? 'partial' : 'unpaid';
+        $sale->save();
+
+        ActivityLog::logAction(
+            auth()->id(),
+            'payment_request_rejected',
+            "Rejected payment request #{$paymentRequest->id} for sale #{$sale->sale_id}",
+            $request->ip()
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment request rejected.',
+            'data' => $paymentRequest->fresh(['sale', 'user', 'reviewer']),
         ]);
     }
 }

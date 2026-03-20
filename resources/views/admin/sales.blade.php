@@ -37,7 +37,7 @@
                 </button>
             </div>
 
-            <div id="message" class="hidden mb-4 px-4 py-3 rounded"></div>
+            <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
             <div class="bg-white rounded-lg shadow overflow-hidden">
                 <table class="min-w-full">
@@ -143,8 +143,21 @@
 
         function showMessage(text, type = 'success') {
             const box = document.getElementById('message');
-            box.textContent = text;
-            box.className = `mb-4 px-4 py-3 rounded ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            const isSuccess = type === 'success';
+            box.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="rounded-xl ${isSuccess ? 'bg-emerald-100' : 'bg-red-100'} p-2">
+                        ${isSuccess
+                            ? '<svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75A1.5 1.5 0 0 1 6.75 17.25v-10.5A1.5 1.5 0 0 1 8.25 5.25h7.5l3 3v9a1.5 1.5 0 0 1-1.5 1.5h-9ZM9 9h6m-6 3h6m-6 3h4.5"/></svg>'
+                            : '<svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>'}
+                    </div>
+                    <div>
+                        <div class="text-xs font-semibold uppercase tracking-[0.22em] ${isSuccess ? 'text-emerald-700' : 'text-red-700'}">${isSuccess ? 'Sales Update' : 'Action Needed'}</div>
+                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${text}</div>
+                    </div>
+                </div>
+            `;
+            box.className = 'fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur';
             box.classList.remove('hidden');
             clearTimeout(messageTimeout);
             messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
@@ -167,7 +180,23 @@
             const tbody = document.getElementById('salesBody');
 
             tbody.innerHTML = sales.length
-                ? sales.map((sale) => `
+                ? sales.map((sale) => {
+                    const paymentRequests = Array.isArray(sale.payment_requests) ? sale.payment_requests : [];
+                    const pendingRequestsHtml = paymentRequests
+                        .filter((request) => request.status === 'processing')
+                        .map((request) => `
+                            <div class="rounded-lg border border-sky-200 bg-sky-50 p-2 text-xs text-sky-900">
+                                <div class="font-semibold">Payment request: ${formatCurrency(request.amount)}</div>
+                                <div class="mt-1">${request.payment_method}${request.reference_no ? ` | Ref: ${request.reference_no}` : ''}</div>
+                                ${request.proof_image_path ? `<a href="/storage/${request.proof_image_path}" target="_blank" class="mt-1 inline-block font-semibold text-sky-700 hover:underline">View proof</a>` : ''}
+                                <div class="mt-2 flex gap-2">
+                                    <button type="button" onclick="approvePaymentRequest(${request.id})" class="rounded bg-emerald-600 px-2 py-1 text-white hover:bg-emerald-700">Approve</button>
+                                    <button type="button" onclick="rejectPaymentRequest(${request.id})" class="rounded bg-red-600 px-2 py-1 text-white hover:bg-red-700">Reject</button>
+                                </div>
+                            </div>
+                        `).join('');
+
+                    return `
                     <tr>
                         <td class="px-6 py-4">#${sale.sale_id}</td>
                         <td class="px-6 py-4">${new Date(sale.sale_date).toLocaleString()}</td>
@@ -175,6 +204,7 @@
                         <td class="px-6 py-4">
                             <select id="payment_status_${sale.sale_id}" class="rounded border px-2 py-1">
                                 <option value="unpaid" ${sale.payment_status === 'unpaid' ? 'selected' : ''}>Unpaid</option>
+                                <option value="processing" ${sale.payment_status === 'processing' ? 'selected' : ''}>Processing</option>
                                 <option value="partial" ${sale.payment_status === 'partial' ? 'selected' : ''}>Partial</option>
                                 <option value="paid" ${sale.payment_status === 'paid' ? 'selected' : ''}>Paid</option>
                             </select>
@@ -191,10 +221,14 @@
                         </td>
                         <td class="px-6 py-4">${formatCurrency(sale.total_amount)}</td>
                         <td class="px-6 py-4">
-                            <button type="button" onclick="updateSaleStatus(${sale.sale_id})" class="text-blue-600 hover:text-blue-900">Update</button>
+                            <div class="space-y-2">
+                                <button type="button" onclick="updateSaleStatus(${sale.sale_id})" class="text-blue-600 hover:text-blue-900">Update</button>
+                                ${pendingRequestsHtml}
+                            </div>
                         </td>
                     </tr>
-                `).join('')
+                `;
+                }).join('')
                 : '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No sales records yet.</td></tr>';
         }
 
@@ -324,6 +358,44 @@
 
             const data = await response.json();
             showMessage(data.message || 'Sale status updated.', response.ok ? 'success' : 'error');
+
+            if (response.ok) {
+                loadSales();
+            }
+        }
+
+        async function approvePaymentRequest(requestId) {
+            const response = await fetch(`/admin-api/payment-requests/${requestId}/approve`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
+
+            const data = await response.json();
+            showMessage(data.message || 'Payment request approved.', response.ok ? 'success' : 'error');
+
+            if (response.ok) {
+                loadSales();
+            }
+        }
+
+        async function rejectPaymentRequest(requestId) {
+            const response = await fetch(`/admin-api/payment-requests/${requestId}/reject`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
+
+            const data = await response.json();
+            showMessage(data.message || 'Payment request rejected.', response.ok ? 'success' : 'error');
 
             if (response.ok) {
                 loadSales();

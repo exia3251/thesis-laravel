@@ -49,10 +49,22 @@
                     <div class="flex flex-wrap gap-2 items-center">
                         @auth
                             @if(auth()->user()->isCustomer())
-                                <a href="/cart" class="rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">Cart</a>
-                                <a href="/orders" class="rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">Orders</a>
-                                <a href="/profile" class="rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">Profile</a>
-                                <button onclick="logout()" class="rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">Logout</button>
+                                <a href="/cart" class="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h2l.4 2m0 0L7 14h10l2-8H5.4ZM7 14l-1 5h12M9 20a1 1 0 1 0 0 .01M17 20a1 1 0 1 0 0 .01"/></svg>
+                                    <span>Cart</span>
+                                </a>
+                                <a href="/orders" class="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5h10M9 9h10M9 13h10M5 5h.01M5 9h.01M5 13h.01M5 17h.01M9 17h10"/></svg>
+                                    <span>Orders</span>
+                                </a>
+                                <a href="/profile" class="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19a4 4 0 0 0-8 0m8 0h4m-4 0H5m6-8a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/></svg>
+                                    <span>Profile</span>
+                                </a>
+                                <button onclick="logout()" class="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white/70 px-4 py-2 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H3"/></svg>
+                                    <span>Logout</span>
+                                </button>
                             @else
                                 <a href="/shop/login" class="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110">Customer Login</a>
                             @endif
@@ -152,7 +164,7 @@
                 <div class="mb-5 flex items-end justify-between gap-4">
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--primary)]">Featured Products</div>
-                        <h2 class="mt-2 text-3xl font-black text-[var(--ink)]">Highlighted catalog picks</h2>
+                        <h2 class="mt-2 text-3xl font-black text-[var(--ink)]">Top products in the catalog</h2>
                     </div>
                     <a href="#catalog" class="text-sm font-semibold text-[var(--muted)] hover:text-[var(--primary)]">Jump to full catalog</a>
                 </div>
@@ -185,7 +197,7 @@
                 </div>
             </section>
 
-            <div id="message" class="hidden mb-4 rounded-2xl px-4 py-3"></div>
+            <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-[var(--line)] bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
             <div id="productsGrid" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 <div class="col-span-full rounded-[1.5rem] border border-[var(--line)] bg-white/80 py-10 text-center text-[var(--muted)] shadow-sm">Loading products...</div>
@@ -225,8 +237,21 @@
 
         function showMessage(text, type = 'success') {
             const box = document.getElementById('message');
-            box.textContent = text;
-            box.className = `mb-4 rounded-2xl px-4 py-3 ${type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`;
+            const isSuccess = type === 'success';
+            const icon = isSuccess
+                ? '<svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>'
+                : '<svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>';
+            const label = isSuccess ? 'Cart Update' : 'Action Needed';
+            box.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="rounded-xl ${isSuccess ? 'bg-emerald-100' : 'bg-red-100'} p-2">${icon}</div>
+                    <div>
+                        <div class="text-xs font-semibold uppercase tracking-[0.22em] ${isSuccess ? 'text-emerald-700' : 'text-red-700'}">${label}</div>
+                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${text}</div>
+                    </div>
+                </div>
+            `;
+            box.className = 'fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl border border-[var(--line)] bg-white/95 p-4 shadow-2xl backdrop-blur';
             box.classList.remove('hidden');
             clearTimeout(messageTimeout);
             messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
@@ -236,10 +261,15 @@
             return `PHP ${Number(value || 0).toFixed(2)}`;
         }
 
+        function getProductStock(product) {
+            const stock = Number(product?.quantity);
+            return Number.isNaN(stock) ? 0 : stock;
+        }
+
         function renderShowcase() {
             const brands = [...new Set(products.map((product) => product.brand))].slice(0, 8);
             const types = [...new Set(products.map((product) => product.oil_type))];
-            const availableCount = products.filter((product) => Number(product.quantity) > 0).length;
+            const availableCount = products.filter((product) => getProductStock(product) > 0).length;
 
             document.getElementById('heroProductCount').textContent = products.length;
             document.getElementById('heroBrandCount').textContent = brands.length;
@@ -257,8 +287,9 @@
 
         function renderFeaturedProducts() {
             const featured = [...products]
+                .filter((product) => getProductStock(product) > 0)
                 .sort((a, b) => {
-                    const stockDiff = Number(b.quantity || 0) - Number(a.quantity || 0);
+                    const stockDiff = getProductStock(b) - getProductStock(a);
                     if (stockDiff !== 0) {
                         return stockDiff;
                     }
@@ -284,7 +315,6 @@
                                 </div>
                                 <span class="rounded-full bg-[var(--primary-soft)] px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[var(--primary)]">${product.oil_type}</span>
                             </div>
-                            <p class="mt-4 text-sm leading-6 text-[var(--muted)]">${product.description || 'Reliable lubricant product ready for practical retail ordering.'}</p>
                             <div class="mt-5 flex items-center justify-between">
                                 <div>
                                     <div class="text-2xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</div>
@@ -316,36 +346,56 @@
                 return matchesSearch && matchesBrand && matchesType;
             });
 
-            document.getElementById('productsGrid').innerHTML = filtered.length
-                ? filtered.map((product) => `
-                    <div class="overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--card-solid)] shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-                        ${product.image_url
-                            ? `<img src="${product.image_url}" alt="${product.product_name}" class="h-52 w-full object-cover">`
-                            : `<div class="flex h-52 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))]"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
-                        <div class="p-5">
-                            <div class="mb-3 flex items-start justify-between gap-3">
-                                <div>
-                                    <h3 class="mb-1 text-lg font-black text-[var(--ink)]">${product.product_name}</h3>
-                                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${product.brand}</p>
+            const availableProducts = filtered
+                .filter((product) => getProductStock(product) > 0)
+                .sort((a, b) => a.product_name.localeCompare(b.product_name));
+
+            const unavailableProducts = filtered
+                .filter((product) => getProductStock(product) === 0)
+                .sort((a, b) => a.product_name.localeCompare(b.product_name));
+
+            const orderedProducts = [...availableProducts, ...unavailableProducts];
+
+            document.getElementById('productsGrid').innerHTML = orderedProducts.length
+                ? orderedProducts.map((product, index) => {
+                    const stock = getProductStock(product);
+                    const unavailable = stock === 0;
+                    const showUnavailableDivider = unavailable && index === availableProducts.length;
+
+                    return `
+                        ${showUnavailableDivider ? `
+                            <div class="col-span-full mt-2 rounded-[1.5rem] border border-[var(--line)] bg-slate-100/90 px-6 py-4 text-sm font-semibold uppercase tracking-[0.22em] text-slate-600 shadow-sm">
+                                Unavailable Products
+                            </div>
+                        ` : ''}
+                        <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group cursor-pointer overflow-hidden rounded-[1.75rem] border border-[var(--line)] ${unavailable ? 'bg-slate-100/90 opacity-80' : 'bg-[var(--card-solid)]'} shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                            ${product.image_url
+                                ? `<div class="relative"><img src="${product.image_url}" alt="${product.product_name}" class="h-64 w-full object-cover ${unavailable ? 'grayscale' : ''}"></div>`
+                                : `<div class="relative flex h-64 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))] ${unavailable ? 'grayscale' : ''}"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
+                            <div class="p-5">
+                                <div class="mb-3 flex items-start justify-between gap-3">
+                                    <div>
+                                        <h3 class="mb-1 text-lg font-black text-[var(--ink)]">${product.product_name}</h3>
+                                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${product.brand}</p>
+                                    </div>
+                                    <span class="rounded-full bg-[var(--primary-soft)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--primary)]">${product.oil_type}</span>
                                 </div>
-                                <span class="rounded-full bg-[var(--primary-soft)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--primary)]">${product.oil_type}</span>
+                                <p class="mb-4 text-sm text-[var(--muted)]">${product.viscosity_grade || 'Standard'} | ${product.unit}</p>
+                                <div class="mb-4 flex items-center justify-between">
+                                    <span class="text-2xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</span>
+                                    <span class="rounded-full ${unavailable ? 'bg-slate-200 text-slate-600' : 'bg-[#f3f6f8] text-[var(--muted)]'} px-3 py-1 text-xs font-semibold">Stock: ${stock}</span>
+                                </div>
+                                <div class="h-px bg-[var(--line)]"></div>
+                                <div class="mt-4 flex items-center justify-between gap-3">
+                                    <span class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted)] group-hover:text-[var(--primary)]">View Details</span>
+                                    <button onclick="event.stopPropagation(); addToCart(${product.product_id})" class="rounded-xl ${unavailable ? 'cursor-not-allowed bg-slate-400' : 'bg-[var(--primary)]'} px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 ${!isCustomer ? 'opacity-60 cursor-not-allowed' : ''}" ${unavailable ? 'disabled' : ''}>
+                                        Add to Cart
+                                    </button>
+                                </div>
                             </div>
-                            <p class="mb-4 text-sm text-[var(--muted)]">${product.viscosity_grade || 'Standard'} | ${product.unit}</p>
-                            <p class="mb-4 line-clamp-2 min-h-[40px] text-sm leading-6 text-[var(--muted)]">${product.description || 'Reliable engine oil for daily and heavy-duty lubrication needs.'}</p>
-                            <div class="mb-4 flex items-center justify-between">
-                                <span class="text-2xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</span>
-                                <span class="rounded-full bg-[#f3f6f8] px-3 py-1 text-xs font-semibold text-[var(--muted)]">Stock: ${product.quantity}</span>
-                            </div>
-                            <div class="h-px bg-[var(--line)]"></div>
-                            <div class="mt-4 flex items-center justify-between gap-3">
-                                <a href="/shop/products/${product.product_id}" class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted)] hover:text-[var(--primary)]">View Details</a>
-                                <button onclick="addToCart(${product.product_id})" class="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 ${!isCustomer ? 'opacity-60 cursor-not-allowed' : ''}">
-                                    Add to Cart
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('')
+                        </article>
+                    `;
+                }).join('')
                 : '<div class="col-span-full rounded-[1.5rem] border border-[var(--line)] bg-white/80 py-10 text-center text-[var(--muted)] shadow-sm">No matching products found.</div>';
         }
 
