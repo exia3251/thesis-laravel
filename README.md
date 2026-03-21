@@ -89,7 +89,7 @@ copy .env.example .env
 
 ```
 
-Open the `.env` file in any text editor and update the database section:
+Open the `.env` file and update the database section:
 
 ```env
 DB_CONNECTION=mysql
