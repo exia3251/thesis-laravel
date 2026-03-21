@@ -34,14 +34,26 @@ class UserManagementController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'password' => 'required|string|min:6',
-            'full_name' => 'required|string|max:100',
-            'role' => 'required|in:admin,customer',
+            'username'  => ['required','string','min:3','max:20','regex:/^[A-Za-z][A-Za-z0-9._-]*$/','unique:users,username'],
+            'password'  => ['required','string','min:8','max:32'],
+            'full_name' => ['required','string','min:5','max:60','regex:/^[A-Za-z]{2,}(\s[A-Za-z]{2,})+$/'],
+            'role'      => 'required|in:admin,customer',
             'is_active' => 'nullable|boolean',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:100',
-            'address' => 'nullable|string',
+            'phone'     => ['nullable','string','regex:/^(09\d{9}|\+639\d{9})$/'],
+            'email'     => 'nullable|email|max:100|unique:customer_profiles,email',
+            'address'   => 'nullable|string|max:500',
+        ], [
+            'username.min'       => 'Username must be at least 3 characters.',
+            'username.max'       => 'Username must not exceed 20 characters.',
+            'username.regex'     => 'Username must start with a letter and may only contain letters, numbers, dots, underscores, or hyphens.',
+            'username.unique'    => 'That username is already taken.',
+            'email.unique'       => 'That email address is already in use.',
+            'password.min'       => 'Password must be at least 8 characters.',
+            'password.max'       => 'Password must not exceed 32 characters.',
+            'full_name.min'      => 'Full name must be at least 5 characters.',
+            'full_name.max'      => 'Full name must not exceed 60 characters.',
+            'full_name.regex'    => 'Full name must contain at least two words, each with at least 2 letters.',
+            'phone.regex'        => 'Phone must be a valid Philippine number e.g. 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
         DB::beginTransaction();
@@ -102,14 +114,26 @@ class UserManagementController extends Controller
         }
 
         $request->validate([
-            'username' => 'required|string|max:50|unique:users,username,' . $id . ',user_id',
-            'password' => 'nullable|string|min:6',
-            'full_name' => 'required|string|max:100',
-            'role' => 'required|in:admin,customer',
+            'username'  => ['required','string','min:3','max:20','regex:/^[A-Za-z][A-Za-z0-9._-]*$/','unique:users,username,' . $id . ',user_id'],
+            'password'  => ['nullable','string','min:8','max:32'],
+            'full_name' => ['required','string','min:5','max:60','regex:/^[A-Za-z]{2,}(\s[A-Za-z]{2,})+$/'],
+            'role'      => 'required|in:admin,customer',
             'is_active' => 'nullable|boolean',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:100',
-            'address' => 'nullable|string',
+            'phone'     => ['nullable','string','regex:/^(09\d{9}|\+639\d{9})$/'],
+            'email'     => ['nullable','email','max:100','unique:customer_profiles,email,' . ($user->customerProfile->profile_id ?? 0) . ',profile_id'],
+            'address'   => 'nullable|string|max:500',
+        ], [
+            'username.min'       => 'Username must be at least 3 characters.',
+            'username.max'       => 'Username must not exceed 20 characters.',
+            'username.regex'     => 'Username must start with a letter and may only contain letters, numbers, dots, underscores, or hyphens.',
+            'username.unique'    => 'That username is already taken.',
+            'email.unique'       => 'That email address is already in use.',
+            'password.min'       => 'Password must be at least 8 characters.',
+            'password.max'       => 'Password must not exceed 32 characters.',
+            'full_name.min'      => 'Full name must be at least 5 characters.',
+            'full_name.max'      => 'Full name must not exceed 60 characters.',
+            'full_name.regex'    => 'Full name must contain at least two words, each with at least 2 letters.',
+            'phone.regex'        => 'Phone must be a valid Philippine number e.g. 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
         DB::beginTransaction();

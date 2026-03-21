@@ -39,13 +39,27 @@ class ProfileController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $request->validate([
-            'phone' => 'required|max:20',
-            'email' => 'nullable|email|max:100',
-            'address' => 'required|string|max:500'
-        ]);
-
         $profile = CustomerProfile::where('user_id', auth()->id())->first();
+
+        $request->validate([
+            'phone'   => [
+                'required', 'string',
+                'regex:/^(09\d{9}|\+639\d{9})$/',
+                'unique:customer_profiles,phone,' . ($profile?->profile_id ?? 0) . ',profile_id',
+            ],
+            'email'   => [
+                'nullable', 'email', 'max:100',
+                'unique:customer_profiles,email,' . ($profile?->profile_id ?? 0) . ',profile_id',
+            ],
+            'address' => 'required|string|min:10|max:500',
+        ], [
+            'phone.required' => 'Phone number is required.',
+            'phone.regex'    => 'Enter a valid PH number e.g. 09XXXXXXXXX or +639XXXXXXXXX.',
+            'phone.unique'   => 'That phone number is already registered to another account.',
+            'address.required' => 'Address is required.',
+            'address.min'    => 'Address must be at least 10 characters.',
+            'email.unique'   => 'That email address is already registered to another account.',
+        ]);
 
         if (!$profile) {
             return response()->json([
@@ -77,7 +91,7 @@ class ProfileController extends Controller
     {
         $request->validate([
             'current_password' => 'required',
-            'new_password' => 'required|min:6|confirmed', // requires new_password_confirmation
+            'new_password' => 'required|min:8|max:32|confirmed',
         ]);
 
         $user = User::find(auth()->id());

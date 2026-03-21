@@ -64,9 +64,11 @@
                     <p class="text-[var(--muted)]">Create, update, and remove products from the catalog.</p>
                 </div>
                 <div class="flex gap-3">
+                    {{-- Bulk Import temporarily disabled
                     <button onclick="openImportModal()" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900">
                         Bulk Import
                     </button>
+                    --}}
                     <button onclick="openForm()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
                         Add Product
                     </button>
@@ -174,32 +176,11 @@
         </div>
     </div>
 
+    {{-- Bulk Import Modal temporarily disabled
     <div id="importModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-        <div class="relative top-10 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="text-lg font-bold">Bulk Import Product List</h3>
-                    <p class="text-sm text-gray-500">Paste brand headings with product lines. Optional format: `Product Name | Price | Stock | Reorder`</p>
-                </div>
-                <button type="button" onclick="closeImportModal()" class="text-gray-500 hover:text-gray-700">Close</button>
-            </div>
-
-            <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                <p class="font-semibold">Example:</p>
-                <pre class="mt-2 whitespace-pre-wrap text-xs">CANROYAL PRODUCTS
-Fully Synthetic Gasoline/Diesel Engine Oil SAE 5W30 API SN/CJ-4 1L | 450 | 20 | 5
-Diesel Engine Oil SAE 15W40 API CI4/SJ 5L | 1500 | 8 | 3</pre>
-            </div>
-
-            <textarea id="catalog_text" rows="16" class="w-full resize-none rounded-lg border border-slate-300 px-4 py-3 font-mono text-sm" placeholder="Paste your brand headings and product list here..."></textarea>
-            <div id="importSummary" class="hidden mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
-
-            <div class="mt-4 flex justify-end gap-2">
-                <button type="button" onclick="closeImportModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
-                <button type="button" onclick="submitCatalogImport()" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900">Import Catalog</button>
-            </div>
-        </div>
+        ...
     </div>
+    --}}
 
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -290,6 +271,7 @@ Diesel Engine Oil SAE 15W40 API CI4/SJ 5L | 1500 | 8 | 3</pre>
             resetForm();
         }
 
+        /* Bulk Import JS temporarily disabled
         function openImportModal() {
             document.getElementById('importModal').classList.remove('hidden');
         }
@@ -300,6 +282,7 @@ Diesel Engine Oil SAE 15W40 API CI4/SJ 5L | 1500 | 8 | 3</pre>
             document.getElementById('importSummary').innerHTML = '';
             document.getElementById('catalog_text').value = '';
         }
+        */
 
         function openForm(product = null) {
             document.getElementById('productModal').classList.remove('hidden');
@@ -349,7 +332,7 @@ Diesel Engine Oil SAE 15W40 API CI4/SJ 5L | 1500 | 8 | 3</pre>
                         <td class="px-6 py-4">${product.inventory ? product.inventory.quantity : 0}</td>
                         <td class="px-6 py-4 space-x-3">
                             <button type="button" onclick="editProduct(${product.product_id})" class="text-[var(--primary)] hover:text-[var(--primary-dark)]">Edit</button>
-                            <button type="button" onclick="deleteProduct(${product.product_id})" class="text-red-600 hover:text-red-900">Delete</button>
+                            ${ /* <button type="button" onclick="deleteProduct(${product.product_id})" class="text-red-600 hover:text-red-900">Delete</button> */ "" }
                         </td>
                     </tr>
                 `).join('')
@@ -458,6 +441,7 @@ Diesel Engine Oil SAE 15W40 API CI4/SJ 5L | 1500 | 8 | 3</pre>
             reader.readAsDataURL(file);
         });
 
+        /* submitCatalogImport temporarily disabled
         async function submitCatalogImport() {
             const catalogText = document.getElementById('catalog_text').value.trim();
 
@@ -494,6 +478,7 @@ Diesel Engine Oil SAE 15W40 API CI4/SJ 5L | 1500 | 8 | 3</pre>
 
             loadProducts();
         }
+        */
 
         async function logout() {
             const response = await fetch('/admin/logout', {

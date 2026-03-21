@@ -122,6 +122,30 @@
         </div>
     </div>
 
+    {{-- Deactivate Confirmation Modal --}}
+    <div id="deactivateModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="w-full max-w-sm mx-4 rounded-2xl bg-white shadow-2xl overflow-hidden">
+            <div class="bg-[linear-gradient(135deg,_#0d1f18_0%,_#163d2c_100%)] px-6 py-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-400/20">
+                        <svg class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Deactivate Account</h3>
+                        <p class="text-xs text-white/60 mt-0.5">This action will take effect immediately.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-5">
+                <p class="text-sm text-[var(--ink)] leading-6">Are you sure you want to <span class="font-semibold text-amber-600">deactivate</span> this account? The user will be logged out of all active sessions immediately.</p>
+            </div>
+            <div class="flex gap-3 border-t border-[var(--line)] px-6 py-4">
+                <button type="button" onclick="cancelDeactivate()" class="flex-1 rounded-full border border-[var(--line)] py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface)] transition">Cancel</button>
+                <button type="button" onclick="confirmDeactivateAction()" class="flex-1 rounded-full bg-amber-500 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition">Yes, Deactivate</button>
+            </div>
+        </div>
+    </div>
+
     <div id="userModal" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto">
         <div class="relative mx-auto my-10 w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
             <div class="flex items-center justify-between border-b border-[var(--line)] px-7 py-5">
@@ -132,41 +156,63 @@
                 <button type="button" onclick="closeUserModal()" class="rounded-full p-2 text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--ink)]">&#10005;</button>
             </div>
             <div class="p-7">
+                <div id="userFormErrors" class="hidden mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1"></div>
                 <form id="userForm" class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <input type="hidden" id="userId">
                     <div>
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Full Name</label>
-                        <input type="text" id="full_name" required class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Full Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="full_name" required minlength="5" maxlength="60"
+                               placeholder="e.g. Juan Dela Cruz"
+                               title="At least two words, each with at least 2 letters."
+                               class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                        <p id="err_full_name" class="hidden mt-1 text-xs text-red-600"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Username</label>
-                        <input type="text" id="username" required class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Username <span class="text-red-500">*</span></label>
+                        <input type="text" id="username" required minlength="3" maxlength="20"
+                               pattern="[A-Za-z][A-Za-z0-9._-]*"
+                               placeholder="e.g. juan_dc"
+                               title="Must start with a letter. Letters, numbers, dots, underscores, hyphens only."
+                               class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                        <p id="err_username" class="hidden mt-1 text-xs text-red-600"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Role</label>
+                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Role <span class="text-red-500">*</span></label>
                         <select id="role" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
                             <option value="admin">Admin</option>
                             <option value="customer">Customer</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Password</label>
-                        <input type="password" id="password" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Password <span id="passwordRequired" class="text-red-500">*</span></label>
+                        <input type="password" id="password" minlength="8" maxlength="32"
+                               placeholder="Min 8 characters"
+                               class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                        <p id="err_password" class="hidden mt-1 text-xs text-red-600"></p>
+                        <p class="mt-1 text-xs text-[var(--muted)]">Leave blank to keep existing password when editing.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[var(--ink)] mb-1">Phone</label>
-                        <input type="text" id="phone" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                        <input type="text" id="phone" maxlength="13"
+                               placeholder="09XXXXXXXXX or +639XXXXXXXXX"
+                               pattern="^(09[0-9]{9}|\+639[0-9]{9})$"
+                               title="Valid Philippine mobile number e.g. 09XXXXXXXXX"
+                               class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                        <p id="err_phone" class="hidden mt-1 text-xs text-red-600"></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[var(--ink)] mb-1">Email</label>
-                        <input type="email" id="email" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                        <input type="email" id="email" maxlength="100"
+                               placeholder="you@example.com"
+                               class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                        <p id="err_email" class="hidden mt-1 text-xs text-red-600"></p>
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-[var(--ink)] mb-1">Address</label>
-                        <textarea id="address" rows="3" class="block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none"></textarea>
+                        <textarea id="address" rows="3" maxlength="500" class="block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Delivery address"></textarea>
                     </div>
                     <label class="md:col-span-2 inline-flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" id="is_active" checked class="rounded">
+                        <input type="checkbox" id="is_active" checked class="rounded" onchange="confirmDeactivate(this)">
                         <span class="text-sm text-[var(--ink)]">Active account</span>
                     </label>
                 </form>
@@ -214,7 +260,11 @@
         function openUserModal(user = null) {
             document.getElementById('userModal').classList.remove('hidden');
             document.getElementById('userModalTitle').textContent = user ? 'Edit User' : 'Add User';
+            clearUserFormErrors();
             resetUserForm();
+            // Password required only on create
+            document.getElementById('passwordRequired').style.display = user ? 'none' : '';
+            document.getElementById('password').required = !user;
 
             if (!user) return;
 
@@ -247,7 +297,7 @@
                         <td class="px-6 py-4">${user.is_active ? 'Active' : 'Inactive'}</td>
                         <td class="px-6 py-4 space-x-3">
                             <button onclick="editUser(${user.user_id})" class="text-blue-600 hover:text-blue-900">Edit</button>
-                            <button onclick="deleteUser(${user.user_id})" class="text-red-600 hover:text-red-900">Delete</button>
+                            ${ /* <button onclick="deleteUser(${user.user_id})" class="text-red-600 hover:text-red-900">Delete</button> */ "" }
                         </td>
                     </tr>
                 `).join('')
@@ -396,19 +446,126 @@
             renderCurrentLogs();
         }
 
+        let _deactivateCheckbox = null;
+
+        function confirmDeactivate(checkbox) {
+            const userId = document.getElementById('userId').value;
+            if (!userId) return; // creating — no confirmation
+            if (checkbox.checked) return; // re-activating — no confirmation
+
+            // Revert checkbox immediately, show custom modal
+            checkbox.checked = true;
+            _deactivateCheckbox = checkbox;
+            document.getElementById('deactivateModal').classList.remove('hidden');
+        }
+
+        function confirmDeactivateAction() {
+            if (_deactivateCheckbox) {
+                _deactivateCheckbox.checked = false;
+                _deactivateCheckbox = null;
+            }
+            document.getElementById('deactivateModal').classList.add('hidden');
+        }
+
+        function cancelDeactivate() {
+            _deactivateCheckbox = null;
+            document.getElementById('deactivateModal').classList.add('hidden');
+        }
+
+        function clearUserFormErrors() {
+            document.getElementById('userFormErrors').classList.add('hidden');
+            document.getElementById('userFormErrors').innerHTML = '';
+            ['full_name','username','password','phone','email'].forEach(f => {
+                const el = document.getElementById('err_' + f);
+                if (el) { el.classList.add('hidden'); el.textContent = ''; }
+                const input = document.getElementById(f);
+                if (input) input.classList.remove('border-red-400');
+            });
+        }
+
+        function showUserFieldError(field, message) {
+            const el = document.getElementById('err_' + field);
+            const input = document.getElementById(field);
+            if (el) { el.textContent = message; el.classList.remove('hidden'); }
+            if (input) input.classList.add('border-red-400');
+        }
+
+        function validateUserForm(userId) {
+            clearUserFormErrors();
+            const fullName = document.getElementById('full_name').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const phone    = document.getElementById('phone').value.trim();
+            let valid = true;
+
+            // Full name — at least 2 words, each 2+ letters
+            if (!fullName) {
+                showUserFieldError('full_name', 'Full name is required.');
+                valid = false;
+            } else if (!/^[A-Za-z]{2,}(\s[A-Za-z]{2,})+$/.test(fullName)) {
+                showUserFieldError('full_name', 'Must contain at least two words, each with at least 2 letters.');
+                valid = false;
+            } else if (fullName.length > 60) {
+                showUserFieldError('full_name', 'Full name must not exceed 60 characters.');
+                valid = false;
+            }
+
+            // Username
+            if (!username) {
+                showUserFieldError('username', 'Username is required.');
+                valid = false;
+            } else if (username.length < 3) {
+                showUserFieldError('username', 'Username must be at least 3 characters.');
+                valid = false;
+            } else if (username.length > 20) {
+                showUserFieldError('username', 'Username must not exceed 20 characters.');
+                valid = false;
+            } else if (!/^[A-Za-z][A-Za-z0-9._-]*$/.test(username)) {
+                showUserFieldError('username', 'Must start with a letter. Letters, numbers, dots, underscores, hyphens only.');
+                valid = false;
+            }
+
+            // Password — required on create, optional on edit
+            if (!userId) {
+                if (!password) {
+                    showUserFieldError('password', 'Password is required.');
+                    valid = false;
+                } else if (password.length < 8) {
+                    showUserFieldError('password', 'Password must be at least 8 characters.');
+                    valid = false;
+                } else if (password.length > 32) {
+                    showUserFieldError('password', 'Password must not exceed 32 characters.');
+                    valid = false;
+                }
+            } else if (password && (password.length < 8 || password.length > 32)) {
+                showUserFieldError('password', 'Password must be 8–32 characters.');
+                valid = false;
+            }
+
+            // Phone — optional but must match PH format if provided
+            if (phone && !/^(09\d{9}|\+639\d{9})$/.test(phone)) {
+                showUserFieldError('phone', 'Enter a valid PH number e.g. 09XXXXXXXXX or +639XXXXXXXXX.');
+                valid = false;
+            }
+
+            return valid;
+        }
+
         document.getElementById('userForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const userId = document.getElementById('userId').value;
-            const payload = {
-                full_name: document.getElementById('full_name').value,
-                username: document.getElementById('username').value,
-                address: document.getElementById('address').value,
-                role: document.getElementById('role').value,
-                password: document.getElementById('password').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('email').value,
 
+            if (!validateUserForm(userId)) return;
+
+            const payload = {
+                full_name: document.getElementById('full_name').value.trim(),
+                username:  document.getElementById('username').value.trim(),
+                address:   document.getElementById('address').value.trim(),
+                role:      document.getElementById('role').value,
+                password:  document.getElementById('password').value,
+                phone:     document.getElementById('phone').value.trim(),
+                email:     document.getElementById('email').value.trim(),
                 is_active: document.getElementById('is_active').checked
             };
 
@@ -423,12 +580,28 @@
             });
 
             const data = await response.json();
-            showMessage(data.message || 'User saved.', response.ok ? 'success' : 'error');
 
             if (response.ok) {
+                clearUserFormErrors();
+                showMessage(data.message || 'User saved.', 'success');
                 closeUserModal();
                 loadUsers();
                 loadLogs();
+            } else {
+                // Show backend validation errors inline
+                if (data.errors) {
+                    const errBox = document.getElementById('userFormErrors');
+                    const messages = Object.values(data.errors).flat();
+                    errBox.innerHTML = messages.map(m => `<div>${m}</div>`).join('');
+                    errBox.classList.remove('hidden');
+                    // Also show per-field
+                    const fieldMap = { full_name: 'full_name', username: 'username', password: 'password', phone: 'phone', email: 'email' }; // email already included
+                    Object.entries(data.errors).forEach(([field, msgs]) => {
+                        if (fieldMap[field]) showUserFieldError(fieldMap[field], msgs[0]);
+                    });
+                } else {
+                    showMessage(data.message || 'Failed to save user.', 'error');
+                }
             }
         });
 

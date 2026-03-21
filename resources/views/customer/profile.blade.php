@@ -61,18 +61,30 @@
                         <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--primary)]">Customer Details</div>
                         <h2 class="mt-2 text-xl font-semibold text-[var(--ink)]">Contact Information</h2>
                     </div>
+                    <div id="profileErrors" class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1"></div>
                     <form id="profileForm" class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-[var(--ink)]">Phone</label>
-                            <input type="text" id="phone" class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            <label class="block text-sm font-medium text-[var(--ink)]">Phone <span class="text-red-500">*</span></label>
+                            <input type="text" id="phone" required maxlength="13"
+                                   placeholder="09XXXXXXXXX or +639XXXXXXXXX"
+                                   pattern="^(09[0-9]{9}|\+639[0-9]{9})$"
+                                   title="Valid Philippine mobile number e.g. 09XXXXXXXXX"
+                                   class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            <p id="err_phone" class="hidden mt-1 text-xs text-red-600"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-[var(--ink)]">Email</label>
-                            <input type="email" id="email" class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            <input type="email" id="email" maxlength="100"
+                                   placeholder="you@example.com"
+                                   class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            <p id="err_email" class="hidden mt-1 text-xs text-red-600"></p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-[var(--ink)]">Address</label>
-                            <textarea id="address" rows="6" class="mt-2 block w-full resize-none rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]"></textarea>
+                            <label class="block text-sm font-medium text-[var(--ink)]">Address <span class="text-red-500">*</span></label>
+                            <textarea id="address" rows="6" required minlength="10" maxlength="500"
+                                      placeholder="Complete delivery address"
+                                      class="mt-2 block w-full resize-none rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]"></textarea>
+                            <p id="err_address" class="hidden mt-1 text-xs text-red-600"></p>
                         </div>
                         <button type="submit" class="rounded-xl bg-[var(--primary)] px-5 py-3 text-sm font-bold text-white transition hover:brightness-110">Save Profile</button>
                     </form>
@@ -83,18 +95,28 @@
                         <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">Security</div>
                         <h2 class="mt-2 text-xl font-semibold text-[var(--ink)]">Change Password</h2>
                     </div>
+                    <div id="passwordErrors" class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1"></div>
                     <form id="passwordForm" class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-[var(--ink)]">Current Password</label>
-                            <input type="password" id="current_password" class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            <label class="block text-sm font-medium text-[var(--ink)]">Current Password <span class="text-red-500">*</span></label>
+                            <input type="password" id="current_password" required maxlength="32"
+                                   placeholder="Enter current password"
+                                   class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            <p id="err_current_password" class="hidden mt-1 text-xs text-red-600"></p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-[var(--ink)]">New Password</label>
-                            <input type="password" id="new_password" class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            <label class="block text-sm font-medium text-[var(--ink)]">New Password <span class="text-red-500">*</span></label>
+                            <input type="password" id="new_password" required minlength="8" maxlength="32"
+                                   placeholder="Min 8 characters"
+                                   class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            <p id="err_new_password" class="hidden mt-1 text-xs text-red-600"></p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-[var(--ink)]">Confirm Password</label>
-                            <input type="password" id="new_password_confirmation" class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            <label class="block text-sm font-medium text-[var(--ink)]">Confirm Password <span class="text-red-500">*</span></label>
+                            <input type="password" id="new_password_confirmation" required minlength="8" maxlength="32"
+                                   placeholder="Re-enter new password"
+                                   class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            <p id="err_confirm_password" class="hidden mt-1 text-xs text-red-600"></p>
                         </div>
                         <button type="submit" class="rounded-xl bg-[var(--ink)] px-5 py-3 text-sm font-bold text-white transition hover:brightness-110">Change Password</button>
                     </form>
@@ -232,49 +254,142 @@
             }
         }
 
+        function clearProfileErrors() {
+            ['phone','email','address'].forEach(f => {
+                const el = document.getElementById('err_' + f);
+                if (el) { el.classList.add('hidden'); el.textContent = ''; }
+            });
+            const box = document.getElementById('profileErrors');
+            box.classList.add('hidden'); box.innerHTML = '';
+        }
+
+        function showProfileFieldError(field, msg) {
+            const el = document.getElementById('err_' + field);
+            if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+        }
+
+        function clearPasswordErrors() {
+            ['current_password','new_password','confirm_password'].forEach(f => {
+                const el = document.getElementById('err_' + f);
+                if (el) { el.classList.add('hidden'); el.textContent = ''; }
+            });
+            const box = document.getElementById('passwordErrors');
+            box.classList.add('hidden'); box.innerHTML = '';
+        }
+
+        function showPasswordFieldError(field, msg) {
+            const el = document.getElementById('err_' + field);
+            if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+        }
+
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            clearProfileErrors();
+
+            const phone = document.getElementById('phone').value.trim();
+            const address = document.getElementById('address').value.trim();
+            let valid = true;
+
+            if (!phone) {
+                showProfileFieldError('phone', 'Phone number is required.');
+                valid = false;
+            } else if (!/^(09\d{9}|\+639\d{9})$/.test(phone)) {
+                showProfileFieldError('phone', 'Enter a valid PH number e.g. 09XXXXXXXXX.');
+                valid = false;
+            }
+
+            if (!address) {
+                showProfileFieldError('address', 'Address is required.');
+                valid = false;
+            } else if (address.length < 10) {
+                showProfileFieldError('address', 'Address must be at least 10 characters.');
+                valid = false;
+            }
+
+            if (!valid) return;
 
             const response = await fetch('/shop-api/profile', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                 body: JSON.stringify({
-                    phone: document.getElementById('phone').value,
-                    email: document.getElementById('email').value,
-                    address: document.getElementById('address').value
+                    phone: phone,
+                    email: document.getElementById('email').value.trim(),
+                    address: address
                 })
             });
 
             const data = await response.json();
-            showMessage(data.message || 'Profile updated.', response.ok ? 'success' : 'error');
+
+            if (response.ok) {
+                showMessage(data.message || 'Profile updated.', 'success');
+            } else if (data.errors) {
+                const errBox = document.getElementById('profileErrors');
+                const messages = Object.values(data.errors).flat();
+                errBox.innerHTML = messages.map(m => `<div>${m}</div>`).join('');
+                errBox.classList.remove('hidden');
+                Object.entries(data.errors).forEach(([field, msgs]) => showProfileFieldError(field, msgs[0]));
+            } else {
+                showMessage(data.message || 'Failed to update profile.', 'error');
+            }
         });
 
         document.getElementById('passwordForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            clearPasswordErrors();
+
+            const current = document.getElementById('current_password').value;
+            const newPw   = document.getElementById('new_password').value;
+            const confirm = document.getElementById('new_password_confirmation').value;
+            let valid = true;
+
+            if (!current) {
+                showPasswordFieldError('current_password', 'Current password is required.');
+                valid = false;
+            }
+            if (!newPw) {
+                showPasswordFieldError('new_password', 'New password is required.');
+                valid = false;
+            } else if (newPw.length < 8) {
+                showPasswordFieldError('new_password', 'New password must be at least 8 characters.');
+                valid = false;
+            } else if (newPw.length > 32) {
+                showPasswordFieldError('new_password', 'New password must not exceed 32 characters.');
+                valid = false;
+            }
+            if (newPw && confirm !== newPw) {
+                showPasswordFieldError('confirm_password', 'Passwords do not match.');
+                valid = false;
+            }
+
+            if (!valid) return;
 
             const response = await fetch('/shop-api/profile/password', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                 body: JSON.stringify({
-                    current_password: document.getElementById('current_password').value,
-                    new_password: document.getElementById('new_password').value,
-                    new_password_confirmation: document.getElementById('new_password_confirmation').value
+                    current_password: current,
+                    new_password: newPw,
+                    new_password_confirmation: confirm
                 })
             });
 
             const data = await response.json();
-            showMessage(data.message || 'Password updated.', response.ok ? 'success' : 'error');
 
             if (response.ok) {
+                showMessage(data.message || 'Password changed.', 'success');
                 document.getElementById('passwordForm').reset();
+                clearPasswordErrors();
+            } else if (data.errors) {
+                const errBox = document.getElementById('passwordErrors');
+                const messages = Object.values(data.errors).flat();
+                errBox.innerHTML = messages.map(m => `<div>${m}</div>`).join('');
+                errBox.classList.remove('hidden');
+                Object.entries(data.errors).forEach(([field, msgs]) => {
+                    const map = { current_password: 'current_password', new_password: 'new_password' };
+                    if (map[field]) showPasswordFieldError(map[field], msgs[0]);
+                });
+            } else {
+                showMessage(data.message || 'Failed to change password.', 'error');
             }
         });
 

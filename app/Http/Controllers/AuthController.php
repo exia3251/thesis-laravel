@@ -39,8 +39,8 @@ class AuthController extends Controller
             'username' => ['required', 'string', 'min:3', 'max:30', 'unique:users,username', 'regex:/^[A-Za-z][A-Za-z0-9._-]*$/'],
             'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
             'full_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[A-Za-z][A-Za-z\s\'.-]*$/'],
-            'phone' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
-            'email' => ['nullable', 'email', 'max:100'],
+            'phone' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/', 'unique:customer_profiles,phone'],
+            'email' => ['nullable', 'email', 'max:100', 'unique:customer_profiles,email'],
             'address' => ['required', 'string', 'min:10', 'max:500'],
         ];
     }
@@ -60,8 +60,10 @@ class AuthController extends Controller
             'full_name.min' => 'Full name must be at least 2 characters.',
             'full_name.regex' => 'Full name may only contain letters, spaces, apostrophes, periods, and hyphens.',
             'phone.required' => 'Phone number is required.',
-            'phone.regex' => 'Phone number must be a valid Philippine mobile number such as 09XXXXXXXXX or +639XXXXXXXXX.',
-            'email.email' => 'Email address must be valid.',
+            'phone.regex'   => 'Phone number must be a valid Philippine mobile number such as 09XXXXXXXXX or +639XXXXXXXXX.',
+            'phone.unique'  => 'That phone number is already registered to another account.',
+            'email.email'   => 'Email address must be valid.',
+            'email.unique'  => 'That email address is already registered to another account.',
             'address.required' => 'Address is required.',
             'address.min' => 'Address must be at least 10 characters long.',
         ];
