@@ -62,7 +62,7 @@ cd thesis-laravel
 Open thesis-laravel folder name in xampp htdocs and in terminal:
 
 ```bash
-cd thesis-laravel
+cd C:/xampp/htdocs/thesis-laravel
 composer install
 ```
 
@@ -73,7 +73,7 @@ This installs all Laravel packages listed in `composer.json`. It may take a minu
 ## Step 5 — Install Frontend Dependencies
 
 ```bash
-cd thesis-laravel
+cd C:/xampp/htdocs/thesis-laravel
 npm install
 ```
 
