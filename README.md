@@ -59,6 +59,8 @@ cd thesis-laravel
 
 ## Step 4 — Open vs code and Install PHP Dependencies
 
+Open thesis-laravel folder name in xampp htdocs and in terminal:
+
 ```bash
 cd thesis-laravel
 composer install
