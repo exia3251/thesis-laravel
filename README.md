@@ -21,11 +21,11 @@ Laravel-based ecommerce and admin management system for engine oil and lubricant
 
 ## Installation
 
-1. Clone the repository
+1. Clone the repository in vscode cli
 
 ```bash
-git clone <your-github-repository-url>
-cd engine-oil-laravel
+git clone https://github.com/exia3251/thesis-laravel.git
+cd C:\xampp\htdocs\thesis-laravel
 ```
 
 2. Install PHP dependencies
@@ -82,30 +82,12 @@ php artisan storage:link
 ```bash
 php artisan serve
 ```
-
-10. Optional: run frontend watcher if needed
-
-```bash
-npm run dev
-```
-
 ## Demo Notes
 
 - Root URL redirects to `/shop`
 - Customer login/register is under `/shop/login` and `/shop/register`
 - Admin login is under `/admin/login`
 - If GCash is selected during checkout, the user is redirected to the order payment section
-- Replace `public/images/gcash-qr-placeholder.svg` with the real staff GCash QR before the demo if available
-
-## Suggested Demo Accounts
-
-Create accounts in the database or via seeders for:
-
-- `super_admin`
-- `admin`
-- `customer`
-
-If needed, I can help you generate a final demo seeder for those accounts.
 
 ## Important Directories
 
@@ -128,9 +110,7 @@ If needed, I can help you generate a final demo seeder for those accounts.
 - `database/seeders`:
   demo and initial data seeders
 
-## Presentation Focus
-
-Recommended demo sequence:
+Demo sequence:
 
 1. Customer browses products
 2. Customer adds to cart and checks out
