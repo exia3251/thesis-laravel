@@ -35,7 +35,7 @@ git -v
 1. Open your browser and go to `http://localhost/phpmyadmin`
 2. Click **New** on the left sidebar
 3. Name the database: `engine_oil_inventory`
-4. Set collation to `utf8mb4_unicode_ci`
+4. Set collation to `utf8mb4_general_ci`
 5. Click **Create**
 
 ---
