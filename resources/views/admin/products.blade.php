@@ -299,7 +299,7 @@
             document.getElementById('oil_type').value = product.oil_type;
             document.getElementById('viscosity_grade').value = product.viscosity_grade || '';
             document.getElementById('unit').value = product.unit || '1 Liter';
-            document.getElementById('price').value = product.price;
+            document.getElementById('price').value = parseInt(product.price);
             document.getElementById('reorder_level').value = product.reorder_level;
             document.getElementById('description').value = product.description || '';
             if (product.image_url) {
