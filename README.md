@@ -59,8 +59,10 @@ cd thesis-laravel
 
 ## Step 4 — Open vs code and Install PHP Dependencies
 
+Open thesis-laravel folder name in xampp htdocs and in terminal:
+
 ```bash
-cd thesis-laravel
+cd C:/xampp/htdocs/thesis-laravel
 composer install
 ```
 
@@ -71,7 +73,7 @@ This installs all Laravel packages listed in `composer.json`. It may take a minu
 ## Step 5 — Install Frontend Dependencies
 
 ```bash
-cd thesis-laravel
+cd C:/xampp/htdocs/thesis-laravel
 npm install
 ```
 
@@ -87,7 +89,7 @@ copy .env.example .env
 
 ```
 
-Open the `.env` file in any text editor and update the database section:
+Open the `.env` file and update the database section:
 
 ```env
 DB_CONNECTION=mysql
