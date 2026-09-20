@@ -10,6 +10,8 @@ use App\Models\Inventory;
 use App\Models\StockTransaction;
 use App\Models\ActivityLog;
 use App\Models\PaymentRequest;
+use App\Mail\OrderDelivered;
+use App\Services\Notifier;
 use App\Services\OrderCancellation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -445,6 +447,12 @@ class SalesController extends Controller
         $sale->delivery_confirmed_by = auth()->id();
         $sale->delivery_status = 'delivered';
         $sale->save();
+
+        Notifier::send(
+            $sale->user?->email,
+            new OrderDelivered($sale->load('items.product', 'user')),
+            ['sale_id' => $sale->sale_id]
+        );
 
         ActivityLog::logAction(
             auth()->id(),

@@ -11,6 +11,8 @@ use App\Models\StockTransaction;
 use App\Models\CustomerProfile;
 use App\Models\PaymentRequest;
 use App\Models\ActivityLog;
+use App\Mail\OrderPlaced;
+use App\Services\Notifier;
 use App\Services\OrderCancellation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -124,6 +126,16 @@ class OrderController extends Controller
             ], 400);
         }
 
+        // An unconfirmed address cannot receive a receipt or a refund notice,
+        // and it is the same address a Google sign-in would later be linked to.
+        if (!auth()->user()->hasVerifiedEmail()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Confirm your email address before placing an order. Check your inbox, or resend the link from your profile.',
+                'needs_verification' => true,
+            ], 422);
+        }
+
         // Get customer profile before opening a transaction
         $profile = CustomerProfile::where('user_id', auth()->id())->first();
 
@@ -203,6 +215,14 @@ class OrderController extends Controller
             ShoppingCart::where('user_id', auth()->id())->delete();
 
             DB::commit();
+
+            // After the commit, never inside it: a mail failure must not roll
+            // back an order that was placed successfully.
+            Notifier::send(
+                auth()->user()->email,
+                new OrderPlaced($sale->load('items.product')),
+                ['sale_id' => $sale->sale_id]
+            );
 
             $messages = [
                 Sale::PLAN_COD => 'Order placed. Please prepare payment for delivery.',

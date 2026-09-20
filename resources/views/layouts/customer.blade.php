@@ -16,6 +16,8 @@
 <div class="min-h-screen bg-[var(--surface)]">
     @includeWhen($showHeader ?? true, 'partials.customer-header', ['showSearch' => $showSearch ?? false])
 
+    @include('partials.verify-banner')
+
     @yield('content')
 
     @includeWhen($showFooter ?? true, 'partials.customer-footer')

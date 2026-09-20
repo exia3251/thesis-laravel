@@ -45,7 +45,12 @@ return [
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+
+            // Mail is sent inside the request that triggers it, so an
+            // unreachable SMTP host would otherwise stall a checkout for as
+            // long as the network takes to give up. Five seconds bounds it;
+            // the send is abandoned and logged, and the order still completes.
+            'timeout' => env('MAIL_TIMEOUT', 5),
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 

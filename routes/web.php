@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\OrderController;
@@ -132,6 +133,19 @@ Route::middleware('guest')->group(function () {
 Route::post('/shop/login', [AuthController::class, 'customerLogin'])->name('customer.login.submit');
 Route::post('/shop/register', [AuthController::class, 'customerRegister'])->name('customer.register.submit');
 Route::post('/shop/logout', [AuthController::class, 'logout'])->name('customer.logout');
+
+/*
+| Email verification. The confirmation link carries a signature rather than
+| relying on a session, so it still works when the mail is opened on a
+| different device from the one that registered.
+*/
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware('signed')
+    ->name('verification.verify');
+
+Route::post('/email/verify/resend', [EmailVerificationController::class, 'resend'])
+    ->middleware(['customer', 'throttle:5,1'])
+    ->name('verification.send');
 
 // Customer pages
 Route::get('/shop', [ShopController::class, 'index'])->name('shop');

@@ -235,6 +235,17 @@ class AuthController extends Controller
 
             DB::commit();
 
+            // Verification is what later makes linking a Google sign-in to this
+            // account safe, so it is requested straight away.
+            try {
+                $user->sendEmailVerificationNotification();
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Verification mail failed.', [
+                    'user_id' => $user->user_id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             ActivityLog::logAction(
                 $user->user_id,
                 'customer_registered',
@@ -244,7 +255,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Registration successful'
+                'message' => 'Registration successful. Check your email for a verification link.',
             ]);
 
         } catch (\Exception $e) {
