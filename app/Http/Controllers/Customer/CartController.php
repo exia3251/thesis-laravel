@@ -19,16 +19,19 @@ class CartController extends Controller
             ->map(function ($item) {
                 $product = $item->product;
                 $stock = $product?->inventory->quantity ?? 0;
-                $isInactive = !$product || $stock <= 0 || $item->quantity > $stock;
+
+                // Availability is about whether this line can be bought right
+                // now, not about the state of the product record.
+                $isUnavailable = !$product || $stock <= 0 || $item->quantity > $stock;
 
                 if (!$product) {
-                    $inactiveReason = 'This product is no longer available.';
+                    $unavailableReason = 'This product is no longer sold.';
                 } elseif ($stock <= 0) {
-                    $inactiveReason = 'This product is out of stock.';
+                    $unavailableReason = 'Out of stock.';
                 } elseif ($item->quantity > $stock) {
-                    $inactiveReason = 'Only ' . $stock . ' item(s) are currently available.';
+                    $unavailableReason = 'Only ' . $stock . ' left in stock.';
                 } else {
-                    $inactiveReason = null;
+                    $unavailableReason = null;
                 }
 
                 return [
@@ -42,8 +45,8 @@ class CartController extends Controller
                     'stock' => $stock,
                     'subtotal' => ($product?->price ?? 0) * $item->quantity,
                     'image_url' => $product?->image_path ? asset('storage/' . $product->image_path) : null,
-                    'is_inactive' => $isInactive,
-                    'inactive_reason' => $inactiveReason,
+                    'is_unavailable' => $isUnavailable,
+                    'unavailable_reason' => $unavailableReason,
                 ];
             });
 

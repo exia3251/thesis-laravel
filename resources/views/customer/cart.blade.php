@@ -10,7 +10,7 @@
                 <div class="max-w-3xl">
                     <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">Checkout Ready</div>
                     <h1 class="mt-5 text-3xl font-black leading-tight text-[var(--ink)] sm:text-4xl">Shopping cart and delivery-ready checkout.</h1>
-                    <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Review active items, confirm your saved delivery details, and place an order only when stock is still available.</p>
+                    <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Check what is still in stock, confirm your delivery details, and choose how you want to pay.</p>
                 </div>
                 <div class="flex flex-wrap gap-3">
                     <a href="/shop" class="rounded-xl border border-[var(--line)] bg-white/70 px-5 py-3 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">Continue Shopping</a>
@@ -28,7 +28,7 @@
             </div>
             <div class="rounded-[1.75rem] border border-[var(--accent-soft)] bg-[rgba(255,252,243,0.92)] p-6 shadow-lg">
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[#9d7b20]">Checkout Reminder</div>
-                <p class="mt-3 text-sm leading-7 text-[#715b1d]">Unavailable items cannot be checked out. Remove them first if stock has changed after they were added to your cart.</p>
+                <p class="mt-3 text-sm leading-7 text-[#715b1d]">Items marked unavailable cannot be checked out. Remove them, or lower the quantity to what is still in stock.</p>
             </div>
         </section>
 
@@ -164,9 +164,9 @@
         }
 
         function updateCheckoutState() {
-            const hasInactiveItems = cartItems.some((item) => item.is_inactive);
+            const hasUnavailableItems = cartItems.some((item) => item.is_unavailable);
             const checkoutButton = document.getElementById('checkoutButton');
-            checkoutButton.disabled = hasInactiveItems || cartItems.length === 0 || splitAmountError() !== null;
+            checkoutButton.disabled = hasUnavailableItems || cartItems.length === 0 || splitAmountError() !== null;
             checkoutButton.classList.toggle('opacity-60', checkoutButton.disabled);
             checkoutButton.classList.toggle('cursor-not-allowed', checkoutButton.disabled);
         }
@@ -174,7 +174,7 @@
         function renderCart() {
             const tbody = document.getElementById('cartBody');
             const total = cartItems
-                .filter((item) => !item.is_inactive)
+                .filter((item) => !item.is_unavailable)
                 .reduce((sum, item) => sum + Number(item.subtotal), 0);
             orderTotal = total;
             document.getElementById('cartTotal').textContent = formatCurrency(total);
@@ -183,30 +183,46 @@
 
             tbody.innerHTML = cartItems.length
                 ? cartItems.map((item) => `
-                    <tr class="border-b border-[var(--line)] ${item.is_inactive ? 'bg-red-50/60' : ''}">
+                    <tr class="border-b border-[var(--line)] ${item.is_unavailable ? 'bg-red-50/50' : ''}">
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-4">
                                 ${item.image_url
-                                    ? `<img src="${item.image_url}" alt="${item.product_name}" class="h-16 w-16 rounded-2xl border border-[var(--line)] object-cover">`
+                                    ? `<img src="${item.image_url}" alt="${item.product_name}" class="h-16 w-16 rounded-2xl border border-[var(--line)] object-cover ${item.is_unavailable ? 'grayscale opacity-60' : ''}">`
                                     : `<div class="flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--line)] bg-slate-100 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">No Image</div>`}
                                 <div>
                                     <div class="font-semibold text-[var(--ink)]">${item.product_name}</div>
-                                    <div class="text-sm text-[var(--muted)]">${item.brand} | ${item.unit}</div>
+                                    <div class="text-sm text-[var(--muted)]">${item.brand} &middot; ${item.unit}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4">${formatCurrency(item.price)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${formatCurrency(item.price)}</td>
                         <td class="px-6 py-4">
-                            <input type="number" min="1" step="1" max="${Math.max(item.stock, 1)}" value="${item.quantity}" onchange="updateQuantity(${item.cart_id}, this.value)" class="w-20 rounded-xl border border-[var(--line)] px-3 py-2 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)] ${item.is_inactive ? 'bg-slate-100 text-slate-400' : 'bg-white'}" ${item.is_inactive ? 'disabled' : ''}>
+                            <input type="number" min="1" step="1" max="${Math.max(item.stock, 1)}" value="${item.quantity}" onchange="updateQuantity(${item.cart_id}, this.value)" class="w-20 rounded-xl border border-[var(--line)] px-3 py-2 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)] ${item.is_unavailable ? 'bg-slate-100 text-slate-400' : 'bg-white'}" ${item.is_unavailable ? 'disabled' : ''}>
                         </td>
                         <td class="px-6 py-4">
-                            ${item.is_inactive
-                                ? `<span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">${item.inactive_reason}</span>`
-                                : `<span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Active</span>`}
+                            ${item.is_unavailable
+                                ? `<span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                                        Unavailable
+                                    </span>
+                                    <div class="mt-1.5 text-xs leading-5 text-red-700">${item.unavailable_reason}</div>`
+                                : `<span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                                        Available
+                                    </span>
+                                    <div class="mt-1.5 text-xs text-[var(--muted)]">${item.stock} in stock</div>`}
                         </td>
-                        <td class="px-6 py-4">${formatCurrency(item.subtotal)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${item.is_unavailable
+                                ? `<div class="font-semibold text-slate-400 line-through">${formatCurrency(item.subtotal)}</div>
+                                   <div class="mt-0.5 text-xs text-[var(--muted)]">not counted</div>`
+                                : `<div class="font-semibold text-[var(--ink)]">${formatCurrency(item.subtotal)}</div>`}
+                        </td>
                         <td class="px-6 py-4">
-                            <button onclick="removeItem(${item.cart_id})" class="font-semibold text-red-600 transition hover:text-red-800">Remove</button>
+                            <button onclick="removeItem(${item.cart_id})" title="Remove from cart" class="inline-flex items-center gap-1.5 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--muted)] transition hover:border-red-300 hover:bg-red-50 hover:text-red-700">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.35 9m-4.78 0L9.26 9M19 7l-.87 12.14A2 2 0 0 1 16.14 21H7.86a2 2 0 0 1-1.99-1.86L5 7m5-3h4a1 1 0 0 1 1 1v2H9V5a1 1 0 0 1 1-1Z"/></svg>
+                                Remove
+                            </button>
                         </td>
                     </tr>
                 `).join('')
@@ -265,8 +281,8 @@
                 return;
             }
 
-            if (cartItems.some((item) => item.is_inactive)) {
-                showMessage('Remove unavailable items before checkout.', 'error');
+            if (cartItems.some((item) => item.is_unavailable)) {
+                showMessage('Some items are unavailable. Remove them or reduce the quantity before checking out.', 'error');
                 return;
             }
 

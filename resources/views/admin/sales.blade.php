@@ -51,6 +51,24 @@
 
     {{-- Reviewing a payment means comparing a receipt against what the order
          actually owes, so both sit side by side rather than in a table cell. --}}
+    {{-- Every payment ever claimed against one order, so a disputed amount can
+         be traced back to the receipt and reference it came from. --}}
+    <div id="historyModal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto">
+        <div class="mx-auto my-8 w-full max-w-3xl rounded-[1.5rem] bg-white shadow-2xl">
+            <div class="flex items-start justify-between border-b border-[var(--line)] px-6 py-4">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Payment history</p>
+                    <h2 class="mt-1 text-xl font-black text-[var(--ink)]">Order <span id="hsSaleId"></span> &mdash; <span id="hsCustomer"></span></h2>
+                    <p id="hsSummary" class="mt-1 text-sm text-[var(--muted)]"></p>
+                </div>
+                <button type="button" onclick="closeHistoryModal()" class="rounded-full p-2 text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="hsBody" class="max-h-[32rem] space-y-3 overflow-y-auto p-6"></div>
+        </div>
+    </div>
+
     <div id="verifyModal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto">
         <div class="mx-auto my-8 w-full max-w-5xl rounded-[1.5rem] bg-white shadow-2xl">
             <div class="flex items-start justify-between border-b border-[var(--line)] px-6 py-4">
@@ -302,7 +320,10 @@
                         <td class="px-6 py-4">${formatCurrency(sale.total_amount)}</td>
                         <td class="px-6 py-4">
                             <div class="space-y-2">
-                                <button type="button" onclick="updateSaleStatus(${sale.sale_id})" class="text-blue-600 hover:text-blue-900">Update</button>
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" onclick="updateSaleStatus(${sale.sale_id})" class="rounded border border-[var(--line)] px-2 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-50">Update</button>
+                                    <button type="button" onclick="openHistoryModal(${sale.sale_id})" class="rounded border border-[var(--line)] px-2 py-1 text-xs font-semibold text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]">History${(sale.payment_requests || []).length ? ` (${(sale.payment_requests || []).length})` : ''}</button>
+                                </div>
                                 ${pendingRequestsHtml}
                             </div>
                         </td>
@@ -580,11 +601,81 @@
         }
 
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') closeVerifyModal();
+            if (event.key !== 'Escape') return;
+            closeVerifyModal();
+            closeHistoryModal();
         });
 
         document.getElementById('verifyModal').addEventListener('click', (event) => {
             if (event.target.id === 'verifyModal') closeVerifyModal();
+        });
+
+
+        // ---- Payment history --------------------------------------------
+        const REQUEST_STATUS_STYLES = {
+            approved:   { pill: 'bg-emerald-100 text-emerald-800', label: 'Approved' },
+            rejected:   { pill: 'bg-red-100 text-red-800',         label: 'Rejected' },
+            processing: { pill: 'bg-sky-100 text-sky-800',         label: 'Awaiting review' },
+        };
+
+        function openHistoryModal(saleId) {
+            const sale = allSales.find((s) => Number(s.sale_id) === Number(saleId));
+            if (!sale) return;
+
+            const requests = [...(sale.payment_requests || [])]
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            const approved = requests
+                .filter((r) => r.status === 'approved')
+                .reduce((sum, r) => sum + Number(r.amount), 0);
+
+            document.getElementById('hsSaleId').textContent = '#' + sale.sale_id;
+            document.getElementById('hsCustomer').textContent = sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in Customer';
+            document.getElementById('hsSummary').textContent =
+                requests.length + ' payment request' + (requests.length === 1 ? '' : 's') + ' \u00b7 '
+                + formatCurrency(approved) + ' approved of ' + formatCurrency(sale.total_amount);
+
+            document.getElementById('hsBody').innerHTML = requests.length
+                ? requests.map((r) => {
+                    const style = REQUEST_STATUS_STYLES[r.status] || { pill: 'bg-slate-100 text-slate-700', label: r.status };
+                    const reviewer = r.reviewer && r.reviewer.full_name;
+
+                    return `
+                        <div class="flex gap-4 rounded-2xl border border-[var(--line)] p-4">
+                            ${r.proof_image_path
+                                ? `<a href="/storage/${r.proof_image_path}" target="_blank" class="shrink-0">
+                                       <img src="/storage/${r.proof_image_path}" alt="Receipt" class="h-24 w-24 rounded-xl border border-[var(--line)] object-cover transition hover:opacity-80">
+                                   </a>`
+                                : `<div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">No receipt</div>`}
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div class="text-lg font-black text-[var(--ink)]">${formatCurrency(r.amount)}</div>
+                                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ${style.pill}">${style.label}</span>
+                                </div>
+                                <div class="mt-1 text-sm text-[var(--muted)]">
+                                    ${r.payment_method ? r.payment_method.toUpperCase() : 'GCASH'}
+                                    ${r.reference_no ? ` &middot; Ref <code class="rounded bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)]">${r.reference_no}</code>` : ' &middot; no reference given'}
+                                </div>
+                                <div class="mt-1 text-xs text-[var(--muted)]">
+                                    Submitted ${new Date(r.created_at).toLocaleString()}
+                                    ${r.reviewed_at ? ` &middot; reviewed ${new Date(r.reviewed_at).toLocaleString()}${reviewer ? ' by ' + reviewer : ''}` : ''}
+                                </div>
+                                ${r.admin_notes ? `<div class="mt-2 rounded-lg bg-[var(--surface)] px-3 py-2 text-xs leading-5 text-[var(--ink)]">${r.admin_notes}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('')
+                : '<p class="py-8 text-center text-sm text-[var(--muted)]">No payment has been claimed against this order yet.</p>';
+
+            document.getElementById('historyModal').classList.remove('hidden');
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.add('hidden');
+        }
+
+        document.getElementById('historyModal').addEventListener('click', (event) => {
+            if (event.target.id === 'historyModal') closeHistoryModal();
         });
 
         loadSales();
