@@ -12,15 +12,10 @@ use App\Models\CustomerProfile;
 use App\Models\PaymentRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
-    // Display checkout page
-    public function checkout()
-    {
-        return view('customer.checkout');
-    }
-
     // Display orders page
     public function index()
     {
@@ -37,11 +32,48 @@ class OrderController extends Controller
         return view('customer.order-details', compact('sale'));
     }
 
+    /**
+     * Resolves the chosen payment plan into the amount committed to GCash,
+     * rejecting a split that falls under the configured down payment floor.
+     */
+    protected function resolveGcashAmount(string $plan, float $total, Request $request): float
+    {
+        if ($plan === Sale::PLAN_COD) {
+            return 0.0;
+        }
+
+        if ($plan === Sale::PLAN_GCASH_FULL) {
+            return $total;
+        }
+
+        $minimum = Sale::minimumDownPayment($total);
+        $amount = round((float) $request->input('gcash_amount', 0), 2);
+
+        if ($amount < $minimum) {
+            throw ValidationException::withMessages([
+                'gcash_amount' => 'The down payment must be at least PHP ' . number_format($minimum, 2)
+                    . ' (' . config('payments.minimum_down_payment_percent') . '% of the order).',
+            ]);
+        }
+
+        if ($amount >= $total) {
+            throw ValidationException::withMessages([
+                'gcash_amount' => 'A split payment must leave a balance for delivery. Choose full GCash payment instead.',
+            ]);
+        }
+
+        return $amount;
+    }
+
     // Place order
     public function placeOrder(Request $request)
     {
         $request->validate([
-            'payment_method' => 'required|in:cash_on_delivery,gcash',
+            'payment_plan' => 'required|in:cod,gcash_full,split',
+            'gcash_amount' => 'nullable|numeric|min:0',
+        ], [
+            'payment_plan.required' => 'Choose how you would like to pay.',
+            'payment_plan.in' => 'Choose a valid payment option.',
         ]);
 
         // Get cart items
@@ -66,24 +98,32 @@ class OrderController extends Controller
             ], 422);
         }
 
+        $plan = $request->payment_plan;
+
         DB::beginTransaction();
         try {
-            // Check stock for all items
+            // Lock the inventory rows before reading them, so two orders placed
+            // at the same moment cannot both pass the stock check and oversell.
             foreach ($cartItems as $item) {
                 if (!$item->product) {
                     throw new \Exception('One or more items in your cart are no longer available.');
                 }
 
-                $inventory = Inventory::where('product_id', $item->product_id)->first();
+                $inventory = Inventory::where('product_id', $item->product_id)
+                    ->lockForUpdate()
+                    ->first();
+
                 if (!$inventory || $inventory->quantity < $item->quantity) {
                     throw new \Exception("Insufficient stock for: " . $item->product->product_name);
                 }
             }
 
             // Calculate total
-            $total = $cartItems->sum(function ($item) {
+            $total = (float) $cartItems->sum(function ($item) {
                 return $item->product->price * $item->quantity;
             });
+
+            $gcashAmount = $this->resolveGcashAmount($plan, $total, $request);
 
             // Create sale
             $sale = Sale::create([
@@ -92,7 +132,9 @@ class OrderController extends Controller
                 'delivery_address' => $profile->address,
                 'contact_phone' => $profile->phone,
                 'total_amount' => $total,
-                'payment_method' => $request->payment_method,
+                'payment_method' => $plan === Sale::PLAN_COD ? 'cash_on_delivery' : 'gcash',
+                'payment_plan' => $plan,
+                'gcash_amount' => $gcashAmount,
                 'payment_status' => 'unpaid',
                 'paid_amount' => 0,
                 'balance_due' => $total,
@@ -102,7 +144,6 @@ class OrderController extends Controller
 
             // Create sale items and update inventory
             foreach ($cartItems as $item) {
-                // Create sale item
                 SaleItem::create([
                     'sale_id' => $sale->sale_id,
                     'product_id' => $item->product_id,
@@ -111,10 +152,8 @@ class OrderController extends Controller
                     'subtotal' => $item->product->price * $item->quantity
                 ]);
 
-                // Update inventory
                 Inventory::updateStock($item->product_id, -$item->quantity);
 
-                // Log transaction
                 StockTransaction::logTransaction(
                     $item->product_id,
                     'stock_out',
@@ -129,17 +168,27 @@ class OrderController extends Controller
 
             DB::commit();
 
+            $messages = [
+                Sale::PLAN_COD => 'Order placed. Please prepare payment for delivery.',
+                Sale::PLAN_GCASH_FULL => 'Order placed. Continue to GCash payment instructions.',
+                Sale::PLAN_SPLIT => 'Order placed. Pay your down payment by GCash, then settle the balance on delivery.',
+            ];
+
             return response()->json([
                 'success' => true,
-                'message' => $request->payment_method === 'gcash'
-                    ? 'Order placed. Continue to GCash payment instructions.'
-                    : 'Order placed successfully.',
+                'message' => $messages[$plan],
                 'data' => [
                     'order_id' => $sale->sale_id,
-                    'payment_method' => $request->payment_method,
+                    'payment_plan' => $plan,
+                    'payment_method' => $sale->payment_method,
+                    'gcash_amount' => $gcashAmount,
+                    'cod_amount' => $sale->codAmount(),
                 ]
             ]);
 
+        } catch (ValidationException $e) {
+            DB::rollback();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json([
@@ -162,6 +211,10 @@ class OrderController extends Controller
                     'sale_date' => $sale->sale_date,
                     'total_amount' => $sale->total_amount,
                     'payment_method' => $sale->payment_method,
+                    'payment_plan' => $sale->payment_plan,
+                    'plan_label' => $sale->planLabel(),
+                    'gcash_amount' => $sale->gcash_amount,
+                    'cod_amount' => $sale->codAmount(),
                     'payment_status' => $sale->payment_status,
                     'paid_amount' => $sale->paid_amount,
                     'balance_due' => $sale->balance_due,
@@ -207,11 +260,28 @@ class OrderController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
+        $proof = config('payments.proof');
+
         $request->validate([
             'payment_method' => 'required|in:gcash',
             'amount' => 'required|numeric|min:1',
-            'reference_no' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9][A-Za-z0-9\\-]{5,99}$/'],
-            'proof_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'reference_no' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9][A-Za-z0-9\-]{5,99}$/'],
+            'proof_image' => [
+                'required',
+                'image',
+                'mimes:' . implode(',', $proof['mimes']),
+                'max:' . $proof['max_kilobytes'],
+                'dimensions:min_width=' . $proof['min_width'] . ',min_height=' . $proof['min_height'],
+            ],
+        ], [
+            'reference_no.required' => 'Enter the GCash reference number from your receipt.',
+            'reference_no.regex' => 'Reference numbers are at least 6 characters, using letters, numbers and hyphens only.',
+            'proof_image.required' => 'Attach a screenshot of your GCash receipt.',
+            'proof_image.image' => 'The attachment must be an image file.',
+            'proof_image.mimes' => 'Accepted formats are ' . strtoupper(implode(', ', $proof['mimes'])) . '.',
+            'proof_image.max' => 'The screenshot must be smaller than ' . round($proof['max_kilobytes'] / 1024) . ' MB.',
+            'proof_image.dimensions' => 'That image is too small to read. Upload the full screenshot, at least '
+                . $proof['min_width'] . ' by ' . $proof['min_height'] . ' pixels.',
         ]);
 
         if ((float) $sale->balance_due <= 0) {
@@ -228,12 +298,22 @@ class OrderController extends Controller
             ], 422);
         }
 
+        // A reference number identifies one GCash transaction, so reusing one
+        // means either a mistake or an attempt to claim the same payment twice.
+        $referenceInUse = PaymentRequest::where('reference_no', $request->reference_no)
+            ->where('status', '!=', 'rejected')
+            ->exists();
+
+        if ($referenceInUse) {
+            return response()->json([
+                'success' => false,
+                'message' => 'That reference number has already been submitted. Check your receipt and try again.'
+            ], 422);
+        }
+
         $amount = min((float) $request->amount, (float) $sale->balance_due);
 
-        $proofPath = null;
-        if ($request->hasFile('proof_image')) {
-            $proofPath = $request->file('proof_image')->store('payment-proofs', 'public');
-        }
+        $proofPath = $request->file('proof_image')->store('payment-proofs', 'public');
 
         $paymentRequest = PaymentRequest::create([
             'sale_id' => $sale->sale_id,

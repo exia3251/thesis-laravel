@@ -53,21 +53,83 @@
         </section>
 
         <section class="rounded-[1.75rem] border border-[var(--line)] bg-[var(--card)] p-6 shadow-lg backdrop-blur">
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-3 md:items-end">
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Payment Method</label>
-                    <select id="payment_method" class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)]">
-                        <option value="cash_on_delivery">Cash on Delivery</option>
-                        <option value="gcash">GCash</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end sm:justify-end">
-                    <div class="text-left sm:text-right">
-                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Total</div>
-                        <div class="mt-2 text-3xl font-black text-[var(--primary)]" id="cartTotal">PHP 0.00</div>
+            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">How would you like to pay?</div>
+
+            <div class="mt-4 grid gap-3 lg:grid-cols-3">
+                <label class="payment-option group relative flex cursor-pointer flex-col rounded-2xl border-2 border-[var(--line)] bg-white/70 p-4 transition hover:border-[var(--primary)]" data-plan="cod">
+                    <div class="flex items-start gap-3">
+                        <input type="radio" name="payment_plan" value="cod" class="mt-1 accent-[var(--primary)]" checked onchange="onPlanChange()">
+                        <div>
+                            <div class="font-bold text-[var(--ink)]">Cash on Delivery</div>
+                            <p class="mt-1 text-xs leading-5 text-[var(--muted)]">Pay the courier in full when your order arrives.</p>
+                        </div>
                     </div>
-                    <button id="checkoutButton" onclick="placeOrder()" class="rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">Place Order</button>
+                    <div class="mt-3 rounded-xl bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)]">
+                        Due on delivery <span class="float-right font-bold text-[var(--ink)]" data-cod-preview>PHP 0.00</span>
+                    </div>
+                </label>
+
+                <label class="payment-option group relative flex cursor-pointer flex-col rounded-2xl border-2 border-[var(--line)] bg-white/70 p-4 transition hover:border-[var(--primary)]" data-plan="gcash_full">
+                    <div class="flex items-start gap-3">
+                        <input type="radio" name="payment_plan" value="gcash_full" class="mt-1 accent-[var(--primary)]" onchange="onPlanChange()">
+                        <div>
+                            <div class="font-bold text-[var(--ink)]">GCash — pay in full</div>
+                            <p class="mt-1 text-xs leading-5 text-[var(--muted)]">Send the whole amount now and upload your receipt.</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 rounded-xl bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)]">
+                        Pay by GCash <span class="float-right font-bold text-[var(--ink)]" data-gcash-preview>PHP 0.00</span>
+                    </div>
+                </label>
+
+                <label class="payment-option group relative flex cursor-pointer flex-col rounded-2xl border-2 border-[var(--line)] bg-white/70 p-4 transition hover:border-[var(--primary)]" data-plan="split">
+                    <div class="flex items-start gap-3">
+                        <input type="radio" name="payment_plan" value="split" class="mt-1 accent-[var(--primary)]" onchange="onPlanChange()">
+                        <div>
+                            <div class="font-bold text-[var(--ink)]">Down payment</div>
+                            <p class="mt-1 text-xs leading-5 text-[var(--muted)]">Send part by GCash now, pay the rest on delivery.</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 rounded-xl bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)]">
+                        Minimum <span class="float-right font-bold text-[var(--ink)]" data-minimum-preview>PHP 0.00</span>
+                    </div>
+                </label>
+            </div>
+
+            <div id="splitPanel" class="mt-4 hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4">
+                <label class="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">GCash down payment</label>
+                <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div class="relative flex-1">
+                        <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--muted)]">PHP</span>
+                        <input id="gcash_amount" type="number" step="0.01" min="0"
+                               class="block w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 pl-12 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)]"
+                               oninput="onSplitAmountChange()">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="setSplitPercent(20)" class="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">20%</button>
+                        <button type="button" onclick="setSplitPercent(50)" class="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">50%</button>
+                        <button type="button" onclick="setSplitPercent(75)" class="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">75%</button>
+                    </div>
                 </div>
+                <p id="splitError" class="mt-2 hidden text-xs font-semibold text-red-600"></p>
+                <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div class="rounded-xl bg-white px-3 py-2">
+                        <div class="text-xs text-[var(--muted)]">Now by GCash</div>
+                        <div class="font-bold text-[var(--primary)]" id="splitNow">PHP 0.00</div>
+                    </div>
+                    <div class="rounded-xl bg-white px-3 py-2">
+                        <div class="text-xs text-[var(--muted)]">On delivery</div>
+                        <div class="font-bold text-[var(--ink)]" id="splitLater">PHP 0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 flex flex-col items-start justify-between gap-4 border-t border-[var(--line)] pt-5 sm:flex-row sm:items-end">
+                <div>
+                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Order total</div>
+                    <div class="mt-2 text-3xl font-black text-[var(--primary)]" id="cartTotal">PHP 0.00</div>
+                </div>
+                <button id="checkoutButton" onclick="placeOrder()" class="rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">Place Order</button>
             </div>
         </section>
     </main>
@@ -104,7 +166,7 @@
         function updateCheckoutState() {
             const hasInactiveItems = cartItems.some((item) => item.is_inactive);
             const checkoutButton = document.getElementById('checkoutButton');
-            checkoutButton.disabled = hasInactiveItems || cartItems.length === 0;
+            checkoutButton.disabled = hasInactiveItems || cartItems.length === 0 || splitAmountError() !== null;
             checkoutButton.classList.toggle('opacity-60', checkoutButton.disabled);
             checkoutButton.classList.toggle('cursor-not-allowed', checkoutButton.disabled);
         }
@@ -114,7 +176,9 @@
             const total = cartItems
                 .filter((item) => !item.is_inactive)
                 .reduce((sum, item) => sum + Number(item.subtotal), 0);
+            orderTotal = total;
             document.getElementById('cartTotal').textContent = formatCurrency(total);
+            refreshPlanPreviews();
             updateCheckoutState();
 
             tbody.innerHTML = cartItems.length
@@ -214,7 +278,8 @@
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    payment_method: document.getElementById('payment_method').value
+                    payment_plan: selectedPlan(),
+                    gcash_amount: Number(document.getElementById('gcash_amount').value || 0)
                 })
             });
 
@@ -224,9 +289,9 @@
                 loadCart();
                 setTimeout(() => {
                     const orderId = data?.data?.order_id;
-                    const paymentMethod = data?.data?.payment_method;
+                    const plan = data?.data?.payment_plan;
 
-                    if (orderId && paymentMethod === 'gcash') {
+                    if (orderId && plan !== 'cod') {
                         window.location.href = `/orders/${orderId}#payment-request`;
                         return;
                     }
@@ -236,6 +301,82 @@
             }
         }
 
+
+        // ---- Payment plan ------------------------------------------------
+        let orderTotal = 0;
+        const MIN_DOWN_PERCENT = @json((float) config('payments.minimum_down_payment_percent'));
+
+        function selectedPlan() {
+            return document.querySelector('input[name="payment_plan"]:checked')?.value || 'cod';
+        }
+
+        function minimumDownPayment() {
+            return Math.round(orderTotal * MIN_DOWN_PERCENT) / 100;
+        }
+
+        function refreshPlanPreviews() {
+            const min = minimumDownPayment();
+            document.querySelectorAll('[data-cod-preview]').forEach(el => el.textContent = formatCurrency(orderTotal));
+            document.querySelectorAll('[data-gcash-preview]').forEach(el => el.textContent = formatCurrency(orderTotal));
+            document.querySelectorAll('[data-minimum-preview]').forEach(el => el.textContent = formatCurrency(min));
+            onSplitAmountChange();
+        }
+
+        function onPlanChange() {
+            const plan = selectedPlan();
+
+            document.querySelectorAll('.payment-option').forEach((option) => {
+                const active = option.dataset.plan === plan;
+                option.classList.toggle('border-[var(--primary)]', active);
+                option.classList.toggle('bg-[var(--primary-soft)]', active);
+                option.classList.toggle('border-[var(--line)]', !active);
+                option.classList.toggle('bg-white/70', !active);
+            });
+
+            const panel = document.getElementById('splitPanel');
+            panel.classList.toggle('hidden', plan !== 'split');
+
+            if (plan === 'split' && !document.getElementById('gcash_amount').value) {
+                setSplitPercent(MIN_DOWN_PERCENT);
+            }
+
+            onSplitAmountChange();
+        }
+
+        function setSplitPercent(percent) {
+            document.getElementById('gcash_amount').value = (Math.round(orderTotal * percent) / 100).toFixed(2);
+            onSplitAmountChange();
+        }
+
+        /** Returns an error string when the split amount is not usable, else null. */
+        function splitAmountError() {
+            if (selectedPlan() !== 'split') return null;
+
+            const amount = Number(document.getElementById('gcash_amount').value || 0);
+            const min = minimumDownPayment();
+
+            if (!amount) return 'Enter how much you want to send by GCash.';
+            if (amount < min) return `The down payment must be at least ${formatCurrency(min)} (${MIN_DOWN_PERCENT}% of the order).`;
+            if (amount >= orderTotal) return 'A down payment must leave a balance for delivery. Choose GCash in full instead.';
+
+            return null;
+        }
+
+        function onSplitAmountChange() {
+            const amount = Number(document.getElementById('gcash_amount').value || 0);
+            const error = splitAmountError();
+            const errorEl = document.getElementById('splitError');
+
+            errorEl.textContent = error || '';
+            errorEl.classList.toggle('hidden', !error);
+
+            document.getElementById('splitNow').textContent = formatCurrency(amount);
+            document.getElementById('splitLater').textContent = formatCurrency(Math.max(orderTotal - amount, 0));
+
+            updateCheckoutState();
+        }
+
+        onPlanChange();
         loadCart();
         loadProfileSummary();
 </script>
