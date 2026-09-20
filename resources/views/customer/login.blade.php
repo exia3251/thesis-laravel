@@ -37,9 +37,14 @@
                         </div>
                     </div>
                     <button type="submit" class="flex w-full justify-center rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110">Sign in</button>
-                    <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-sm text-[var(--muted)]">
-                        Test Account: <span class="font-semibold text-[var(--ink)]">customer / customer123</span>
-                    </div>
+                    {{-- Seeded login, for local development only. This block is
+                         absent once APP_ENV is anything other than local. --}}
+                    @if (app()->environment('local'))
+                        <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-xs text-[var(--muted)]">
+                            <div class="mb-1 font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo account</div>
+                            <span class="font-semibold text-[var(--ink)]">john@example.com</span> / <span class="font-semibold text-[var(--ink)]">customer123</span>
+                        </div>
+                    @endif
                 </form>
                 <div class="mt-6 text-center">
                     <a href="/shop" class="text-sm font-semibold text-[var(--primary)] hover:underline">Continue as Guest</a>

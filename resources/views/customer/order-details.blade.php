@@ -64,7 +64,12 @@
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Order Date</p>
                         <p class="mt-2 font-semibold text-[var(--ink)]">{{ optional($sale->sale_date)->format('F d, Y h:i A') }}</p>
                         <p class="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Delivery Status</p>
-                        <p class="mt-2 font-semibold text-[var(--ink)]">{{ ucwords(str_replace('_', ' ', $sale->delivery_status ?? 'to_receive')) }}</p>
+                        <p class="mt-2 font-semibold text-[var(--ink)]">
+                            {{ $sale->isCancelled() ? 'Cancelled' : ucwords(str_replace('_', ' ', $sale->delivery_status ?? 'to_receive')) }}
+                        </p>
+                        @if ($sale->received_at)
+                            <p class="mt-1 text-xs font-medium text-emerald-700">You confirmed receipt on {{ $sale->received_at->format('M d, Y') }}</p>
+                        @endif
                     </div>
                 </div>
 
@@ -110,9 +115,21 @@
                                 <span class="text-[var(--muted)]">Balance Due</span>
                                 <span class="font-medium text-[var(--ink)]">PHP {{ number_format((float) $sale->balance_due, 2) }}</span>
                             </div>
-                            <div class="flex justify-between gap-4 border-t border-[var(--line)] pt-3">
+                            <div class="flex items-center justify-between gap-4 border-t border-[var(--line)] pt-3">
                                 <span class="text-[var(--muted)]">Status</span>
-                                <span class="font-semibold text-[var(--ink)]">{{ ucwords($sale->payment_status) }}</span>
+                                @php
+                                    $tone = match (true) {
+                                        $sale->isCancelled() => ['bg-slate-200 text-slate-700', 'M6 18 18 6M6 6l12 12', 'Cancelled'],
+                                        $sale->payment_status === 'paid' => ['bg-emerald-100 text-emerald-800', 'm4.5 12.75 6 6 9-13.5', 'Paid'],
+                                        $sale->payment_status === 'partial' => ['bg-amber-100 text-amber-800', 'M12 3v18m9-9a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z', 'Partly paid'],
+                                        $sale->payment_status === 'processing' => ['bg-sky-100 text-sky-800', 'M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z', 'Checking payment'],
+                                        default => ['bg-slate-100 text-slate-700', 'M6 20V4h5a4 4 0 0 1 0 8H6m-1 3h8M5 11h8', 'Not yet paid'],
+                                    };
+                                @endphp
+                                <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold {{ $tone[0] }}">
+                                    <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $tone[1] }}"/></svg>
+                                    {{ $tone[2] }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -149,7 +166,56 @@
 
                 @php
                     $pendingRequest = $sale->paymentRequests->firstWhere('status', 'processing');
+                    $canCancel = $sale->canBeCancelledByCustomer();
+                    $canConfirm = !$sale->isCancelled() && !$sale->received_at && !$sale->isDelivered();
                 @endphp
+
+                @if ($sale->isCancelled())
+                    <div class="mt-8 rounded-[1.5rem] border-2 border-slate-300 bg-slate-50 p-5">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+                            <div class="shrink-0 rounded-2xl bg-slate-200 p-3">
+                                <svg class="h-6 w-6 text-slate-700" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">Order cancelled</p>
+                                <h3 class="mt-1 text-xl font-bold text-slate-900">
+                                    Cancelled on {{ optional($sale->cancelled_at)->format('F d, Y') }}
+                                </h3>
+                                @if ($sale->cancellation_reason)
+                                    <p class="mt-2 text-sm leading-6 text-slate-700">Reason given: {{ $sale->cancellation_reason }}</p>
+                                @endif
+
+                                @if ($sale->refund_status === 'pending')
+                                    <div class="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                                        A refund of <strong>PHP {{ number_format((float) $sale->refund_amount, 2) }}</strong> is owed to you. Our staff will send it to your GCash.
+                                    </div>
+                                @elseif ($sale->refund_status === 'refunded')
+                                    <div class="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
+                                        <strong>PHP {{ number_format((float) $sale->refund_amount, 2) }}</strong> was refunded on {{ optional($sale->refunded_at)->format('F d, Y') }}@if ($sale->refund_reference), reference {{ $sale->refund_reference }}@endif.
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @elseif ($canCancel || $canConfirm)
+                    <div class="mt-8 rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5 no-print">
+                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Manage this order</p>
+                        <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+                            @if ($canConfirm)
+                                <button type="button" onclick="askConfirmReceipt()" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                                    Received
+                                </button>
+                            @endif
+                            @if ($canCancel)
+                                <button type="button" onclick="askCancelOrder()" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-700 transition hover:bg-red-50">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                                    Cancel
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                @endif
 
                 @if ($pendingRequest)
                     {{-- Only one payment may be under review at a time, so show its
@@ -268,6 +334,33 @@
     @include('partials.customer-footer')
     </div>
 
+
+    <div id="actionModal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto no-print">
+        <div class="mx-auto my-20 w-full max-w-md rounded-[1.5rem] bg-white shadow-2xl">
+            <div class="p-6">
+                <div class="flex items-start gap-4">
+                    <div id="amIconWrap" class="shrink-0 rounded-2xl p-3">
+                        <svg id="amIcon" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"></svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <h2 id="amTitle" class="text-xl font-black text-[var(--ink)]"></h2>
+                        <p id="amBody" class="mt-2 text-sm leading-6 text-[var(--muted)]"></p>
+                    </div>
+                </div>
+                <div id="amNoteWrap" class="mt-4 hidden">
+                    <label class="block text-sm font-medium text-[var(--ink)]">Reason <span class="font-normal text-[var(--muted)]">(optional)</span></label>
+                    <textarea id="amNote" rows="2" maxlength="500" placeholder="Tell us why, so we can improve"
+                              class="mt-2 block w-full resize-none rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)]"></textarea>
+                </div>
+                <p id="amError" class="mt-3 hidden text-xs font-semibold text-red-600"></p>
+                <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
+                    <button type="button" onclick="closeActionModal()" class="flex-1 rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]">Go back</button>
+                    <button id="amConfirm" type="button" class="flex-1 rounded-xl px-4 py-3 text-sm font-bold text-white transition"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
@@ -341,5 +434,118 @@
                 }
             });
         }
+
+        // ---- Confirmation panel -----------------------------------------
+        const SALE_ID = @json($sale->sale_id);
+        const SALE_BALANCE = @json((float) $sale->balance_due);
+        const SALE_PAID = @json((float) $sale->paid_amount);
+        const ACTION_ICONS = {
+            check: 'm4.5 12.75 6 6 9-13.5',
+            cross: 'M6 18 18 6M6 6l12 12',
+        };
+
+        let pendingAction = null;
+
+        function openActionModal({ title, body, confirmLabel, tone, icon, withNote, onConfirm }) {
+            pendingAction = onConfirm;
+            document.getElementById('amTitle').textContent = title;
+            document.getElementById('amBody').textContent = body;
+            document.getElementById('amIcon').innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="${ACTION_ICONS[icon]}"/>`;
+            document.getElementById('amIconWrap').className = `shrink-0 rounded-2xl p-3 ${tone.wrap}`;
+            document.getElementById('amIcon').classList.value = `h-6 w-6 ${tone.icon}`;
+
+            const confirmButton = document.getElementById('amConfirm');
+            confirmButton.textContent = confirmLabel;
+            confirmButton.className = `flex-1 rounded-xl px-4 py-3 text-sm font-bold text-white transition ${tone.button}`;
+            confirmButton.onclick = runPendingAction;
+
+            document.getElementById('amNoteWrap').classList.toggle('hidden', !withNote);
+            document.getElementById('amNote').value = '';
+            document.getElementById('amError').classList.add('hidden');
+            document.getElementById('actionModal').classList.remove('hidden');
+        }
+
+        function closeActionModal() {
+            document.getElementById('actionModal').classList.add('hidden');
+            pendingAction = null;
+        }
+
+        async function runPendingAction() {
+            if (!pendingAction) return;
+
+            const button = document.getElementById('amConfirm');
+            const original = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Working...';
+
+            try {
+                const result = await pendingAction(document.getElementById('amNote').value.trim() || null);
+
+                if (result.ok) {
+                    showMessage(result.message, 'success');
+                    setTimeout(() => window.location.reload(), 1200);
+                    return;
+                }
+
+                const error = document.getElementById('amError');
+                error.textContent = result.message;
+                error.classList.remove('hidden');
+            } finally {
+                button.disabled = false;
+                button.textContent = original;
+            }
+        }
+
+        document.getElementById('actionModal').addEventListener('click', (event) => {
+            if (event.target.id === 'actionModal') closeActionModal();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') closeActionModal();
+        });
+
+        function askConfirmReceipt() {
+            openActionModal({
+                title: `Confirm order #${SALE_ID} arrived?`,
+                body: SALE_BALANCE > 0
+                    ? `We will record that you received this order. The remaining PHP ${SALE_BALANCE.toFixed(2)} is still due and our staff will record it once collected.`
+                    : 'We will record that you received this order and mark it complete.',
+                confirmLabel: 'Yes, it arrived',
+                icon: 'check',
+                tone: { wrap: 'bg-emerald-100', icon: 'text-emerald-700', button: 'bg-emerald-600 hover:bg-emerald-700' },
+                withNote: false,
+                onConfirm: async () => {
+                    const response = await fetch(`/shop-api/orders/${SALE_ID}/receipt`, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+                    });
+                    const data = await response.json();
+                    return { ok: response.ok, message: data.message || 'Could not confirm this order.' };
+                }
+            });
+        }
+
+        function askCancelOrder() {
+            openActionModal({
+                title: `Cancel order #${SALE_ID}?`,
+                body: SALE_PAID > 0
+                    ? `The items go back into stock and the PHP ${SALE_PAID.toFixed(2)} you have already paid will be refunded to your GCash by our staff.`
+                    : 'The items go back into stock. Nothing has been paid on this order, so there is nothing to refund.',
+                confirmLabel: 'Cancel this order',
+                icon: 'cross',
+                tone: { wrap: 'bg-red-100', icon: 'text-red-700', button: 'bg-red-600 hover:bg-red-700' },
+                withNote: true,
+                onConfirm: async (reason) => {
+                    const response = await fetch(`/shop-api/orders/${SALE_ID}/cancel`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                        body: JSON.stringify({ reason })
+                    });
+                    const data = await response.json();
+                    return { ok: response.ok, message: data.message || 'Could not cancel this order.' };
+                }
+            });
+        }
+
 </script>
 @endpush
