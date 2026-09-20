@@ -33,8 +33,8 @@
                         <p id="err_phone" class="hidden mt-1 text-xs text-red-600"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-[var(--ink)]">Email</label>
-                        <input type="email" id="email" maxlength="100"
+                        <label class="block text-sm font-medium text-[var(--ink)]">Email <span class="font-normal text-[var(--muted)]">— you sign in with this</span></label>
+                        <input type="email" id="email" required maxlength="150"
                                placeholder="you@example.com"
                                class="mt-2 block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
                         <p id="err_email" class="hidden mt-1 text-xs text-red-600"></p>
@@ -118,7 +118,7 @@
 
             if (data.success && data.data) {
                 document.getElementById('phone').value = data.data.phone || '';
-                document.getElementById('email').value = data.data.email || '';
+                document.getElementById('email').value = data.data.user?.email || '';
                 document.getElementById('address').value = data.data.address || '';
             }
         }

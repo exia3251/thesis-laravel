@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\CustomerProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class ProfileController extends Controller
@@ -35,34 +36,13 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update profile
+     * Update profile. The email address lives on the user record because it
+     * is the login identifier; phone and address stay on the profile.
      */
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
-        $profile = CustomerProfile::with('user')
-            ->where('user_id', $user->user_id)
-            ->first();
-
-        $request->validate([
-            'phone'   => [
-                'required', 'string',
-                'regex:/^(09\d{9}|\+639\d{9})$/',
-                'unique:customer_profiles,phone,' . ($profile?->profile_id ?? 0) . ',profile_id',
-            ],
-            'email'   => [
-                'nullable', 'email', 'max:100',
-                'unique:customer_profiles,email,' . ($profile?->profile_id ?? 0) . ',profile_id',
-            ],
-            'address' => 'required|string|min:10|max:500',
-        ], [
-            'phone.required' => 'Phone number is required.',
-            'phone.regex'    => 'Enter a valid PH number e.g. 09XXXXXXXXX or +639XXXXXXXXX.',
-            'phone.unique'   => 'That phone number is already registered to another account.',
-            'address.required' => 'Address is required.',
-            'address.min'    => 'Address must be at least 10 characters.',
-            'email.unique'   => 'That email address is already registered to another account.',
-        ]);
+        $profile = CustomerProfile::where('user_id', $user->user_id)->first();
 
         if (!$profile) {
             return response()->json([
@@ -71,19 +51,47 @@ class ProfileController extends Controller
             ], 404);
         }
 
-        $profile->update($request->only(['phone', 'email', 'address']));
+        $request->validate([
+            'phone'   => [
+                'required', 'string',
+                'regex:/^(09\d{9}|\+639\d{9})$/',
+                'unique:customer_profiles,phone,' . $profile->profile_id . ',profile_id',
+            ],
+            'email'   => [
+                'required', 'email', 'max:150',
+                'unique:users,email,' . $user->user_id . ',user_id',
+            ],
+            'address' => 'required|string|min:10|max:500',
+        ], [
+            'phone.required' => 'Phone number is required.',
+            'phone.regex'    => 'Enter a valid PH number e.g. 09XXXXXXXXX or +639XXXXXXXXX.',
+            'phone.unique'   => 'That phone number is already registered to another account.',
+            'email.required' => 'Email address is required.',
+            'email.email'    => 'Enter a valid email address.',
+            'email.unique'   => 'That email address is already registered to another account.',
+            'address.required' => 'Address is required.',
+            'address.min'    => 'Address must be at least 10 characters.',
+        ]);
+
+        DB::transaction(function () use ($request, $user, $profile) {
+            $profile->update($request->only(['phone', 'address']));
+
+            if ($request->email !== $user->email) {
+                $user->forceFill(['email' => $request->email])->save();
+            }
+        });
 
         ActivityLog::logAction(
             $user->user_id,
             'profile_updated',
-            "Customer {$profile->user->full_name} (@{$user->username}) updated their profile.",
+            "Customer {$user->full_name} ({$user->email}) updated their profile.",
             $request->ip()
         );
 
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully',
-            'data' => $profile
+            'data' => $profile->fresh('user')
         ]);
     }
 
@@ -92,17 +100,18 @@ class ProfileController extends Controller
      */
     public function changePassword(Request $request)
     {
-        $user = auth()->user();
+        $user = User::findOrFail(auth()->id());
+
+        // An account created through Google Sign-In has no password yet, so
+        // there is nothing for it to confirm the first time one is set.
+        $hasPassword = filled($user->password);
 
         $request->validate([
-            'current_password' => 'required',
+            'current_password' => $hasPassword ? 'required' : 'nullable',
             'new_password' => 'required|min:8|max:32|confirmed',
         ]);
 
-        $user = User::findOrFail($user->user_id);
-
-        // Verify current password with Hash::check
-        if (!Hash::check($request->current_password, $user->password)) {
+        if ($hasPassword && !Hash::check($request->current_password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Current password is incorrect'
@@ -122,14 +131,14 @@ class ProfileController extends Controller
 
         ActivityLog::logAction(
             $user->user_id,
-            'password_changed',
-            "Customer {$user->full_name} (@{$user->username}) changed their password.",
+            $hasPassword ? 'password_changed' : 'password_set',
+            "Customer {$user->full_name} ({$user->email}) " . ($hasPassword ? 'changed' : 'set') . " their password.",
             $request->ip()
         );
 
         return response()->json([
             'success' => true,
-            'message' => 'Password changed successfully'
+            'message' => $hasPassword ? 'Password changed successfully' : 'Password set successfully'
         ]);
     }
 }

@@ -16,7 +16,7 @@ class AuthController extends Controller
     protected function loginRules(): array
     {
         return [
-            'username' => ['required', 'string', 'min:3', 'max:30', 'regex:/^[A-Za-z][A-Za-z0-9._-]*$/'],
+            'email' => ['required', 'string', 'email', 'max:150'],
             'password' => ['required', 'string', 'min:6', 'max:255'],
         ];
     }
@@ -24,10 +24,9 @@ class AuthController extends Controller
     protected function loginMessages(): array
     {
         return [
-            'username.required' => 'Username is required.',
-            'username.min' => 'Username must be at least 3 characters.',
-            'username.max' => 'Username must not exceed 30 characters.',
-            'username.regex' => 'Username must start with a letter and may only contain letters, numbers, dots, underscores, or hyphens.',
+            'email.required' => 'Email address is required.',
+            'email.email' => 'Enter a valid email address.',
+            'email.max' => 'Email address must not exceed 150 characters.',
             'password.required' => 'Password is required.',
             'password.min' => 'Password must be at least 6 characters.',
         ];
@@ -36,11 +35,10 @@ class AuthController extends Controller
     protected function customerRegistrationRules(): array
     {
         return [
-            'username' => ['required', 'string', 'min:3', 'max:30', 'unique:users,username', 'regex:/^[A-Za-z][A-Za-z0-9._-]*$/'],
+            'email' => ['required', 'email', 'max:150', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
             'full_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[A-Za-z][A-Za-z\s\'.-]*$/'],
             'phone' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/', 'unique:customer_profiles,phone'],
-            'email' => ['nullable', 'email', 'max:100', 'unique:customer_profiles,email'],
             'address' => ['required', 'string', 'min:10', 'max:500'],
         ];
     }
@@ -48,11 +46,9 @@ class AuthController extends Controller
     protected function customerRegistrationMessages(): array
     {
         return [
-            'username.required' => 'Username is required.',
-            'username.min' => 'Username must be at least 3 characters.',
-            'username.max' => 'Username must not exceed 30 characters.',
-            'username.unique' => 'That username is already taken.',
-            'username.regex' => 'Username must start with a letter and may only contain letters, numbers, dots, underscores, or hyphens.',
+            'email.required' => 'Email address is required.',
+            'email.email'   => 'Enter a valid email address.',
+            'email.unique'  => 'That email address is already registered.',
             'password.required' => 'Password is required.',
             'password.min' => 'Password must be at least 8 characters.',
             'password.confirmed' => 'Password confirmation does not match.',
@@ -62,98 +58,92 @@ class AuthController extends Controller
             'phone.required' => 'Phone number is required.',
             'phone.regex'   => 'Phone number must be a valid Philippine mobile number such as 09XXXXXXXXX or +639XXXXXXXXX.',
             'phone.unique'  => 'That phone number is already registered to another account.',
-            'email.email'   => 'Email address must be valid.',
-            'email.unique'  => 'That email address is already registered to another account.',
             'address.required' => 'Address is required.',
             'address.min' => 'Address must be at least 10 characters long.',
         ];
     }
 
     /**
-     * Admin login page
+     * Opens a session for an account that has already been authenticated,
+     * replacing whatever session it previously held.
      */
-    public function adminLoginPage()
+    protected function startSession(Request $request, User $user, string $logAction, string $replacedNote): void
     {
-        return view('auth.admin-login');
+        $previousSessionId = $user->current_session_id;
+
+        Auth::login($user);
+
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
+        }
+
+        $user->forceFill([
+            'current_session_id' => $request->session()->getId(),
+        ])->save();
+
+        ActivityLog::logAction(
+            $user->user_id,
+            $logAction,
+            "{$user->full_name} ({$user->email}) logged in as {$user->roleLabel()}",
+            $request->ip()
+        );
+
+        if ($previousSessionId && $previousSessionId !== $request->session()->getId()) {
+            ActivityLog::logAction($user->user_id, 'single_session_replaced', $replacedNote, $request->ip());
+        }
     }
 
     /**
-     * Customer login page
-     */
-    public function customerLoginPage()
-    {
-        return view('auth.customer-login');
-    }
-
-    /**
-     * Admin login with rate limiting
+     * Staff login with rate limiting.
      */
     public function adminLogin(Request $request)
     {
         $request->validate($this->loginRules(), $this->loginMessages());
 
-        // Rate limiting key
         $key = 'admin-login:' . $request->ip();
 
-        // Check if too many attempts
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => "Too many login attempts. Please try again in {$seconds} seconds."
             ], 429);
         }
 
-        // Find user
-        $user = User::where('username', $request->username)
-                    ->whereIn('role', ['super_admin', 'admin'])
+        $user = User::where('email', $request->email)
+                    ->whereIn('role', User::STAFF_ROLES)
                     ->first();
 
-        // Verify password with Hash::check
-        if ($user && Hash::check($request->password, $user->password)) {
+        if ($user && $user->password && Hash::check($request->password, $user->password)) {
 
-            // Block deactivated admin accounts (super_admin is exempt)
-            if ($user->role === 'admin' && !$user->is_active) {
+            if (!$user->is_active) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Your admin account has been deactivated. Please contact the super admin.'
+                    'message' => 'Your account has been deactivated. Please contact an administrator.'
                 ], 403);
             }
 
-            // Clear rate limiter on success
             RateLimiter::clear($key);
-            $previousSessionId = $user->current_session_id;
 
-            Auth::login($user);
+            $this->startSession(
+                $request,
+                $user,
+                'admin_login',
+                'Previous active session was replaced by a new staff login.'
+            );
 
-            if ($request->hasSession()) {
-                $request->session()->regenerate();
-            }
-
-            $user->forceFill([
-                'current_session_id' => $request->session()->getId(),
-            ])->save();
-
-            ActivityLog::logAction($user->user_id, 'admin_login', "{$user->full_name} (@{$user->username}) logged in as {$user->role}", $request->ip());
-
-            if ($previousSessionId && $previousSessionId !== $request->session()->getId()) {
-                ActivityLog::logAction(
-                    $user->user_id,
-                    'single_session_replaced',
-                    'Previous active session was replaced by a new admin login.',
-                    $request->ip()
-                );
-            }
-            
             return response()->json([
                 'success' => true,
-                'message' => 'Login successful'
+                'message' => 'Login successful',
+                'data' => [
+                    'role' => $user->role,
+                    'redirect' => $user->homePath(),
+                ],
             ]);
         }
 
-        // Increment failed attempts
-        RateLimiter::hit($key, 60); // Lock for 60 seconds after 5 attempts
+        RateLimiter::hit($key, 60);
 
         return response()->json([
             'success' => false,
@@ -162,34 +152,29 @@ class AuthController extends Controller
     }
 
     /**
-     * Customer login with rate limiting
+     * Customer login with rate limiting.
      */
     public function customerLogin(Request $request)
     {
         $request->validate($this->loginRules(), $this->loginMessages());
 
-        // Rate limiting key
         $key = 'customer-login:' . $request->ip();
 
-        // Check if too many attempts
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => "Too many login attempts. Please try again in {$seconds} seconds."
             ], 429);
         }
 
-        // Find user
-        $user = User::where('username', $request->username)
-                    ->where('role', 'customer')
+        $user = User::where('email', $request->email)
+                    ->where('role', User::ROLE_CUSTOMER)
                     ->first();
 
-        // Verify password with Hash::check
-        if ($user && Hash::check($request->password, $user->password)) {
+        if ($user && $user->password && Hash::check($request->password, $user->password)) {
 
-            // Reject deactivated accounts before creating a session
             if (!$user->is_active) {
                 return response()->json([
                     'success' => false,
@@ -197,44 +182,28 @@ class AuthController extends Controller
                 ], 403);
             }
 
-            // Clear rate limiter on success
             RateLimiter::clear($key);
-            $previousSessionId = $user->current_session_id;
 
-            Auth::login($user);
+            $this->startSession(
+                $request,
+                $user,
+                'customer_login',
+                'Previous active session was replaced by a new customer login.'
+            );
 
-            if ($request->hasSession()) {
-                $request->session()->regenerate();
-            }
-
-            $user->forceFill([
-                'current_session_id' => $request->session()->getId(),
-            ])->save();
-
-            ActivityLog::logAction($user->user_id, 'customer_login', "{$user->full_name} (@{$user->username}) logged in", $request->ip());
-
-            if ($previousSessionId && $previousSessionId !== $request->session()->getId()) {
-                ActivityLog::logAction(
-                    $user->user_id,
-                    'single_session_replaced',
-                    'Previous active session was replaced by a new customer login.',
-                    $request->ip()
-                );
-            }
-            
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful',
                 'data' => [
                     'user_id' => $user->user_id,
-                    'username' => $user->username,
-                    'full_name' => $user->full_name
+                    'email' => $user->email,
+                    'full_name' => $user->full_name,
+                    'redirect' => $user->homePath(),
                 ]
             ]);
         }
 
-        // Increment failed attempts
-        RateLimiter::hit($key, 60); // Lock for 60 seconds after 5 attempts
+        RateLimiter::hit($key, 60);
 
         return response()->json([
             'success' => false,
@@ -243,7 +212,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Customer registration
+     * Customer registration.
      */
     public function customerRegister(Request $request)
     {
@@ -251,20 +220,17 @@ class AuthController extends Controller
 
         DB::beginTransaction();
         try {
-            // Create user - password auto-hashed by User model
             $user = User::create([
-                'username' => $request->username,
-                'password' => $request->password, // Auto-hashed by model
+                'email' => $request->email,
+                'password' => $request->password, // hashed by the model cast
                 'full_name' => $request->full_name,
-                'role' => 'customer'
+                'role' => User::ROLE_CUSTOMER,
             ]);
 
-            // Create customer profile
             CustomerProfile::create([
                 'user_id' => $user->user_id,
                 'phone' => $request->phone,
-                'email' => $request->email,
-                'address' => $request->address
+                'address' => $request->address,
             ]);
 
             DB::commit();
@@ -272,7 +238,7 @@ class AuthController extends Controller
             ActivityLog::logAction(
                 $user->user_id,
                 'customer_registered',
-                "New customer registered: {$user->full_name} (@{$user->username})",
+                "New customer registered: {$user->full_name} ({$user->email})",
                 $request->ip()
             );
 
@@ -291,12 +257,13 @@ class AuthController extends Controller
     }
 
     /**
-     * Logout
+     * Logout.
      */
     public function logout(Request $request)
     {
         $user = auth()->user();
         $userId = $user?->user_id;
+        $label = $user ? "{$user->full_name} ({$user->email}) logged out" : 'User logged out';
 
         if ($user && $request->hasSession() && $user->current_session_id === $request->session()->getId()) {
             $user->forceFill([
@@ -312,9 +279,9 @@ class AuthController extends Controller
         }
 
         if ($userId) {
-            ActivityLog::logAction($userId, 'logout', ($user ? "{$user->full_name} (@{$user->username}) logged out" : 'User logged out'), $request->ip());
+            ActivityLog::logAction($userId, 'logout', $label, $request->ip());
         }
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Logged out successfully'

@@ -1,15 +1,16 @@
 @php
-    $links = [
-        ['url' => '/admin/dashboard', 'label' => 'Dashboard'],
-        ['url' => '/admin/products',  'label' => 'Products'],
-        ['url' => '/admin/inventory', 'label' => 'Inventory'],
-        ['url' => '/admin/sales',     'label' => 'Sales'],
-        ['url' => '/admin/reports',   'label' => 'Reports'],
-    ];
+    $user = auth()->user();
 
-    if (auth()->check() && auth()->user()->isSuperAdmin()) {
-        $links[] = ['url' => '/admin/users', 'label' => 'Users'];
-    }
+    // Only offer what this role may actually open, so nobody clicks into a
+    // redirect. Mirrors the permission middleware on each route.
+    $links = collect([
+        ['url' => '/admin/dashboard', 'label' => 'Dashboard', 'can' => $user?->canViewFullDashboard()],
+        ['url' => '/admin/products',  'label' => 'Products',  'can' => $user?->canManageProducts()],
+        ['url' => '/admin/inventory', 'label' => 'Inventory', 'can' => $user?->canManageInventory()],
+        ['url' => '/admin/sales',     'label' => 'Sales',     'can' => $user?->canViewSales()],
+        ['url' => '/admin/reports',   'label' => 'Reports',   'can' => $user?->canViewReports()],
+        ['url' => '/admin/users',     'label' => 'Users',     'can' => $user?->canManageUsers()],
+    ])->where('can', true);
 @endphp
 
 <div class="fixed inset-y-0 left-0 w-64 bg-[var(--sidebar-bg)] shadow-2xl">
@@ -21,7 +22,15 @@
             <div class="text-[10px] uppercase tracking-[0.28em] text-white/50 mt-0.5">Trading</div>
         </div>
     </div>
-    <nav class="mt-6 space-y-1 px-3">
+
+    @if ($user)
+        <div class="mx-3 mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            <div class="truncate text-sm font-semibold text-white">{{ $user->full_name }}</div>
+            <div class="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-[var(--accent)]">{{ $user->roleLabel() }}</div>
+        </div>
+    @endif
+
+    <nav class="mt-4 space-y-1 px-3">
         @foreach ($links as $link)
             <a href="{{ $link['url'] }}"
                @class([

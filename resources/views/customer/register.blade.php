@@ -24,15 +24,9 @@
                 <div id="message" class="hidden mt-6 rounded-2xl px-4 py-3"></div>
 
                 <form id="registerForm" class="mt-8 space-y-5">
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <div>
-                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Full Name</label>
-                            <input id="full_name" type="text" required minlength="2" maxlength="100" pattern="[A-Za-z][A-Za-z\s'.-]*" title="Full name must contain letters only. Spaces, apostrophes, periods, and hyphens are allowed." class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Juan Dela Cruz">
-                        </div>
-                        <div>
-                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Username</label>
-                            <input id="username" type="text" required minlength="3" maxlength="30" pattern="[A-Za-z][A-Za-z0-9._-]*" title="Username must start with a letter and may contain letters, numbers, dots, underscores, or hyphens." class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Choose a username">
-                        </div>
+                    <div>
+                        <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Full Name</label>
+                        <input id="full_name" type="text" required minlength="2" maxlength="100" pattern="[A-Za-z][A-Za-z\s'.-]*" title="Full name must contain letters only. Spaces, apostrophes, periods, and hyphens are allowed." class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Juan Dela Cruz">
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">
@@ -42,7 +36,7 @@
                         </div>
                         <div>
                             <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Email</label>
-                            <input id="email" type="email" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="you@example.com">
+                            <input id="email" type="email" required maxlength="150" autocomplete="username" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="you@example.com">
                         </div>
                     </div>
 
@@ -97,7 +91,6 @@
 
             const payload = {
                 full_name: document.getElementById('full_name').value.trim(),
-                username: document.getElementById('username').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
                 email: document.getElementById('email').value.trim(),
                 address: document.getElementById('address').value.trim(),

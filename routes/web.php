@@ -34,54 +34,86 @@ Route::middleware('guest')->group(function () {
 Route::post('/admin/login', [AuthController::class, 'adminLogin'])->name('admin.login.submit');
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
 
-// Admin pages
+/*
+|--------------------------------------------------------------------------
+| Back office
+|--------------------------------------------------------------------------
+| The admin middleware lets any active staff member in. The permission
+| middleware decides which of them may see each page.
+*/
 Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
-    Route::get('/products', [ProductController::class, 'index'])->name('admin.products');
-    Route::get('/inventory', [InventoryController::class, 'index'])->name('admin.inventory');
-    Route::get('/sales', [SalesController::class, 'index'])->name('admin.sales');
-    Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports');
-});
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->middleware('permission:full_dashboard')->name('admin.dashboard');
 
-Route::middleware(['admin', 'super_admin', 'active_session'])->prefix('admin')->group(function () {
-    Route::get('/users', [UserManagementController::class, 'index'])->name('admin.users');
+    Route::get('/products', [ProductController::class, 'index'])
+        ->middleware('permission:manage_products')->name('admin.products');
+
+    Route::get('/inventory', [InventoryController::class, 'index'])
+        ->middleware('permission:manage_inventory')->name('admin.inventory');
+
+    Route::get('/sales', [SalesController::class, 'index'])
+        ->middleware('permission:view_sales')->name('admin.sales');
+
+    Route::get('/reports', [ReportController::class, 'index'])
+        ->middleware('permission:view_reports')->name('admin.reports');
+
+    Route::get('/users', [UserManagementController::class, 'index'])
+        ->middleware('permission:manage_users')->name('admin.users');
 });
 
 // Session-backed admin endpoints
 Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(function () {
-    Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
-    Route::get('/products', [ProductController::class, 'getProducts']);
-    Route::get('/products/{id}', [ProductController::class, 'getProduct']);
-    Route::post('/products', [ProductController::class, 'store']);
-    Route::post('/products/import', [ProductController::class, 'importCatalog']);
-    Route::post('/products/{id}', [ProductController::class, 'update']);
-    Route::put('/products/{id}', [ProductController::class, 'update']);
-    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+    Route::get('/dashboard/stats', [DashboardController::class, 'getStats'])
+        ->middleware('permission:full_dashboard');
 
-    Route::get('/inventory', [InventoryController::class, 'getInventory']);
-    Route::post('/inventory/stock-in', [InventoryController::class, 'stockIn']);
-    Route::post('/inventory/stock-out', [InventoryController::class, 'stockOut']);
-    Route::get('/inventory/transactions/{productId}', [InventoryController::class, 'getTransactions']);
+    Route::middleware('permission:manage_products')->group(function () {
+        Route::get('/products', [ProductController::class, 'getProducts']);
+        Route::get('/products/{id}', [ProductController::class, 'getProduct']);
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::post('/products/import', [ProductController::class, 'importCatalog']);
+        Route::post('/products/{id}', [ProductController::class, 'update']);
+        Route::put('/products/{id}', [ProductController::class, 'update']);
+        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+    });
 
-    Route::get('/sales', [SalesController::class, 'getSales']);
-    Route::get('/sales/{id}', [SalesController::class, 'getSale']);
-    Route::post('/sales', [SalesController::class, 'store']);
-    Route::put('/sales/{id}/status', [SalesController::class, 'updateStatus']);
-    Route::put('/payment-requests/{id}/approve', [SalesController::class, 'approvePaymentRequest']);
-    Route::put('/payment-requests/{id}/reject', [SalesController::class, 'rejectPaymentRequest']);
-    Route::get('/sales/products/list', [SalesController::class, 'getProducts']);
-    Route::get('/reports/sales', [ReportController::class, 'salesReport']);
-    Route::get('/reports/inventory', [ReportController::class, 'inventoryReport']);
-    Route::get('/reports/sales/export', [ReportController::class, 'exportSalesCsv']);
-    Route::get('/reports/inventory/export', [ReportController::class, 'exportInventoryCsv']);
-});
+    Route::middleware('permission:manage_inventory')->group(function () {
+        Route::get('/inventory', [InventoryController::class, 'getInventory']);
+        Route::post('/inventory/stock-in', [InventoryController::class, 'stockIn']);
+        Route::post('/inventory/stock-out', [InventoryController::class, 'stockOut']);
+        Route::get('/inventory/transactions/{productId}', [InventoryController::class, 'getTransactions']);
+    });
 
-Route::middleware(['admin', 'super_admin', 'active_session'])->prefix('admin-api')->group(function () {
-    Route::get('/users', [UserManagementController::class, 'getUsers']);
-    Route::post('/users', [UserManagementController::class, 'store']);
-    Route::put('/users/{id}', [UserManagementController::class, 'update']);
-    Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
-    Route::get('/logs', [UserManagementController::class, 'getLogs']);
+    // Reading sales history is open to every staff role.
+    Route::middleware('permission:view_sales')->group(function () {
+        Route::get('/sales', [SalesController::class, 'getSales']);
+        Route::get('/sales/{id}', [SalesController::class, 'getSale']);
+        Route::get('/sales/products/list', [SalesController::class, 'getProducts']);
+    });
+
+    // Moving money or delivery state is not.
+    Route::middleware('permission:create_sales')->group(function () {
+        Route::post('/sales', [SalesController::class, 'store']);
+        Route::put('/sales/{id}/status', [SalesController::class, 'updateStatus']);
+        Route::put('/payment-requests/{id}/approve', [SalesController::class, 'approvePaymentRequest']);
+        Route::put('/payment-requests/{id}/reject', [SalesController::class, 'rejectPaymentRequest']);
+    });
+
+    Route::middleware('permission:view_reports')->group(function () {
+        Route::get('/reports/sales', [ReportController::class, 'salesReport']);
+        Route::get('/reports/inventory', [ReportController::class, 'inventoryReport']);
+        Route::get('/reports/sales/export', [ReportController::class, 'exportSalesCsv']);
+        Route::get('/reports/inventory/export', [ReportController::class, 'exportInventoryCsv']);
+    });
+
+    Route::middleware('permission:manage_users')->group(function () {
+        Route::get('/users', [UserManagementController::class, 'getUsers']);
+        Route::post('/users', [UserManagementController::class, 'store']);
+        Route::put('/users/{id}', [UserManagementController::class, 'update']);
+        Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
+    });
+
+    Route::get('/logs', [UserManagementController::class, 'getLogs'])
+        ->middleware('permission:view_logs');
 });
 
 // Customer authentication

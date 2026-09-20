@@ -26,10 +26,10 @@
                 <form id="loginForm" class="mt-8 space-y-6">
                     <div class="space-y-4">
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Username</label>
-                            <input id="username" name="username" type="text" required minlength="3" maxlength="30"
+                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Email</label>
+                            <input id="email" name="email" type="email" required maxlength="150" autocomplete="username"
                                    class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]"
-                                   placeholder="Enter your username">
+                                   placeholder="you@example.com">
                         </div>
                         <div>
                             <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Password</label>
@@ -43,10 +43,16 @@
                         Sign in
                     </button>
 
-                    <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-sm text-[var(--muted)]">
-                        Super Admin: <span class="font-semibold text-[var(--ink)]">superadmin / superadmin123</span><br>
-                        Admin: <span class="font-semibold text-[var(--ink)]">admin / admin123</span>
-                    </div>
+                    {{-- Seeded logins, for local development only. This block is
+                         absent once APP_ENV is anything other than local. --}}
+                    @if (app()->environment('local'))
+                        <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-xs text-[var(--muted)]">
+                            <div class="mb-1 font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo accounts</div>
+                            Administrator: <span class="font-semibold text-[var(--ink)]">admin@raney.test / admin123</span><br>
+                            Inventory: <span class="font-semibold text-[var(--ink)]">inventory@raney.test / inventory123</span><br>
+                            Accounting: <span class="font-semibold text-[var(--ink)]">accounting@raney.test / accounting123</span>
+                        </div>
+                    @endif
                 </form>
             </section>
 
@@ -62,7 +68,7 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('error-message');
 
@@ -76,13 +82,14 @@
                         'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ email, password })
                 });
 
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    window.location.href = '/admin/dashboard';
+                    // Staff roles do not share a landing page.
+                    window.location.href = data.data?.redirect || '/admin/dashboard';
                     return;
                 }
 

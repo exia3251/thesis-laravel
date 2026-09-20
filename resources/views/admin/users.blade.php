@@ -18,7 +18,7 @@
             <thead class="bg-[var(--surface)]">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Name</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Username</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Email</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Role</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
@@ -113,18 +113,19 @@
                 <p id="err_full_name" class="hidden mt-1 text-xs text-red-600"></p>
             </div>
             <div>
-                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Username <span class="text-red-500">*</span></label>
-                <input type="text" id="username" required minlength="3" maxlength="20"
-                       pattern="[A-Za-z][A-Za-z0-9._-]*"
-                       placeholder="e.g. juan_dc"
-                       title="Must start with a letter. Letters, numbers, dots, underscores, hyphens only."
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Email <span class="text-red-500">*</span></label>
+                <input type="email" id="email" required maxlength="150"
+                       placeholder="you@example.com"
+                       title="This address is the account's login identifier."
                        class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
-                <p id="err_username" class="hidden mt-1 text-xs text-red-600"></p>
+                <p id="err_email" class="hidden mt-1 text-xs text-red-600"></p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-[var(--ink)] mb-1">Role <span class="text-red-500">*</span></label>
                 <select id="role" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
-                    <option value="admin">Admin</option>
+                    <option value="admin">Administrator</option>
+                    <option value="inventory_staff">Inventory Staff</option>
+                    <option value="accounting">Accounting</option>
                     <option value="customer">Customer</option>
                 </select>
             </div>
@@ -145,13 +146,6 @@
                        class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
                 <p id="err_phone" class="hidden mt-1 text-xs text-red-600"></p>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Email</label>
-                <input type="email" id="email" maxlength="100"
-                       placeholder="you@example.com"
-                       class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
-                <p id="err_email" class="hidden mt-1 text-xs text-red-600"></p>
-            </div>
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-[var(--ink)] mb-1">Address</label>
                 <textarea id="address" rows="3" maxlength="500" class="block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Delivery address"></textarea>
@@ -170,6 +164,17 @@
 
 @push('scripts')
 <script>
+        const ROLE_LABELS = {
+            admin: 'Administrator',
+            inventory_staff: 'Inventory Staff',
+            accounting: 'Accounting',
+            customer: 'Customer',
+        };
+
+        function roleLabel(role) {
+            return ROLE_LABELS[role] || role;
+        }
+
         let users = [];
         let messageTimeout;
 
@@ -214,7 +219,7 @@
 
             document.getElementById('userId').value = user.user_id;
             document.getElementById('full_name').value = user.full_name;
-            document.getElementById('username').value = user.username;
+            document.getElementById('email').value = user.email;
             document.getElementById('role').value = user.role;
             document.getElementById('is_active').checked = user.is_active;
             document.getElementById('phone').value = user.customer_profile ? user.customer_profile.phone || '' : '';
@@ -236,8 +241,8 @@
                 ? users.map((user) => `
                     <tr>
                         <td class="px-6 py-4">${user.full_name}</td>
-                        <td class="px-6 py-4">${user.username}</td>
-                        <td class="px-6 py-4 capitalize">${user.role.replace('_', ' ')}</td>
+                        <td class="px-6 py-4">${user.email}</td>
+                        <td class="px-6 py-4">${roleLabel(user.role)}</td>
                         <td class="px-6 py-4">${user.is_active ? 'Active' : 'Inactive'}</td>
                         <td class="px-6 py-4 space-x-3">
                             <button onclick="editUser(${user.user_id})" class="text-blue-600 hover:text-blue-900">Edit</button>
@@ -419,7 +424,7 @@
         function clearUserFormErrors() {
             document.getElementById('userFormErrors').classList.add('hidden');
             document.getElementById('userFormErrors').innerHTML = '';
-            ['full_name','username','password','phone','email'].forEach(f => {
+            ['full_name','email','password','phone'].forEach(f => {
                 const el = document.getElementById('err_' + f);
                 if (el) { el.classList.add('hidden'); el.textContent = ''; }
                 const input = document.getElementById(f);
@@ -437,7 +442,7 @@
         function validateUserForm(userId) {
             clearUserFormErrors();
             const fullName = document.getElementById('full_name').value.trim();
-            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const phone    = document.getElementById('phone').value.trim();
             let valid = true;
@@ -454,18 +459,15 @@
                 valid = false;
             }
 
-            // Username
-            if (!username) {
-                showUserFieldError('username', 'Username is required.');
+            // Email — the login identifier, so it is required for every role
+            if (!email) {
+                showUserFieldError('email', 'Email address is required.');
                 valid = false;
-            } else if (username.length < 3) {
-                showUserFieldError('username', 'Username must be at least 3 characters.');
+            } else if (email.length > 150) {
+                showUserFieldError('email', 'Email must not exceed 150 characters.');
                 valid = false;
-            } else if (username.length > 20) {
-                showUserFieldError('username', 'Username must not exceed 20 characters.');
-                valid = false;
-            } else if (!/^[A-Za-z][A-Za-z0-9._-]*$/.test(username)) {
-                showUserFieldError('username', 'Must start with a letter. Letters, numbers, dots, underscores, hyphens only.');
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showUserFieldError('email', 'Enter a valid email address.');
                 valid = false;
             }
 
@@ -504,7 +506,7 @@
 
             const payload = {
                 full_name: document.getElementById('full_name').value.trim(),
-                username:  document.getElementById('username').value.trim(),
+
                 address:   document.getElementById('address').value.trim(),
                 role:      document.getElementById('role').value,
                 password:  document.getElementById('password').value,
@@ -539,7 +541,7 @@
                     errBox.innerHTML = messages.map(m => `<div>${m}</div>`).join('');
                     errBox.classList.remove('hidden');
                     // Also show per-field
-                    const fieldMap = { full_name: 'full_name', username: 'username', password: 'password', phone: 'phone', email: 'email' }; // email already included
+                    const fieldMap = { full_name: 'full_name', email: 'email', password: 'password', phone: 'phone' };
                     Object.entries(data.errors).forEach(([field, msgs]) => {
                         if (fieldMap[field]) showUserFieldError(fieldMap[field], msgs[0]);
                     });

@@ -24,10 +24,10 @@
                 <form id="loginForm" class="mt-8 space-y-6">
                     <div class="space-y-4">
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Username</label>
-                            <input id="username" name="username" type="text" required minlength="3" maxlength="30" pattern="[A-Za-z][A-Za-z0-9._-]*" title="Username must start with a letter and may contain letters, numbers, dots, underscores, or hyphens."
+                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Email</label>
+                            <input id="email" name="email" type="email" required maxlength="150" autocomplete="username"
                                    class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]"
-                                   placeholder="Enter your username">
+                                   placeholder="you@example.com">
                         </div>
                         <div>
                             <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Password</label>
@@ -76,7 +76,7 @@
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    username: document.getElementById('username').value.trim(),
+                    email: document.getElementById('email').value.trim(),
                     password: document.getElementById('password').value
                 })
             });

@@ -20,7 +20,6 @@ class UserManagementController extends Controller
     {
         $users = User::query()
             ->with('customerProfile')
-            ->where('role', '!=', 'super_admin')
             ->orderBy('role')
             ->orderBy('full_name')
             ->get();
@@ -31,47 +30,74 @@ class UserManagementController extends Controller
         ]);
     }
 
+    protected function accountRules(?int $ignoreUserId = null): array
+    {
+        $emailUnique = 'unique:users,email' . ($ignoreUserId ? ',' . $ignoreUserId . ',user_id' : '');
+
+        return [
+            'email'     => ['required', 'email', 'max:150', $emailUnique],
+            'password'  => [$ignoreUserId ? 'nullable' : 'required', 'string', 'min:8', 'max:32'],
+            'full_name' => ['required', 'string', 'min:5', 'max:60', 'regex:/^[A-Za-z]{2,}(\s[A-Za-z]{2,})+$/'],
+            'role'      => 'required|in:admin,inventory_staff,accounting,customer',
+            'is_active' => 'nullable|boolean',
+            'phone'     => ['nullable', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
+            'address'   => 'nullable|string|max:500',
+        ];
+    }
+
+    protected function accountMessages(): array
+    {
+        return [
+            'email.required'    => 'Email address is required.',
+            'email.email'       => 'Enter a valid email address.',
+            'email.unique'      => 'That email address is already in use.',
+            'password.required' => 'Password is required.',
+            'password.min'      => 'Password must be at least 8 characters.',
+            'password.max'      => 'Password must not exceed 32 characters.',
+            'full_name.min'     => 'Full name must be at least 5 characters.',
+            'full_name.max'     => 'Full name must not exceed 60 characters.',
+            'full_name.regex'   => 'Full name must contain at least two words, each with at least 2 letters.',
+            'role.in'           => 'Select a valid role.',
+            'phone.regex'       => 'Phone must be a valid Philippine number e.g. 09XXXXXXXXX or +639XXXXXXXXX.',
+        ];
+    }
+
+    /**
+     * With no super admin tier above them, administrators police each other.
+     * The one thing they must not be able to do is leave the system with
+     * nobody able to administer it.
+     */
+    protected function isLastActiveAdmin(User $user): bool
+    {
+        if ($user->role !== User::ROLE_ADMIN || !$user->is_active) {
+            return false;
+        }
+
+        return User::where('role', User::ROLE_ADMIN)
+            ->where('is_active', true)
+            ->where('user_id', '!=', $user->user_id)
+            ->doesntExist();
+    }
+
     public function store(Request $request)
     {
-        $request->validate([
-            'username'  => ['required','string','min:3','max:20','regex:/^[A-Za-z][A-Za-z0-9._-]*$/','unique:users,username'],
-            'password'  => ['required','string','min:8','max:32'],
-            'full_name' => ['required','string','min:5','max:60','regex:/^[A-Za-z]{2,}(\s[A-Za-z]{2,})+$/'],
-            'role'      => 'required|in:admin,customer',
-            'is_active' => 'nullable|boolean',
-            'phone'     => ['nullable','string','regex:/^(09\d{9}|\+639\d{9})$/'],
-            'email'     => 'nullable|email|max:100|unique:customer_profiles,email',
-            'address'   => 'nullable|string|max:500',
-        ], [
-            'username.min'       => 'Username must be at least 3 characters.',
-            'username.max'       => 'Username must not exceed 20 characters.',
-            'username.regex'     => 'Username must start with a letter and may only contain letters, numbers, dots, underscores, or hyphens.',
-            'username.unique'    => 'That username is already taken.',
-            'email.unique'       => 'That email address is already in use.',
-            'password.min'       => 'Password must be at least 8 characters.',
-            'password.max'       => 'Password must not exceed 32 characters.',
-            'full_name.min'      => 'Full name must be at least 5 characters.',
-            'full_name.max'      => 'Full name must not exceed 60 characters.',
-            'full_name.regex'    => 'Full name must contain at least two words, each with at least 2 letters.',
-            'phone.regex'        => 'Phone must be a valid Philippine number e.g. 09XXXXXXXXX or +639XXXXXXXXX.',
-        ]);
+        $request->validate($this->accountRules(), $this->accountMessages());
 
         DB::beginTransaction();
 
         try {
             $user = User::create([
-                'username' => $request->username,
+                'email' => $request->email,
                 'password' => $request->password,
                 'full_name' => $request->full_name,
                 'role' => $request->role,
                 'is_active' => $request->boolean('is_active', true),
             ]);
 
-            if ($user->role === 'customer') {
+            if ($user->role === User::ROLE_CUSTOMER) {
                 CustomerProfile::create([
                     'user_id' => $user->user_id,
                     'phone' => $request->phone ?: '',
-                    'email' => $request->email,
                     'address' => $request->address ?: '',
                 ]);
             }
@@ -79,7 +105,7 @@ class UserManagementController extends Controller
             ActivityLog::logAction(
                 auth()->id(),
                 'user_created',
-                "" . auth()->user()->full_name . " created {$user->role} account: {$user->full_name} (@{$user->username})",
+                auth()->user()->full_name . " created {$user->roleLabel()} account: {$user->full_name} ({$user->email})",
                 $request->ip()
             );
 
@@ -102,9 +128,7 @@ class UserManagementController extends Controller
 
     public function update(Request $request, int $id)
     {
-        $user = User::where('user_id', $id)
-            ->where('role', '!=', 'super_admin')
-            ->first();
+        $user = User::where('user_id', $id)->first();
 
         if (!$user) {
             return response()->json([
@@ -113,34 +137,29 @@ class UserManagementController extends Controller
             ], 404);
         }
 
-        $request->validate([
-            'username'  => ['required','string','min:3','max:20','regex:/^[A-Za-z][A-Za-z0-9._-]*$/','unique:users,username,' . $id . ',user_id'],
-            'password'  => ['nullable','string','min:8','max:32'],
-            'full_name' => ['required','string','min:5','max:60','regex:/^[A-Za-z]{2,}(\s[A-Za-z]{2,})+$/'],
-            'role'      => 'required|in:admin,customer',
-            'is_active' => 'nullable|boolean',
-            'phone'     => ['nullable','string','regex:/^(09\d{9}|\+639\d{9})$/'],
-            'email'     => ['nullable','email','max:100','unique:customer_profiles,email,' . ($user->customerProfile->profile_id ?? 0) . ',profile_id'],
-            'address'   => 'nullable|string|max:500',
-        ], [
-            'username.min'       => 'Username must be at least 3 characters.',
-            'username.max'       => 'Username must not exceed 20 characters.',
-            'username.regex'     => 'Username must start with a letter and may only contain letters, numbers, dots, underscores, or hyphens.',
-            'username.unique'    => 'That username is already taken.',
-            'email.unique'       => 'That email address is already in use.',
-            'password.min'       => 'Password must be at least 8 characters.',
-            'password.max'       => 'Password must not exceed 32 characters.',
-            'full_name.min'      => 'Full name must be at least 5 characters.',
-            'full_name.max'      => 'Full name must not exceed 60 characters.',
-            'full_name.regex'    => 'Full name must contain at least two words, each with at least 2 letters.',
-            'phone.regex'        => 'Phone must be a valid Philippine number e.g. 09XXXXXXXXX or +639XXXXXXXXX.',
-        ]);
+        $request->validate($this->accountRules($id), $this->accountMessages());
+
+        $losingAdminRights = $request->role !== User::ROLE_ADMIN || !$request->boolean('is_active', true);
+
+        if ($losingAdminRights && $this->isLastActiveAdmin($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This is the only active administrator. Promote another account first.',
+            ], 422);
+        }
+
+        if ($losingAdminRights && (int) $user->user_id === (int) auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot remove your own administrator access.',
+            ], 422);
+        }
 
         DB::beginTransaction();
 
         try {
             $user->fill([
-                'username' => $request->username,
+                'email' => $request->email,
                 'full_name' => $request->full_name,
                 'role' => $request->role,
                 'is_active' => $request->boolean('is_active', true),
@@ -152,12 +171,11 @@ class UserManagementController extends Controller
 
             $user->save();
 
-            if ($user->role === 'customer') {
+            if ($user->role === User::ROLE_CUSTOMER) {
                 CustomerProfile::updateOrCreate(
                     ['user_id' => $user->user_id],
                     [
                         'phone' => $request->phone ?: '',
-                        'email' => $request->email,
                         'address' => $request->address ?: '',
                     ]
                 );
@@ -168,7 +186,7 @@ class UserManagementController extends Controller
             ActivityLog::logAction(
                 auth()->id(),
                 'user_updated',
-                "" . auth()->user()->full_name . " updated {$user->role} account: {$user->full_name} (@{$user->username})",
+                auth()->user()->full_name . " updated {$user->roleLabel()} account: {$user->full_name} ({$user->email})",
                 $request->ip()
             );
 
@@ -191,9 +209,7 @@ class UserManagementController extends Controller
 
     public function destroy(Request $request, int $id)
     {
-        $user = User::where('user_id', $id)
-            ->where('role', '!=', 'super_admin')
-            ->first();
+        $user = User::where('user_id', $id)->first();
 
         if (!$user) {
             return response()->json([
@@ -209,6 +225,13 @@ class UserManagementController extends Controller
             ], 422);
         }
 
+        if ($this->isLastActiveAdmin($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This is the only active administrator and cannot be deleted.',
+            ], 422);
+        }
+
         // sales, stock_transactions and activity_logs all hold restricted foreign
         // keys to users, so deleting an account with any history raises a
         // constraint violation. Such accounts are deactivated, never removed,
@@ -221,8 +244,8 @@ class UserManagementController extends Controller
         }
 
         $fullName = $user->full_name;
-        $username = $user->username;
-        $role = $user->role;
+        $email = $user->email;
+        $role = $user->roleLabel();
 
         try {
             DB::transaction(function () use ($user) {
@@ -239,7 +262,7 @@ class UserManagementController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'user_deleted',
-            auth()->user()->full_name . " deleted {$role} account: {$fullName} (@{$username})",
+            auth()->user()->full_name . " deleted {$role} account: {$fullName} ({$email})",
             $request->ip()
         );
 
@@ -263,17 +286,17 @@ class UserManagementController extends Controller
     {
         $type = $request->get('type', 'all');
 
-        $adminActions   = ['admin_login', 'logout', 'single_session_replaced', 'session_invalidated', 'user_created', 'user_updated', 'user_deleted', 'product_created', 'product_updated', 'product_deleted', 'product_catalog_imported', 'stock_in', 'stock_out', 'sale_created', 'sale_status_updated', 'payment_request_approved', 'payment_request_rejected'];
-        $customerActions = ['customer_login', 'logout', 'single_session_replaced', 'session_invalidated', 'customer_registered', 'order_placed', 'payment_request_submitted', 'profile_updated', 'password_changed'];
+        $staffActions   = ['admin_login', 'logout', 'single_session_replaced', 'session_invalidated', 'user_created', 'user_updated', 'user_deleted', 'product_created', 'product_updated', 'product_deleted', 'product_catalog_imported', 'stock_in', 'stock_out', 'sale_created', 'sale_status_updated', 'payment_request_approved', 'payment_request_rejected', 'sales_report_exported', 'inventory_report_exported'];
+        $customerActions = ['customer_login', 'logout', 'single_session_replaced', 'session_invalidated', 'customer_registered', 'order_placed', 'payment_request_submitted', 'profile_updated', 'password_changed', 'password_set'];
 
         $query = ActivityLog::with('user')->orderByDesc('log_id')->limit(200);
 
         if ($type === 'admin') {
-            $query->whereIn('action', $adminActions)
-                  ->whereHas('user', fn($q) => $q->whereIn('role', ['admin', 'super_admin']));
+            $query->whereIn('action', $staffActions)
+                  ->whereHas('user', fn($q) => $q->whereIn('role', User::STAFF_ROLES));
         } elseif ($type === 'customer') {
             $query->whereIn('action', $customerActions)
-                  ->whereHas('user', fn($q) => $q->where('role', 'customer'));
+                  ->whereHas('user', fn($q) => $q->where('role', User::ROLE_CUSTOMER));
         }
 
         $logs = $query->get();
