@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
@@ -55,6 +56,9 @@ Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function 
     Route::get('/sales', [SalesController::class, 'index'])
         ->middleware('permission:view_sales')->name('admin.sales');
 
+    Route::get('/analytics', [AnalyticsController::class, 'index'])
+        ->middleware('permission:full_dashboard')->name('admin.analytics');
+
     Route::get('/reports', [ReportController::class, 'index'])
         ->middleware('permission:view_reports')->name('admin.reports');
 
@@ -65,6 +69,9 @@ Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function 
 // Session-backed admin endpoints
 Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(function () {
     Route::get('/dashboard/stats', [DashboardController::class, 'getStats'])
+        ->middleware('permission:full_dashboard');
+
+    Route::get('/analytics', [AnalyticsController::class, 'data'])
         ->middleware('permission:full_dashboard');
 
     Route::middleware('permission:manage_products')->group(function () {

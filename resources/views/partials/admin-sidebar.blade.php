@@ -5,6 +5,7 @@
     // redirect. Mirrors the permission middleware on each route.
     $links = collect([
         ['url' => '/admin/dashboard', 'label' => 'Dashboard', 'can' => $user?->canViewFullDashboard()],
+        ['url' => '/admin/analytics', 'label' => 'Analytics', 'can' => $user?->canViewFullDashboard()],
         ['url' => '/admin/products',  'label' => 'Products',  'can' => $user?->canManageProducts()],
         ['url' => '/admin/inventory', 'label' => 'Inventory', 'can' => $user?->canManageInventory()],
         ['url' => '/admin/sales',     'label' => 'Sales',     'can' => $user?->canViewSales()],
