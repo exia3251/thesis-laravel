@@ -17,10 +17,9 @@
         <table class="min-w-full">
             <thead class="bg-[var(--surface)]">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Staff</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Email</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Role</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)]                     <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
@@ -113,6 +112,19 @@
                 <p id="err_full_name" class="hidden mt-1 text-xs text-red-600"></p>
             </div>
             <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Photo</label>
+                <div class="flex items-center gap-3">
+                    <span id="avatarPreviewWrap" class="inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-sm font-bold text-slate-600">
+                        <img id="avatarPreview" src="" alt="" class="hidden h-full w-full object-cover">
+                        <span id="avatarInitials">?</span>
+                    </span>
+                    <input type="file" id="avatar" accept="image/*" onchange="previewAvatar(this)"
+                           class="block w-full rounded-xl border border-[var(--line)] px-3 py-2 text-sm">
+                </div>
+                <p class="mt-1 text-xs text-[var(--muted)]">Optional. JPG, PNG or WEBP, at least 100&times;100 pixels.</p>
+                <p id="err_avatar" class="hidden mt-1 text-xs text-red-600"></p>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-[var(--ink)] mb-1">Email <span class="text-red-500">*</span></label>
                 <input type="email" id="email" required maxlength="150"
                        placeholder="you@example.com"
@@ -164,6 +176,37 @@
 
 @push('scripts')
 <script>
+
+        function setAvatarPreview(url, initials, tone) {
+            const img = document.getElementById('avatarPreview');
+            const letters = document.getElementById('avatarInitials');
+            const wrap = document.getElementById('avatarPreviewWrap');
+
+            wrap.className = 'inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold '
+                + (tone || 'bg-slate-200 text-slate-600');
+
+            if (url) {
+                img.src = url;
+                img.classList.remove('hidden');
+                letters.classList.add('hidden');
+            } else {
+                img.removeAttribute('src');
+                img.classList.add('hidden');
+                letters.textContent = initials || '?';
+                letters.classList.remove('hidden');
+            }
+        }
+
+        function previewAvatar(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => setAvatarPreview(event.target.result, null, null);
+            reader.readAsDataURL(file);
+        }
+
+
         const ROLE_LABELS = {
             admin: 'Administrator',
             inventory_staff: 'Inventory Staff',
@@ -220,6 +263,7 @@
             document.getElementById('userId').value = user.user_id;
             document.getElementById('full_name').value = user.full_name;
             document.getElementById('email').value = user.email;
+            setAvatarPreview(user.avatar_url, user.initials, user.avatar_tone);
             document.getElementById('role').value = user.role;
             document.getElementById('is_active').checked = user.is_active;
             document.getElementById('phone').value = user.customer_profile ? user.customer_profile.phone || '' : '';
@@ -240,10 +284,19 @@
             tbody.innerHTML = users.length
                 ? users.map((user) => `
                     <tr>
-                        <td class="px-6 py-4">${user.full_name}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                ${user.avatar_url
+                                    ? `<img src="${user.avatar_url}" alt="" class="h-9 w-9 shrink-0 rounded-full object-cover">`
+                                    : `<span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${user.avatar_tone}">${user.initials}</span>`}
+                                <div class="min-w-0">
+                                    <div class="truncate font-semibold text-[var(--ink)]">${user.full_name}</div>
+                                    <div class="text-xs text-[var(--muted)]">${user.role_label}</div>
+                                </div>
+                            </div>
+                        </td>
                         <td class="px-6 py-4">${user.email}</td>
-                        <td class="px-6 py-4">${roleLabel(user.role)}</td>
-                        <td class="px-6 py-4">${user.is_active ? 'Active' : 'Inactive'}</td>
+                                                <td class="px-6 py-4">${user.is_active ? 'Active' : 'Inactive'}</td>
                         <td class="px-6 py-4 space-x-3">
                             <button onclick="editUser(${user.user_id})" class="text-blue-600 hover:text-blue-900">Edit</button>
                             ${ /* <button onclick="deleteUser(${user.user_id})" class="text-red-600 hover:text-red-900">Delete</button> */ "" }
@@ -424,7 +477,7 @@
         function clearUserFormErrors() {
             document.getElementById('userFormErrors').classList.add('hidden');
             document.getElementById('userFormErrors').innerHTML = '';
-            ['full_name','email','password','phone'].forEach(f => {
+            ['full_name','email','password','phone','avatar'].forEach(f => {
                 const el = document.getElementById('err_' + f);
                 if (el) { el.classList.add('hidden'); el.textContent = ''; }
                 const input = document.getElementById(f);
@@ -504,25 +557,33 @@
 
             if (!validateUserForm(userId)) return;
 
-            const payload = {
-                full_name: document.getElementById('full_name').value.trim(),
+            // Sent as multipart so the photo can ride along. PHP does not parse
+            // a multipart body on PUT, so an update posts with _method instead.
+            const body = new FormData();
+            body.append('full_name', document.getElementById('full_name').value.trim());
+            body.append('address', document.getElementById('address').value.trim());
+            body.append('role', document.getElementById('role').value);
+            body.append('password', document.getElementById('password').value);
+            body.append('phone', document.getElementById('phone').value.trim());
+            body.append('email', document.getElementById('email').value.trim());
+            body.append('is_active', document.getElementById('is_active').checked ? '1' : '0');
 
-                address:   document.getElementById('address').value.trim(),
-                role:      document.getElementById('role').value,
-                password:  document.getElementById('password').value,
-                phone:     document.getElementById('phone').value.trim(),
-                email:     document.getElementById('email').value.trim(),
-                is_active: document.getElementById('is_active').checked
-            };
+            const photo = document.getElementById('avatar').files[0];
+            if (photo) {
+                body.append('avatar', photo);
+            }
+
+            if (userId) {
+                body.append('_method', 'PUT');
+            }
 
             const response = await fetch(userId ? `/admin-api/users/${userId}` : '/admin-api/users', {
-                method: userId ? 'PUT' : 'POST',
+                method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify(payload)
+                body
             });
 
             const data = await response.json();

@@ -35,6 +35,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'full_name',
+        'avatar_path',
         'role',
         'is_active',
         'current_session_id',
@@ -97,6 +98,38 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isCustomer(): bool
     {
         return $this->role === self::ROLE_CUSTOMER && $this->is_active;
+    }
+
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? asset('storage/' . $this->avatar_path) : null;
+    }
+
+    /**
+     * Fallback when no photo has been uploaded: the first letter of each of
+     * the first two words, so "Maria Santos" reads MS.
+     */
+    public function initials(): string
+    {
+        $words = preg_split('/\s+/', trim((string) $this->full_name)) ?: [];
+        $letters = array_map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)), array_slice($words, 0, 2));
+
+        return implode('', $letters) ?: '?';
+    }
+
+    /** A stable colour per account, so the same person is the same colour. */
+    public function avatarTone(): string
+    {
+        $tones = [
+            'bg-emerald-100 text-emerald-800',
+            'bg-sky-100 text-sky-800',
+            'bg-amber-100 text-amber-800',
+            'bg-violet-100 text-violet-800',
+            'bg-rose-100 text-rose-800',
+            'bg-teal-100 text-teal-800',
+        ];
+
+        return $tones[$this->user_id % count($tones)];
     }
 
     public function roleLabel(): string

@@ -8,6 +8,7 @@ use App\Models\CustomerProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class UserManagementController extends Controller
 {
@@ -22,7 +23,17 @@ class UserManagementController extends Controller
             ->with('customerProfile')
             ->orderBy('role')
             ->orderBy('full_name')
-            ->get();
+            ->get()
+            ->map(function (User $user) {
+                // Appended rather than sent raw, so the view does not have to
+                // know where uploads live or how initials are derived.
+                return $user->toArray() + [
+                    'avatar_url' => $user->avatarUrl(),
+                    'initials' => $user->initials(),
+                    'avatar_tone' => $user->avatarTone(),
+                    'role_label' => $user->roleLabel(),
+                ];
+            });
 
         return response()->json([
             'success' => true,
@@ -42,6 +53,7 @@ class UserManagementController extends Controller
             'is_active' => 'nullable|boolean',
             'phone'     => ['nullable', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
             'address'   => 'nullable|string|max:500',
+            'avatar'    => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:min_width=100,min_height=100'],
         ];
     }
 
@@ -59,6 +71,10 @@ class UserManagementController extends Controller
             'full_name.regex'   => 'Full name must contain at least two words, each with at least 2 letters.',
             'role.in'           => 'Select a valid role.',
             'phone.regex'       => 'Phone must be a valid Philippine number e.g. 09XXXXXXXXX or +639XXXXXXXXX.',
+            'avatar.image'      => 'The photo must be an image file.',
+            'avatar.mimes'      => 'Accepted photo formats are JPG, JPEG, PNG and WEBP.',
+            'avatar.max'        => 'The photo must be smaller than 2 MB.',
+            'avatar.dimensions' => 'That image is too small. Use one at least 100 by 100 pixels.',
         ];
     }
 
@@ -79,6 +95,24 @@ class UserManagementController extends Controller
             ->doesntExist();
     }
 
+    /**
+     * Stores an uploaded photo and discards whatever it replaces, so one
+     * account never accumulates orphaned files in storage.
+     */
+    protected function storeAvatar(Request $request, User $user): void
+    {
+        if (!$request->hasFile('avatar')) {
+            return;
+        }
+
+        if ($user->avatar_path) {
+            Storage::disk('public')->delete($user->avatar_path);
+        }
+
+        $user->avatar_path = $request->file('avatar')->store('avatars', 'public');
+        $user->save();
+    }
+
     public function store(Request $request)
     {
         $request->validate($this->accountRules(), $this->accountMessages());
@@ -93,6 +127,8 @@ class UserManagementController extends Controller
                 'role' => $request->role,
                 'is_active' => $request->boolean('is_active', true),
             ]);
+
+            $this->storeAvatar($request, $user);
 
             if ($user->role === User::ROLE_CUSTOMER) {
                 CustomerProfile::create([
@@ -170,6 +206,8 @@ class UserManagementController extends Controller
             }
 
             $user->save();
+
+            $this->storeAvatar($request, $user);
 
             if ($user->role === User::ROLE_CUSTOMER) {
                 CustomerProfile::updateOrCreate(

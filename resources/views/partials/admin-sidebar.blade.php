@@ -24,9 +24,12 @@
     </div>
 
     @if ($user)
-        <div class="mx-3 mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-            <div class="truncate text-sm font-semibold text-white">{{ $user->full_name }}</div>
-            <div class="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-[var(--accent)]">{{ $user->roleLabel() }}</div>
+        <div class="mx-3 mt-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
+            @include('partials.avatar', ['user' => $user, 'size' => 'h-10 w-10', 'text' => 'text-sm'])
+            <div class="min-w-0">
+                <div class="truncate text-sm font-semibold text-white">{{ $user->full_name }}</div>
+                <div class="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-[var(--accent)]">{{ $user->roleLabel() }}</div>
+            </div>
         </div>
     @endif
 
