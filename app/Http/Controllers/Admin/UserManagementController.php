@@ -202,16 +202,44 @@ class UserManagementController extends Controller
             ], 404);
         }
 
+        if ((int) $user->user_id === (int) auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot delete your own account.',
+            ], 422);
+        }
+
+        // sales, stock_transactions and activity_logs all hold restricted foreign
+        // keys to users, so deleting an account with any history raises a
+        // constraint violation. Such accounts are deactivated, never removed,
+        // which also keeps the audit trail intact.
+        if ($this->hasHistory($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This account has activity history and cannot be deleted. Deactivate it instead.',
+            ], 422);
+        }
+
+        $fullName = $user->full_name;
         $username = $user->username;
         $role = $user->role;
 
-        CustomerProfile::where('user_id', $user->user_id)->delete();
-        $user->delete();
+        try {
+            DB::transaction(function () use ($user) {
+                CustomerProfile::where('user_id', $user->user_id)->delete();
+                $user->delete();
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This account is still referenced by other records and cannot be deleted. Deactivate it instead.',
+            ], 422);
+        }
 
         ActivityLog::logAction(
             auth()->id(),
             'user_deleted',
-            "" . auth()->user()->full_name . " deleted {$role} account: {$fullName} (@{$username})",
+            auth()->user()->full_name . " deleted {$role} account: {$fullName} (@{$username})",
             $request->ip()
         );
 
@@ -219,6 +247,16 @@ class UserManagementController extends Controller
             'success' => true,
             'message' => 'User account deleted successfully.',
         ]);
+    }
+
+    /**
+     * Whether the account is referenced by records that block a hard delete.
+     */
+    protected function hasHistory(User $user): bool
+    {
+        return $user->sales()->exists()
+            || $user->activityLogs()->exists()
+            || DB::table('stock_transactions')->where('user_id', $user->user_id)->exists();
     }
 
     public function getLogs(Request $request)
