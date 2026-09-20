@@ -46,8 +46,23 @@
                         <p class="mt-1 text-sm text-[var(--muted)]">Official Sales Receipt</p>
                     </div>
                     <div class="text-left md:text-right">
-                        <p class="text-sm text-[var(--muted)]">Receipt No.</p>
-                        <p class="text-xl font-semibold text-[var(--ink)]">#{{ $sale->sale_id }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Order No.</p>
+                        <p class="text-lg font-semibold text-[var(--ink)]">#{{ $sale->sale_id }}</p>
+
+                        {{-- A receipt number is only issued once the order is
+                             actually settled, so there is nothing to print
+                             before then. --}}
+                        <p class="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Receipt No.</p>
+                        @if ($sale->receipt_no)
+                            <p class="text-xl font-black tracking-tight text-[var(--primary)]">{{ $sale->receipt_no }}</p>
+                        @else
+                            <p class="text-sm text-[var(--muted)]">Issued once this order is fully paid</p>
+                        @endif
+
+                        @if ($sale->delivery_no)
+                            <p class="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Delivery No.</p>
+                            <p class="text-base font-semibold text-[var(--ink)]">{{ $sale->delivery_no }}</p>
+                        @endif
                     </div>
                 </div>
 

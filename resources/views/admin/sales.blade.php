@@ -354,7 +354,11 @@
 
                     return `
                     <tr>
-                        <td class="px-6 py-4">#${sale.sale_id}</td>
+                        <td class="px-6 py-4">
+                            <div class="font-semibold">#${sale.sale_id}</div>
+                            ${sale.receipt_no ? `<div class="mt-1 text-xs font-medium text-[var(--primary)]">${sale.receipt_no}</div>` : ''}
+                            ${sale.delivery_no ? `<div class="text-xs text-[var(--muted)]">${sale.delivery_no}</div>` : ''}
+                        </td>
                         <td class="px-6 py-4">${new Date(sale.sale_date).toLocaleString()}</td>
                         <td class="px-6 py-4">${sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in Customer'}</td>
                         <td class="px-6 py-4">

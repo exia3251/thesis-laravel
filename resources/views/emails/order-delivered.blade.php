@@ -9,6 +9,25 @@
         {{ optional($sale->delivered_at)->format('F d, Y \a\t g:i A') }}. This email is your receipt.
     </p>
 
+    @if ($sale->receipt_no || $sale->delivery_no)
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; border:1px solid rgba(21,35,54,0.10); border-radius:12px; margin-bottom:20px;">
+            <tr>
+                @if ($sale->receipt_no)
+                    <td style="padding:14px 18px;">
+                        <div style="font-size:10px; text-transform:uppercase; letter-spacing:2px; color:#6f7d8c;">Receipt No.</div>
+                        <div style="margin-top:3px; font-size:15px; font-weight:bold; color:#148a67;">{{ $sale->receipt_no }}</div>
+                    </td>
+                @endif
+                @if ($sale->delivery_no)
+                    <td style="padding:14px 18px;">
+                        <div style="font-size:10px; text-transform:uppercase; letter-spacing:2px; color:#6f7d8c;">Delivery No.</div>
+                        <div style="margin-top:3px; font-size:15px; font-weight:bold; color:#16202a;">{{ $sale->delivery_no }}</div>
+                    </td>
+                @endif
+            </tr>
+        </table>
+    @endif
+
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin-bottom:20px;">
         <thead>
             <tr>

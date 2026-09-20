@@ -264,6 +264,8 @@ class OrderController extends Controller
             ->map(function ($sale) {
                 return [
                     'sale_id' => $sale->sale_id,
+                    'receipt_no' => $sale->receipt_no,
+                    'delivery_no' => $sale->delivery_no,
                     'sale_date' => $sale->sale_date,
                     'total_amount' => $sale->total_amount,
                     'payment_method' => $sale->payment_method,

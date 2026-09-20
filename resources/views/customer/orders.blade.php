@@ -115,7 +115,10 @@
             tbody.innerHTML = orders.length
                 ? orders.map((order) => `
                     <tr class="border-b border-[var(--line)] ${order.order_status === 'cancelled' ? 'bg-slate-50' : ''}">
-                        <td class="px-6 py-4 font-semibold text-[var(--ink)]">#${order.sale_id}</td>
+                        <td class="px-6 py-4">
+                            <div class="font-semibold text-[var(--ink)]">#${order.sale_id}</div>
+                            ${order.receipt_no ? `<div class="mt-1 text-xs font-medium text-[var(--primary)]">${order.receipt_no}</div>` : ''}
+                        </td>
                         <td class="px-6 py-4 text-[var(--muted)]">${new Date(order.sale_date).toLocaleString()}</td>
                         <td class="px-6 py-4">${statusBadge(order)}</td>
                         <td class="px-6 py-4 capitalize text-[var(--muted)]">

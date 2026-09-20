@@ -24,6 +24,8 @@ class Sale extends Model
 
     protected $primaryKey = 'sale_id';
     protected $fillable = [
+        'receipt_no',
+        'delivery_no',
         'user_id',
         'customer_name',
         'delivery_address',
