@@ -4,22 +4,86 @@
 
 @push('styles')
 <style>
+    /* On screen this is a page about an order. On paper it should be the
+       receipt and nothing else, so the print rules strip the surrounding
+       interface rather than merely hiding a few parts of it. */
     @media print {
-        .no-print {
+        @page {
+            margin: 14mm;
+        }
+
+        .no-print,
+        .no-print * {
             display: none !important;
         }
 
-        body {
-            background: white !important;
+        html, body {
+            background: #fff !important;
         }
+
+        body {
+            font-size: 11pt;
+            color: #000;
+        }
+
+        /* Gradients, shadows and deep rounding read as smudges in print. */
+        .receipt-surface,
+        .receipt-panel {
+            background: #fff !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            border-color: #999 !important;
+        }
+
+        .receipt-surface {
+            border: 0 !important;
+            padding: 0 !important;
+            max-width: none !important;
+        }
+
+        .receipt-page {
+            background: #fff !important;
+            padding: 0 !important;
+            min-height: 0 !important;
+        }
+
+        .receipt-panel {
+            border: 1px solid #bbb !important;
+            padding: 10px 12px !important;
+        }
+
+        /* Screen greys are too light to read once printed. */
+        .receipt-surface .text-\[var\(--muted\)\] {
+            color: #444 !important;
+        }
+
+        .receipt-surface table {
+            page-break-inside: auto;
+        }
+
+        .receipt-surface tr {
+            page-break-inside: avoid;
+        }
+
+        .receipt-surface thead {
+            display: table-header-group;
+        }
+
+        .print-only {
+            display: block !important;
+        }
+    }
+
+    .print-only {
+        display: none;
     }
 </style>
 @endpush
 
 @section('content')
-    <div class="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(20,138,103,0.09),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(217,177,74,0.10),_transparent_24%),linear-gradient(180deg,_#fbfcfe_0%,_#f3f6f9_100%)]">
+    <div class="receipt-page min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(20,138,103,0.09),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(217,177,74,0.10),_transparent_24%),linear-gradient(180deg,_#fbfcfe_0%,_#f3f6f9_100%)]">
         <div class="max-w-5xl mx-auto px-4 py-8">
-            <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-[var(--line)] bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
+            <div id="message" class="no-print fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-[var(--line)] bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
             <div class="no-print mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
@@ -39,11 +103,19 @@
                 </div>
             </div>
 
-            <div class="rounded-[2rem] border border-[var(--line)] bg-[var(--card-solid)] p-8 shadow-xl">
+            <div class="receipt-surface rounded-[2rem] border border-[var(--line)] bg-[var(--card-solid)] p-8 shadow-xl">
                 <div class="mb-6 flex flex-col gap-4 border-b border-[var(--line)] pb-6 md:flex-row md:items-start md:justify-between">
                     <div>
                         <h2 class="text-2xl font-black text-[var(--ink)]">RANEY LUBRICANTS TRADING</h2>
                         <p class="mt-1 text-sm text-[var(--muted)]">Official Sales Receipt</p>
+
+                        {{-- A printed receipt has to stand on its own, so it
+                             carries the details the screen gets from the page
+                             around it. --}}
+                        <div class="print-only mt-2 text-xs leading-5 text-[var(--muted)]">
+                            123 Industrial Ave, Makati City, Metro Manila<br>
+                            +63 2 1234 5678 &middot; sales@raneylubricants.ph
+                        </div>
                     </div>
                     <div class="text-left md:text-right">
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Order No.</p>
@@ -67,7 +139,7 @@
                 </div>
 
                 <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div class="rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5">
+                    <div class="receipt-panel rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5">
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Customer</p>
                         <p class="mt-2 font-semibold text-[var(--ink)]">{{ $sale->customer_name ?? $sale->user?->full_name }}</p>
                         <p class="mt-2 text-sm text-[var(--muted)]">Payment Method: {{ ucwords(str_replace('_', ' ', $sale->payment_method ?? 'N/A')) }}</p>
@@ -75,7 +147,7 @@
                         <p class="mt-2 text-sm leading-7 text-[var(--ink)]">{{ $sale->delivery_address ?? 'No address saved.' }}</p>
                         <p class="mt-1 text-sm text-[var(--muted)]">{{ $sale->contact_phone ?? 'No contact phone saved.' }}</p>
                     </div>
-                    <div class="rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5 md:text-right">
+                    <div class="receipt-panel rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5 md:text-right">
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Order Date</p>
                         <p class="mt-2 font-semibold text-[var(--ink)]">{{ optional($sale->sale_date)->format('F d, Y h:i A') }}</p>
                         <p class="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Delivery Status</p>
@@ -93,9 +165,9 @@
                         <thead class="bg-[rgba(246,248,251,0.9)]">
                             <tr>
                                 <th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Product</th>
-                                <th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Qty</th>
-                                <th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Unit Price</th>
-                                <th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Subtotal</th>
+                                <th class="px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Qty</th>
+                                <th class="px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Unit Price</th>
+                                <th class="px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Subtotal</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[var(--line)]">
@@ -105,9 +177,9 @@
                                         <div class="font-medium text-[var(--ink)]">{{ $item->product?->product_name }}</div>
                                         <div class="text-sm text-[var(--muted)]">{{ $item->product?->brand }} | {{ $item->product?->unit }}</div>
                                     </td>
-                                    <td class="px-4 py-4">{{ $item->quantity }}</td>
-                                    <td class="px-4 py-4">PHP {{ number_format((float) $item->unit_price, 2) }}</td>
-                                    <td class="px-4 py-4">PHP {{ number_format((float) $item->subtotal, 2) }}</td>
+                                    <td class="px-4 py-4 text-center tabular-nums">{{ $item->quantity }}</td>
+                                    <td class="px-4 py-4 text-right tabular-nums">{{ number_format((float) $item->unit_price, 2) }}</td>
+                                    <td class="px-4 py-4 text-right font-medium tabular-nums text-[var(--ink)]">{{ number_format((float) $item->subtotal, 2) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -115,7 +187,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div class="rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5">
+                    <div class="receipt-panel rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5">
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Payment Summary</p>
                         <div class="mt-4 space-y-3 text-sm">
                             <div class="flex justify-between gap-4">
@@ -148,7 +220,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5">
+                    <div class="receipt-panel rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5">
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Payment Requests</p>
                         <div class="mt-4 space-y-3">
                             @forelse ($sale->paymentRequests as $paymentRequest)
@@ -346,7 +418,9 @@
             </div>
         </div>
 
-    @include('partials.customer-footer')
+    <div class="no-print">
+        @include('partials.customer-footer')
+    </div>
     </div>
 
 
