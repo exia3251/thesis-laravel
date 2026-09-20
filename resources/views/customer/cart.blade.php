@@ -153,7 +153,7 @@
                     </div>
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.22em] ${isSuccess ? 'text-emerald-700' : 'text-red-700'}">${isSuccess ? 'Cart Update' : 'Action Needed'}</div>
-                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${text}</div>
+                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${escapeHtml(text)}</div>
                     </div>
                 </div>
             `;
@@ -187,11 +187,11 @@
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-4">
                                 ${item.image_url
-                                    ? `<img src="${item.image_url}" alt="${item.product_name}" class="h-16 w-16 rounded-2xl border border-[var(--line)] object-cover ${item.is_unavailable ? 'grayscale opacity-60' : ''}">`
+                                    ? `<img src="${item.image_url}" alt="${escapeHtml(item.product_name)}" class="h-16 w-16 rounded-2xl border border-[var(--line)] object-cover ${item.is_unavailable ? 'grayscale opacity-60' : ''}">`
                                     : `<div class="flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--line)] bg-slate-100 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">No Image</div>`}
                                 <div>
-                                    <div class="font-semibold text-[var(--ink)]">${item.product_name}</div>
-                                    <div class="text-sm text-[var(--muted)]">${item.brand} &middot; ${item.unit}</div>
+                                    <div class="font-semibold text-[var(--ink)]">${escapeHtml(item.product_name)}</div>
+                                    <div class="text-sm text-[var(--muted)]">${escapeHtml(item.brand)} &middot; ${escapeHtml(item.unit)}</div>
                                 </div>
                             </div>
                         </td>
@@ -205,7 +205,7 @@
                                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
                                         Unavailable
                                     </span>
-                                    <div class="mt-1.5 text-xs leading-5 text-red-700">${item.unavailable_reason}</div>`
+                                    <div class="mt-1.5 text-xs leading-5 text-red-700">${escapeHtml(item.unavailable_reason)}</div>`
                                 : `<span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
                                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
                                         Available
@@ -241,7 +241,7 @@
             const data = await response.json();
             const profile = data.data || {};
             document.getElementById('profileAddress').textContent = profile.address
-                ? `${profile.address}${profile.phone ? ` | ${profile.phone}` : ''}`
+                ? `${escapeHtml(profile.address)}${profile.phone ? ` | ${escapeHtml(profile.phone)}` : ''}`
                 : 'Complete your profile address and phone before placing an order.';
         }
 

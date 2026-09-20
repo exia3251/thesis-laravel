@@ -41,6 +41,30 @@
         const LOGOUT_URL = '@yield('logout-url', '/shop/logout')';
         const LOGIN_URL  = '@yield('login-url', '/shop/login')';
 
+        /**
+         * Renders a value safe to drop into markup.
+         *
+         * Everything on these screens is built by string-concatenating into
+         * innerHTML, so any text that originated from a person - a product
+         * name, a customer name, a reference number, a server message quoting
+         * one of those - has to be neutralised on the way in. Quotes are
+         * escaped as well as angle brackets, because several of these land
+         * inside attributes.
+         */
+        function escapeHtml(value) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+
+            return String(value).replace(/[&<>"']/g, (character) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+            }[character]));
+        }
+
         function formatCurrency(value) {
             return `PHP ${Number(value || 0).toFixed(2)}`;
         }

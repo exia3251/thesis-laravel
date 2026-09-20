@@ -121,7 +121,7 @@
                 ? rows.map((row) => `
                     <tr>
                         <td class="px-6 py-4">#${row.sale_id}</td>
-                        <td class="px-6 py-4">${row.customer_name || 'Walk-in Customer'}</td>
+                        <td class="px-6 py-4">${escapeHtml(row.customer_name || 'Walk-in Customer')}</td>
                         <td class="px-6 py-4">${row.payment_status}</td>
                         <td class="px-6 py-4">${row.delivery_status}</td>
                         <td class="px-6 py-4">${formatCurrency(row.total_amount)}</td>
@@ -141,7 +141,7 @@
             body.innerHTML = rows.length
                 ? rows.map((row) => `
                     <tr>
-                        <td class="px-6 py-4">${row.product_name}</td>
+                        <td class="px-6 py-4">${escapeHtml(row.product_name)}</td>
                         <td class="px-6 py-4">${row.quantity}</td>
                         <td class="px-6 py-4">${formatCurrency(row.value)}</td>
                         <td class="px-6 py-4">${row.status}</td>

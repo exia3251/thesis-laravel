@@ -117,7 +117,7 @@
                     <tr class="border-b border-[var(--line)] ${order.order_status === 'cancelled' ? 'bg-slate-50' : ''}">
                         <td class="px-6 py-4">
                             <div class="font-semibold text-[var(--ink)]">#${order.sale_id}</div>
-                            ${order.receipt_no ? `<div class="mt-1 text-xs font-medium text-[var(--primary)]">${order.receipt_no}</div>` : ''}
+                            ${order.receipt_no ? `<div class="mt-1 text-xs font-medium text-[var(--primary)]">${escapeHtml(order.receipt_no)}</div>` : ''}
                         </td>
                         <td class="px-6 py-4 text-[var(--muted)]">${new Date(order.sale_date).toLocaleString()}</td>
                         <td class="px-6 py-4">${statusBadge(order)}</td>
@@ -175,7 +175,7 @@
         function badge(tone, icon, label) {
             return `<span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${tone}">
                 <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="${ICONS[icon]}"/></svg>
-                ${label}
+                ${escapeHtml(label)}
             </span>`;
         }
 

@@ -143,7 +143,7 @@
                     </div>
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.22em] ${isSuccess ? 'text-emerald-700' : 'text-red-700'}">${isSuccess ? 'Catalog Update' : 'Action Needed'}</div>
-                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${text}</div>
+                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${escapeHtml(text)}</div>
                     </div>
                 </div>
             `;
@@ -265,13 +265,13 @@
                     <tr>
                         <td class="px-6 py-4">
                             ${product.image_url
-                                ? `<img src="${product.image_url}" alt="${product.product_name}" class="h-14 w-14 rounded border object-cover">`
+                                ? `<img src="${product.image_url}" alt="${escapeHtml(product.product_name)}" class="h-14 w-14 rounded border object-cover">`
                                 : '<div class="h-14 w-14 rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-400">No image</div>'}
                         </td>
-                        <td class="px-6 py-4">${product.product_name}</td>
-                        <td class="px-6 py-4">${product.brand}</td>
-                        <td class="px-6 py-4">${product.oil_type}</td>
-                        <td class="px-6 py-4">${product.unit || '1 Liter'}</td>
+                        <td class="px-6 py-4">${escapeHtml(product.product_name)}</td>
+                        <td class="px-6 py-4">${escapeHtml(product.brand)}</td>
+                        <td class="px-6 py-4">${escapeHtml(product.oil_type)}</td>
+                        <td class="px-6 py-4">${escapeHtml(product.unit || '1 Liter')}</td>
                         <td class="px-6 py-4">PHP ${Number(product.price).toFixed(2)}</td>
                         <td class="px-6 py-4">${product.inventory ? product.inventory.quantity : 0}</td>
                         <td class="px-6 py-4 space-x-3">

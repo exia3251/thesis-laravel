@@ -179,7 +179,7 @@
                     } else {
                         topProducts.innerHTML = stats.top_products.map((product) => `
                             <div class="flex items-center justify-between border rounded px-3 py-2">
-                                <span>${product.product_name}</span>
+                                <span>${escapeHtml(product.product_name)}</span>
                                 <span class="font-semibold">${product.total_sold} sold</span>
                             </div>
                         `).join('');
@@ -191,7 +191,7 @@
                     } else {
                         lowStockAlerts.innerHTML = stats.low_stock_products.map((product) => `
                             <div class="flex items-center justify-between border border-red-100 bg-red-50 rounded px-3 py-2">
-                                <span class="font-medium text-red-900">${product.product_name}</span>
+                                <span class="font-medium text-red-900">${escapeHtml(product.product_name)}</span>
                                 <span class="text-xs font-semibold text-red-700">Out of Stock</span>
                             </div>
                         `).join('');
@@ -203,7 +203,7 @@
                     } else {
                         lowStockItemAlerts.innerHTML = stats.low_stock_alerts.map((product) => `
                             <div class="flex items-center justify-between border border-orange-100 bg-orange-50 rounded px-3 py-2">
-                                <span class="font-medium text-orange-900">${product.product_name}</span>
+                                <span class="font-medium text-orange-900">${escapeHtml(product.product_name)}</span>
                                 <span class="text-xs font-semibold text-orange-700">${product.quantity} left / reorder at ${product.reorder_level}</span>
                             </div>
                         `).join('');
@@ -217,8 +217,8 @@
                     tbody.innerHTML = products.length
                         ? products.map((product) => `
                             <tr class="border-b">
-                                <td class="py-2">${product.product_name}</td>
-                                <td class="py-2">${product.brand}</td>
+                                <td class="py-2">${escapeHtml(product.product_name)}</td>
+                                <td class="py-2">${escapeHtml(product.brand)}</td>
                                 <td class="py-2">${formatCurrency(product.price)}</td>
                                 <td class="py-2">${product.inventory ? product.inventory.quantity : 0}</td>
                             </tr>

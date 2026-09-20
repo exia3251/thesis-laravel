@@ -131,8 +131,8 @@
                 <div class="flex items-start gap-3">
                     <div class="rounded-xl ${isSuccess ? 'bg-emerald-100' : 'bg-red-100'} p-2">${icon}</div>
                     <div>
-                        <div class="text-xs font-semibold uppercase tracking-[0.22em] ${isSuccess ? 'text-emerald-700' : 'text-red-700'}">${label}</div>
-                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${text}</div>
+                        <div class="text-xs font-semibold uppercase tracking-[0.22em] ${isSuccess ? 'text-emerald-700' : 'text-red-700'}">${escapeHtml(label)}</div>
+                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${escapeHtml(text)}</div>
                     </div>
                 </div>
             `;
@@ -153,11 +153,11 @@
             const availableCount = products.filter((product) => getProductStock(product) > 0).length;
 
             document.getElementById('brandShowcase').innerHTML = brands.length
-                ? brands.map((brand) => `<button type="button" onclick="quickFilterBrand('${brand.replace(/'/g, "\\'")}')" class="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">${brand}</button>`).join('')
+                ? brands.map((brand) => `<button type="button" data-brand="${escapeHtml(brand)}" onclick="quickFilterBrand(this.dataset.brand)" class="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">${escapeHtml(brand)}</button>`).join('')
                 : '<span class="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">No brands yet</span>';
 
             document.getElementById('typeShowcase').innerHTML = types.length
-                ? types.map((type) => `<button type="button" onclick="quickFilterType('${type.replace(/'/g, "\\'")}')" class="rounded-full border border-transparent bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:bg-[var(--primary-soft)] hover:text-[var(--primary)]">${type}</button>`).join('')
+                ? types.map((type) => `<button type="button" data-type="${escapeHtml(type)}" onclick="quickFilterType(this.dataset.type)" class="rounded-full border border-transparent bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:bg-[var(--primary-soft)] hover:text-[var(--primary)]">${escapeHtml(type)}</button>`).join('')
                 : '<span class="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">No types yet</span>';
         }
 
@@ -172,19 +172,19 @@
                     <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group flex flex-col cursor-pointer overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--card-solid)] shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                         <div class="relative flex-shrink-0">
                             ${product.image_url
-                                ? `<img src="${product.image_url}" alt="${product.product_name}" class="h-64 w-full object-cover">`
+                                ? `<img src="${product.image_url}" alt="${escapeHtml(product.product_name)}" class="h-64 w-full object-cover">`
                                 : `<div class="flex h-64 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))]"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
                             <div class="absolute left-4 top-4 rounded-full bg-[rgba(22,32,42,0.82)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">Pick ${index + 1}</div>
                         </div>
                         <div class="flex flex-1 flex-col p-5">
                             <div class="mb-2 flex items-start justify-between gap-2">
                                 <div class="min-w-0 flex-1">
-                                    <h3 class="mb-1 line-clamp-2 text-lg font-black leading-snug text-[var(--ink)]">${product.product_name}</h3>
-                                    <p class="truncate text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${product.brand}</p>
+                                    <h3 class="mb-1 line-clamp-2 text-lg font-black leading-snug text-[var(--ink)]">${escapeHtml(product.product_name)}</h3>
+                                    <p class="truncate text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${escapeHtml(product.brand)}</p>
                                 </div>
-                                <span class="flex-shrink-0 rounded-full bg-[var(--primary-soft)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--primary)]">${product.oil_type}</span>
+                                <span class="flex-shrink-0 rounded-full bg-[var(--primary-soft)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--primary)]">${escapeHtml(product.oil_type)}</span>
                             </div>
-                            <p class="mb-3 truncate text-sm text-[var(--muted)]">${product.viscosity_grade || 'Standard'} | ${product.unit}</p>
+                            <p class="mb-3 truncate text-sm text-[var(--muted)]">${escapeHtml(product.viscosity_grade || 'Standard')} | ${escapeHtml(product.unit)}</p>
                             <div class="mt-auto">
                                 <div class="mb-3 flex items-center justify-between">
                                     <span class="text-2xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</span>
@@ -250,17 +250,17 @@
                         ` : ''}
                         <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group flex flex-col cursor-pointer overflow-hidden rounded-[1.75rem] border border-[var(--line)] ${unavailable ? 'bg-slate-100/90 opacity-80' : 'bg-[var(--card-solid)]'} shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                             ${product.image_url
-                                ? `<div class="flex-shrink-0"><img src="${product.image_url}" alt="${product.product_name}" class="h-60 w-full object-cover ${unavailable ? 'grayscale' : ''}"></div>`
+                                ? `<div class="flex-shrink-0"><img src="${product.image_url}" alt="${escapeHtml(product.product_name)}" class="h-60 w-full object-cover ${unavailable ? 'grayscale' : ''}"></div>`
                                 : `<div class="flex-shrink-0 flex h-60 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))] ${unavailable ? 'grayscale' : ''}"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
                             <div class="flex flex-1 flex-col p-5">
                                 <div class="mb-2 flex items-start justify-between gap-2">
                                     <div class="min-w-0 flex-1">
-                                        <h3 class="mb-1 line-clamp-2 text-base font-black leading-snug text-[var(--ink)]">${product.product_name}</h3>
-                                        <p class="truncate text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${product.brand}</p>
+                                        <h3 class="mb-1 line-clamp-2 text-base font-black leading-snug text-[var(--ink)]">${escapeHtml(product.product_name)}</h3>
+                                        <p class="truncate text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${escapeHtml(product.brand)}</p>
                                     </div>
-                                    <span class="flex-shrink-0 rounded-full bg-[var(--primary-soft)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--primary)]">${product.oil_type}</span>
+                                    <span class="flex-shrink-0 rounded-full bg-[var(--primary-soft)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--primary)]">${escapeHtml(product.oil_type)}</span>
                                 </div>
-                                <p class="mb-3 truncate text-sm text-[var(--muted)]">${product.viscosity_grade || 'Standard'} | ${product.unit}</p>
+                                <p class="mb-3 truncate text-sm text-[var(--muted)]">${escapeHtml(product.viscosity_grade || 'Standard')} | ${escapeHtml(product.unit)}</p>
                                 <div class="mt-auto">
                                     <div class="mb-3 flex items-center justify-between">
                                         <span class="text-xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</span>

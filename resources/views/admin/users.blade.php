@@ -233,7 +233,7 @@
                     </div>
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.22em] ${isSuccess ? 'text-emerald-700' : 'text-red-700'}">${isSuccess ? 'User Update' : 'Action Needed'}</div>
-                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${text}</div>
+                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${escapeHtml(text)}</div>
                     </div>
                 </div>
             `;
@@ -288,14 +288,14 @@
                             <div class="flex items-center gap-3">
                                 ${user.avatar_url
                                     ? `<img src="${user.avatar_url}" alt="" class="h-9 w-9 shrink-0 rounded-full object-cover">`
-                                    : `<span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${user.avatar_tone}">${user.initials}</span>`}
+                                    : `<span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${user.avatar_tone}">${escapeHtml(user.initials)}</span>`}
                                 <div class="min-w-0">
-                                    <div class="truncate font-semibold text-[var(--ink)]">${user.full_name}</div>
-                                    <div class="text-xs text-[var(--muted)]">${user.role_label}</div>
+                                    <div class="truncate font-semibold text-[var(--ink)]">${escapeHtml(user.full_name)}</div>
+                                    <div class="text-xs text-[var(--muted)]">${escapeHtml(user.role_label)}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4">${user.email}</td>
+                        <td class="px-6 py-4">${escapeHtml(user.email)}</td>
                                                 <td class="px-6 py-4">${user.is_active ? 'Active' : 'Inactive'}</td>
                         <td class="px-6 py-4 space-x-3">
                             <button onclick="editUser(${user.user_id})" class="text-blue-600 hover:text-blue-900">Edit</button>
@@ -417,11 +417,11 @@
                     return `
                     <div class="border rounded px-3 py-2">
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
-                            <span class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${badgeClass}">${label}</span>
-                            <span class="text-xs text-gray-500 font-medium">${log.user ? log.user.full_name : 'System'}</span>
+                            <span class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${badgeClass}">${escapeHtml(label)}</span>
+                            <span class="text-xs text-gray-500 font-medium">${escapeHtml(log.user ? log.user.full_name : 'System')}</span>
                             <span class="text-xs text-gray-400 ml-auto">${logDate}</span>
                         </div>
-                        <div class="text-gray-600">${log.description || 'No description provided.'}</div>
+                        <div class="text-gray-600">${escapeHtml(log.description || 'No description provided.')}</div>
                     </div>`;
                 }).join('')
                 : '<p class="text-gray-500">No activity logs yet.</p>';

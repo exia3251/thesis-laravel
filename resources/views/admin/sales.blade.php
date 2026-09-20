@@ -283,7 +283,7 @@
                     </div>
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.22em] ${isSuccess ? 'text-emerald-700' : 'text-red-700'}">${isSuccess ? 'Sales Update' : 'Action Needed'}</div>
-                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${text}</div>
+                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${escapeHtml(text)}</div>
                     </div>
                 </div>
             `;
@@ -308,7 +308,7 @@
             };
             const cls = styles[status] || 'bg-gray-100 text-gray-800';
             const label = labels[status] || status;
-            return `<span class="inline-block rounded-full px-3 py-1 text-xs font-semibold ${cls}">${label}</span>`;
+            return `<span class="inline-block rounded-full px-3 py-1 text-xs font-semibold ${cls}">${escapeHtml(label)}</span>`;
         }
 
         let allSales = [];
@@ -347,7 +347,7 @@
                         .map((request) => `
                             <div class="rounded-lg border border-sky-200 bg-sky-50 p-2 text-xs text-sky-900">
                                 <div class="font-semibold">Customer GCash request: ${formatCurrency(request.amount)}</div>
-                                <div class="mt-1">${request.reference_no ? `Ref: ${request.reference_no}` : 'No reference given'}</div>
+                                <div class="mt-1">${request.reference_no ? `Ref: ${escapeHtml(request.reference_no)}` : 'No reference given'}</div>
                                 <button type="button" onclick="openVerifyModal(${sale.sale_id}, ${request.id})" class="mt-2 w-full rounded bg-sky-700 px-2 py-1.5 font-semibold text-white transition hover:bg-sky-800">Review payment</button>
                             </div>
                         `).join('');
@@ -356,11 +356,11 @@
                     <tr>
                         <td class="px-6 py-4">
                             <div class="font-semibold">#${sale.sale_id}</div>
-                            ${sale.receipt_no ? `<div class="mt-1 text-xs font-medium text-[var(--primary)]">${sale.receipt_no}</div>` : ''}
-                            ${sale.delivery_no ? `<div class="text-xs text-[var(--muted)]">${sale.delivery_no}</div>` : ''}
+                            ${sale.receipt_no ? `<div class="mt-1 text-xs font-medium text-[var(--primary)]">${escapeHtml(sale.receipt_no)}</div>` : ''}
+                            ${sale.delivery_no ? `<div class="text-xs text-[var(--muted)]">${escapeHtml(sale.delivery_no)}</div>` : ''}
                         </td>
                         <td class="px-6 py-4">${new Date(sale.sale_date).toLocaleString()}</td>
-                        <td class="px-6 py-4">${sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in Customer'}</td>
+                        <td class="px-6 py-4">${escapeHtml(sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in Customer')}</td>
                         <td class="px-6 py-4">
                             ${getPaymentBadge(sale.payment_status)}
                         </td>
@@ -407,7 +407,7 @@
             const select = document.getElementById('product_select');
             select.innerHTML = saleProducts.map((product) => `
                 <option value="${product.product_id}">
-                    ${product.product_name} - ${formatCurrency(product.price)} (${product.inventory ? product.inventory.quantity : 0} in stock)
+                    ${escapeHtml(product.product_name)} - ${formatCurrency(product.price)} (${product.inventory ? product.inventory.quantity : 0} in stock)
                 </option>
             `).join('');
         }
@@ -466,7 +466,7 @@
             tbody.innerHTML = saleItems.length
                 ? saleItems.map((item) => `
                     <tr class="hover:bg-slate-50 transition">
-                        <td class="px-4 py-3 text-slate-800 font-medium">${item.product_name}</td>
+                        <td class="px-4 py-3 text-slate-800 font-medium">${escapeHtml(item.product_name)}</td>
                         <td class="px-4 py-3 text-center text-slate-600">${item.quantity}</td>
                         <td class="px-4 py-3 text-right text-slate-600">${formatCurrency(item.price)}</td>
                         <td class="px-4 py-3 text-right font-semibold text-slate-800">${formatCurrency(item.price * item.quantity)}</td>
@@ -714,13 +714,13 @@
                                 </div>
                                 <div class="mt-1 text-sm text-[var(--muted)]">
                                     ${r.payment_method ? r.payment_method.toUpperCase() : 'GCASH'}
-                                    ${r.reference_no ? ` &middot; Ref <code class="rounded bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)]">${r.reference_no}</code>` : ' &middot; no reference given'}
+                                    ${r.reference_no ? ` &middot; Ref <code class="rounded bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)]">${escapeHtml(r.reference_no)}</code>` : ' &middot; no reference given'}
                                 </div>
                                 <div class="mt-1 text-xs text-[var(--muted)]">
                                     Submitted ${new Date(r.created_at).toLocaleString()}
                                     ${r.reviewed_at ? ` &middot; reviewed ${new Date(r.reviewed_at).toLocaleString()}${reviewer ? ' by ' + reviewer : ''}` : ''}
                                 </div>
-                                ${r.admin_notes ? `<div class="mt-2 rounded-lg bg-[var(--surface)] px-3 py-2 text-xs leading-5 text-[var(--ink)]">${r.admin_notes}</div>` : ''}
+                                ${r.admin_notes ? `<div class="mt-2 rounded-lg bg-[var(--surface)] px-3 py-2 text-xs leading-5 text-[var(--ink)]">${escapeHtml(r.admin_notes)}</div>` : ''}
                             </div>
                         </div>
                     `;
@@ -751,7 +751,7 @@
                 return `
                     <div class="rounded-lg border ${owed ? 'border-amber-300 bg-amber-50' : 'border-[var(--line)] bg-[var(--surface)]'} p-2 text-xs">
                         <div class="font-semibold ${owed ? 'text-amber-900' : 'text-[var(--muted)]'}">Cancelled</div>
-                        ${sale.cancellation_reason ? `<div class="mt-1 text-[var(--muted)]">${sale.cancellation_reason}</div>` : ''}
+                        ${sale.cancellation_reason ? `<div class="mt-1 text-[var(--muted)]">${escapeHtml(sale.cancellation_reason)}</div>` : ''}
                         ${owed ? `<button type="button" onclick="openRefundModal(${sale.sale_id})" class="mt-2 w-full rounded bg-amber-600 px-2 py-1.5 font-semibold text-white transition hover:bg-amber-700">Record ${formatCurrency(sale.refund_amount)} refund</button>` : ''}
                         ${refunded ? `<div class="mt-1 font-semibold text-emerald-700">${formatCurrency(sale.refund_amount)} refunded${sale.refund_reference ? ' - ' + sale.refund_reference : ''}</div>` : ''}
                     </div>

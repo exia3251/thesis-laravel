@@ -174,7 +174,6 @@
         if (v >= 1000) return Math.round(v / 1000) + 'k';
         return String(Math.round(v));
     };
-    const escapeText = (s) => String(s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 
     function deltaPill(element, delta, direction) {
         const up = direction === 'up';
@@ -272,7 +271,7 @@
             <div class="flex items-center justify-between gap-3">
                 <span class="flex min-w-0 items-center gap-2">
                     <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background:${BRAND_TONES[i % BRAND_TONES.length]}"></span>
-                    <span class="truncate text-[var(--muted)]">${escapeText(b.brand)}</span>
+                    <span class="truncate text-[var(--muted)]">${escapeHtml(b.brand)}</span>
                 </span>
                 <span class="shrink-0 font-bold text-[var(--ink)]">${b.share}%</span>
             </div>`).join('');
@@ -293,7 +292,7 @@
             ? rows.map(r => `
                 <div class="mb-3">
                     <div class="flex items-end justify-between gap-3">
-                        <span class="truncate text-xs font-medium text-[var(--ink)]" title="${escapeText(r.label)}">${escapeText(r.label)}</span>
+                        <span class="truncate text-xs font-medium text-[var(--ink)]" title="${escapeHtml(r.label)}">${escapeHtml(r.label)}</span>
                         <span class="shrink-0 text-xs text-[var(--muted)]">${pesoShort(r.revenue)} &middot; ${r.share}%</span>
                     </div>
                     <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-[var(--surface)]">
@@ -351,7 +350,7 @@
         const dots = items.map(item => {
             const tone = STOCK_TONES[item.status] || STOCK_TONES.healthy;
             const cover = item.days_of_cover === null ? 'no movement' : item.days_of_cover + ' days of cover';
-            return `<g><title>${escapeText(item.name)} — ${item.stock} in stock, ${item.units_sold} sold, ${cover}</title>
+            return `<g><title>${escapeHtml(item.name)} — ${item.stock} in stock, ${item.units_sold} sold, ${cover}</title>
                 <circle cx="${xFor(item)}" cy="${yFor(item)}" r="6" fill="${tone.dot}" fill-opacity="0.75" stroke="white" stroke-width="1.5"/></g>`;
         }).join('');
 
@@ -370,7 +369,7 @@
             ['healthy', s.healthy, 'healthy'],
         ].map(([key, count, label]) => `
             <span class="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold ${STOCK_TONES[key].chip}">
-                <span class="h-2 w-2 rounded-full" style="background:${STOCK_TONES[key].dot}"></span>${count} ${label}
+                <span class="h-2 w-2 rounded-full" style="background:${STOCK_TONES[key].dot}"></span>${count} ${escapeHtml(label)}
             </span>`).join('');
 
         const attention = health.items
@@ -384,7 +383,7 @@
                 return `<div class="flex items-start gap-3 rounded-xl border border-[var(--line)] p-3">
                     <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full" style="background:${tone.dot}"></span>
                     <div class="min-w-0 flex-1">
-                        <div class="truncate text-xs font-semibold text-[var(--ink)]" title="${escapeText(i.name)}">${escapeText(i.name)}</div>
+                        <div class="truncate text-xs font-semibold text-[var(--ink)]" title="${escapeHtml(i.name)}">${escapeHtml(i.name)}</div>
                         <div class="text-[11px] text-[var(--muted)]">
                             ${i.stock} in stock &middot; ${i.units_sold} sold
                             ${i.days_of_cover !== null ? ` &middot; ${i.days_of_cover} days left` : ' &middot; no movement'}
@@ -421,16 +420,16 @@
             const cx = padL + step * i + step / 2;
             const h = Math.max((r.revenue / peak) * plotH, 2);
             const short = r.name.length > 14 ? r.name.slice(0, 13) + '…' : r.name;
-            return `<g><title>${escapeText(r.name)} — ${peso(r.revenue)} across ${r.orders} orders (${r.share}%, running ${r.cumulative_share}%)</title>
+            return `<g><title>${escapeHtml(r.name)} — ${peso(r.revenue)} across ${r.orders} orders (${r.share}%, running ${r.cumulative_share}%)</title>
                 <rect x="${cx - barW / 2}" y="${padT + plotH - h}" width="${barW}" height="${h}" rx="4" fill="${GREEN}"/>
                 <text x="${cx}" y="${H - 34}" text-anchor="end" font-size="9.5" fill="#8b97a5"
-                      transform="rotate(-38 ${cx} ${H - 34})">${escapeText(short)}</text></g>`;
+                      transform="rotate(-38 ${cx} ${H - 34})">${escapeHtml(short)}</text></g>`;
         }).join('');
 
         const linePoints = shown.map((r, i) => [padL + step * i + step / 2, padT + plotH - (r.cumulative_share / 100) * plotH]);
         const linePath = 'M ' + linePoints.map(p => `${p[0]} ${p[1]}`).join(' L ');
         const lineDots = linePoints.map((p, i) =>
-            `<g><title>${escapeText(shown[i].name)} — running share ${shown[i].cumulative_share}%</title>
+            `<g><title>${escapeHtml(shown[i].name)} — running share ${shown[i].cumulative_share}%</title>
              <circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${GOLD}" stroke="white" stroke-width="1.5"/></g>`).join('');
 
         document.getElementById('paretoChart').innerHTML = `
@@ -461,7 +460,7 @@
 
         document.getElementById('ovChips').innerHTML = d.payment_mix.filter(m => m.orders > 0).map(m => `
             <span class="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2">
-                <span class="block text-[10px] uppercase tracking-wider text-[var(--muted)]">${escapeText(m.label.split(' ')[0])}</span>
+                <span class="block text-[10px] uppercase tracking-wider text-[var(--muted)]">${escapeHtml(m.label.split(' ')[0])}</span>
                 <span class="block text-sm font-bold text-[var(--ink)]">${m.orders} orders</span>
             </span>`).join('');
 
@@ -489,7 +488,7 @@
         document.getElementById('paymentMix').innerHTML = d.payment_mix.map(m => `
             <div>
                 <div class="flex items-end justify-between gap-4">
-                    <span class="text-sm font-semibold text-[var(--ink)]">${escapeText(m.label)}</span>
+                    <span class="text-sm font-semibold text-[var(--ink)]">${escapeHtml(m.label)}</span>
                     <span class="text-xs text-[var(--muted)]">${m.orders} orders &middot; ${peso(m.booked)}</span>
                 </div>
                 <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-[var(--surface)]">

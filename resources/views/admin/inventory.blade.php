@@ -86,7 +86,7 @@
                     </div>
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.22em] ${isSuccess ? 'text-emerald-700' : 'text-red-700'}">${isSuccess ? 'Inventory Update' : 'Action Needed'}</div>
-                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${text}</div>
+                        <div class="mt-1 text-sm font-medium ${isSuccess ? 'text-emerald-900' : 'text-red-900'}">${escapeHtml(text)}</div>
                     </div>
                 </div>
             `;
@@ -136,8 +136,8 @@
                     else if (stock <= item.reorder_level / 2) { statusColor = 'text-orange-600'; statusText = 'Low Stock'; }
                     return `
                         <tr>
-                            <td class="px-6 py-4">${item.product_name}</td>
-                            <td class="px-6 py-4">${item.brand}</td>
+                            <td class="px-6 py-4">${escapeHtml(item.product_name)}</td>
+                            <td class="px-6 py-4">${escapeHtml(item.brand)}</td>
                             <td class="px-6 py-4 font-semibold">${stock}</td>
                             <td class="px-6 py-4">${item.reorder_level}</td>
                             <td class="px-6 py-4 ${statusColor}">${statusText}</td>
@@ -172,7 +172,7 @@
 
             document.getElementById('stock_action').value = action;
             document.getElementById('stock_product_id').value = productId;
-            document.getElementById('stock_product_name').value = `${item.product_name} (${item.brand})`;
+            document.getElementById('stock_product_name').value = `${escapeHtml(item.product_name)} (${escapeHtml(item.brand)})`;
             document.getElementById('stock_quantity').value = 1;
 
             document.getElementById('stockModalTitle').textContent = action === 'stock-in' ? 'Stock In' : 'Stock Out';
