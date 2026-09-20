@@ -147,16 +147,77 @@
                     </div>
                 </div>
 
-                @if ((float) $sale->balance_due > 0)
+                @php
+                    $pendingRequest = $sale->paymentRequests->firstWhere('status', 'processing');
+                @endphp
+
+                @if ($pendingRequest)
+                    {{-- Only one payment may be under review at a time, so show its
+                         status rather than a form that would be refused. --}}
+                    <div id="payment-request" class="mt-8 rounded-[1.5rem] border-2 border-sky-200 bg-sky-50 p-5 no-print">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+                            <div class="rounded-xl bg-sky-100 p-3">
+                                <svg class="h-6 w-6 text-sky-700" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Waiting for confirmation</p>
+                                <h3 class="mt-2 text-xl font-bold text-sky-900">PHP {{ number_format((float) $pendingRequest->amount, 2) }} is under review.</h3>
+                                <p class="mt-2 text-sm leading-7 text-sky-800">
+                                    Submitted {{ $pendingRequest->created_at?->diffForHumans() }}@if ($pendingRequest->reference_no) under reference <strong>{{ $pendingRequest->reference_no }}</strong>@endif.
+                                    An administrator will confirm it against the GCash record, and your balance updates once they do.
+                                </p>
+                                @if ($pendingRequest->proof_image_path)
+                                    <a href="{{ asset('storage/' . $pendingRequest->proof_image_path) }}" target="_blank" class="mt-3 inline-block text-sm font-semibold text-sky-700 hover:underline">View the receipt you sent</a>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @elseif ((float) $sale->balance_due > 0)
                     <div id="payment-request" class="mt-8 rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5 no-print">
                         <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                             <div class="max-w-xl">
                                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Submit Payment Request</p>
-                                <h3 class="mt-2 text-xl font-bold text-[var(--ink)]">Pay the remaining balance for this order.</h3>
-                                <p class="mt-2 text-sm leading-7 text-[var(--muted)]">Payments are submitted for admin review first. If you choose GCash, use the QR below and upload proof with the reference number after payment.</p>
-                                <div class="mt-4 rounded-xl border border-[var(--accent-soft)] bg-[rgba(255,252,243,0.92)] p-4 text-sm text-[#715b1d]">
-                                    Remaining balance: <strong>PHP {{ number_format((float) $sale->balance_due, 2) }}</strong>
-                                </div>
+                                @php
+                                    $gcashDue = $sale->gcashOutstanding();
+                                    $extraFloor = min((float) config('payments.minimum_extra_payment', 500), (float) $sale->balance_due);
+                                @endphp
+
+                                <h3 class="mt-2 text-xl font-bold text-[var(--ink)]">
+                                    {{ $gcashDue > 0 ? 'Send your GCash payment for this order.' : 'Settle part of your delivery balance early.' }}
+                                </h3>
+                                <p class="mt-2 text-sm leading-7 text-[var(--muted)]">Scan the QR, send the payment, then upload the receipt with its reference number. An administrator confirms it before it counts against your balance.</p>
+
+                                <dl class="mt-4 space-y-2 rounded-xl border border-[var(--line)] bg-white/70 p-4 text-sm">
+                                    <div class="flex justify-between">
+                                        <dt class="text-[var(--muted)]">Order total</dt>
+                                        <dd class="font-semibold text-[var(--ink)]">PHP {{ number_format((float) $sale->total_amount, 2) }}</dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-[var(--muted)]">Already paid</dt>
+                                        <dd class="font-semibold text-[var(--ink)]">PHP {{ number_format((float) $sale->paid_amount, 2) }}</dd>
+                                    </div>
+                                    <div class="flex justify-between border-t border-[var(--line)] pt-2">
+                                        <dt class="text-[var(--muted)]">Remaining balance</dt>
+                                        <dd class="font-bold text-[var(--ink)]">PHP {{ number_format((float) $sale->balance_due, 2) }}</dd>
+                                    </div>
+                                </dl>
+
+                                @if ($gcashDue > 0)
+                                    <div class="mt-4 rounded-xl border-2 border-[var(--primary)] bg-[var(--primary-soft)] p-4">
+                                        <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--primary)]">Send exactly</div>
+                                        <div class="mt-1 text-3xl font-black text-[var(--primary)]">PHP {{ number_format($gcashDue, 2) }}</div>
+                                        <p class="mt-2 text-xs leading-5 text-[#0f6b50]">
+                                            This is the GCash portion you chose at checkout. Send it in one transfer.
+                                            @if ($sale->codAmount() > 0)
+                                                The remaining PHP {{ number_format($sale->codAmount(), 2) }} is paid in cash when your order arrives.
+                                            @endif
+                                        </p>
+                                    </div>
+                                @else
+                                    <div class="mt-4 rounded-xl border border-[var(--accent-soft)] bg-[rgba(255,252,243,0.92)] p-4 text-sm leading-6 text-[#715b1d]">
+                                        Your GCash payment is settled. The remaining PHP {{ number_format((float) $sale->balance_due, 2) }} is due in cash on delivery &mdash; paying it early is optional, and must be at least PHP {{ number_format($extraFloor, 2) }}.
+                                    </div>
+                                @endif
                             </div>
                             <div id="gcashQrPanel" class="w-full max-w-xs rounded-[1.5rem] border border-[var(--line)] bg-white/85 p-4 text-center {{ $sale->payment_method === 'gcash' ? '' : 'hidden' }}">
                                 <img src="{{ asset('images/gcash-qr-placeholder.svg') }}" alt="GCash QR" class="mx-auto h-56 w-56 rounded-2xl border border-[var(--line)] object-cover">
@@ -172,7 +233,15 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-[var(--ink)]">Amount</label>
-                                <input id="request_amount" type="number" min="1" step="1" max="{{ (int) ceil((float) $sale->balance_due) }}" value="{{ (int) ceil((float) $sale->balance_due) }}" class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)]">
+                                @if ($gcashDue > 0)
+                                    <input id="request_amount" type="number" value="{{ $gcashDue }}" step="0.01" readonly
+                                           class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-slate-100 px-4 py-3 font-semibold text-slate-700">
+                                    <p class="mt-2 text-xs text-[var(--muted)]">Fixed by the payment option you chose at checkout.</p>
+                                @else
+                                    <input id="request_amount" type="number" min="{{ $extraFloor }}" step="0.01" max="{{ (float) $sale->balance_due }}" value="{{ (float) $sale->balance_due }}"
+                                           class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)]">
+                                    <p class="mt-2 text-xs text-[var(--muted)]">At least PHP {{ number_format($extraFloor, 2) }}, up to PHP {{ number_format((float) $sale->balance_due, 2) }}.</p>
+                                @endif
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-[var(--ink)]">Reference Number</label>
@@ -181,7 +250,11 @@
                             <div>
                                 <label class="block text-sm font-medium text-[var(--ink)]">Proof Image</label>
                                 <input id="request_proof_image" type="file" accept="image/*" class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3">
-                                <p class="mt-2 text-xs text-[var(--muted)]">Accepted: JPG, JPEG, PNG, WEBP. Max file size: 2 MB.</p>
+                                <p class="mt-2 text-xs text-[var(--muted)]">
+                                    {{ strtoupper(implode(', ', config('payments.proof.mimes'))) }} &middot;
+                                    up to {{ round(config('payments.proof.max_kilobytes') / 1024) }} MB &middot;
+                                    at least {{ config('payments.proof.min_width') }}&times;{{ config('payments.proof.min_height') }} pixels so the reference stays readable.
+                                </p>
                             </div>
                             <div class="md:col-span-2 flex justify-end">
                                 <button type="submit" class="rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">Submit Payment Request</button>

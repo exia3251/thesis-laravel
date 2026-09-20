@@ -49,6 +49,69 @@
 </div>
     </div>
 
+    {{-- Reviewing a payment means comparing a receipt against what the order
+         actually owes, so both sit side by side rather than in a table cell. --}}
+    <div id="verifyModal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto">
+        <div class="mx-auto my-8 w-full max-w-5xl rounded-[1.5rem] bg-white shadow-2xl">
+            <div class="flex items-start justify-between border-b border-[var(--line)] px-6 py-4">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Verify payment</p>
+                    <h2 class="mt-1 text-xl font-black text-[var(--ink)]">Order <span id="vfSaleId"></span> &mdash; <span id="vfCustomer"></span></h2>
+                </div>
+                <button type="button" onclick="closeVerifyModal()" class="rounded-full p-2 text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="grid gap-6 p-6 lg:grid-cols-2">
+                <div>
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Receipt supplied</div>
+                    <div id="vfProofWrap" class="mt-2 overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)]">
+                        <img id="vfProof" src="" alt="Proof of payment" class="max-h-[26rem] w-full object-contain">
+                    </div>
+                    <div id="vfNoProof" class="mt-2 hidden rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-8 text-center text-sm text-[var(--muted)]">
+                        No receipt was attached to this request.
+                    </div>
+                    <a id="vfProofLink" href="#" target="_blank" class="mt-2 inline-block text-xs font-semibold text-[var(--primary)] hover:underline">Open full size</a>
+                </div>
+
+                <div>
+                    <div class="rounded-2xl border-2 border-[var(--primary)] bg-[var(--primary-soft)] p-4">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--primary)]">Customer is claiming</div>
+                        <div id="vfAmount" class="mt-1 text-3xl font-black text-[var(--primary)]">PHP 0.00</div>
+                        <div class="mt-2 flex items-center gap-2">
+                            <span class="text-xs text-[#0f6b50]">Reference</span>
+                            <code id="vfReference" class="rounded bg-white/70 px-2 py-1 text-sm font-bold text-[var(--ink)]">&mdash;</code>
+                        </div>
+                    </div>
+
+                    <div id="vfWarning" class="mt-3 hidden rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900"></div>
+
+                    <dl class="mt-4 space-y-2 rounded-2xl border border-[var(--line)] p-4 text-sm">
+                        <div class="flex justify-between"><dt class="text-[var(--muted)]">Order total</dt><dd id="vfTotal" class="font-semibold"></dd></div>
+                        <div class="flex justify-between"><dt class="text-[var(--muted)]">Payment option</dt><dd id="vfPlan" class="font-semibold"></dd></div>
+                        <div class="flex justify-between"><dt class="text-[var(--muted)]">Paid so far</dt><dd id="vfPaid" class="font-semibold"></dd></div>
+                        <div class="flex justify-between"><dt class="text-[var(--muted)]">Balance now</dt><dd id="vfBalance" class="font-semibold"></dd></div>
+                        <div class="flex justify-between border-t border-[var(--line)] pt-2">
+                            <dt class="font-semibold text-[var(--ink)]">Balance if approved</dt>
+                            <dd id="vfAfter" class="font-black text-[var(--primary)]"></dd>
+                        </div>
+                    </dl>
+
+                    <label class="mt-4 block text-sm font-medium text-[var(--ink)]">Notes <span class="font-normal text-[var(--muted)]">(kept on the record)</span></label>
+                    <textarea id="vfNotes" rows="2" maxlength="500" placeholder="e.g. matched against the GCash transaction log"
+                              class="mt-2 block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]"></textarea>
+
+                    <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+                        <button type="button" onclick="submitVerification('approve')" class="flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700">Approve payment</button>
+                        <button type="button" onclick="submitVerification('reject')" class="flex-1 rounded-xl border-2 border-red-300 bg-white px-4 py-3 text-sm font-bold text-red-700 transition hover:bg-red-50">Reject</button>
+                    </div>
+                    <p class="mt-2 text-center text-xs text-[var(--muted)]">Approving moves money against the order and cannot be undone here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="saleModal" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto">
 <div class="relative mx-auto my-10 w-full max-w-4xl rounded-2xl bg-white shadow-2xl">
 
@@ -213,12 +276,8 @@
                         .map((request) => `
                             <div class="rounded-lg border border-sky-200 bg-sky-50 p-2 text-xs text-sky-900">
                                 <div class="font-semibold">Customer GCash request: ${formatCurrency(request.amount)}</div>
-                                <div class="mt-1">${request.payment_method}${request.reference_no ? ` | Ref: ${request.reference_no}` : ''}</div>
-                                ${request.proof_image_path ? `<a href="/storage/${request.proof_image_path}" target="_blank" class="mt-1 inline-block font-semibold text-sky-700 hover:underline">View proof</a>` : ''}
-                                <div class="mt-2 flex gap-2">
-                                    <button type="button" onclick="approvePaymentRequest(${request.id})" class="rounded bg-emerald-600 px-2 py-1 text-white hover:bg-emerald-700">Approve</button>
-                                    <button type="button" onclick="rejectPaymentRequest(${request.id})" class="rounded bg-red-600 px-2 py-1 text-white hover:bg-red-700">Reject</button>
-                                </div>
+                                <div class="mt-1">${request.reference_no ? `Ref: ${request.reference_no}` : 'No reference given'}</div>
+                                <button type="button" onclick="openVerifyModal(${sale.sale_id}, ${request.id})" class="mt-2 w-full rounded bg-sky-700 px-2 py-1.5 font-semibold text-white transition hover:bg-sky-800">Review payment</button>
                             </div>
                         `).join('');
 
@@ -403,43 +462,130 @@
             }
         }
 
-        async function approvePaymentRequest(requestId) {
-            const response = await fetch(`/admin-api/payment-requests/${requestId}/approve`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
 
-            const data = await response.json();
-            showMessage(data.message || 'Payment request approved.', response.ok ? 'success' : 'error');
 
-            if (response.ok) {
+
+        // ---- Payment verification ---------------------------------------
+        const PLAN_LABELS = {
+            cod: 'Cash on Delivery',
+            gcash_full: 'GCash (full payment)',
+            split: 'Split - GCash down payment, balance on delivery',
+        };
+
+        let verifyContext = null;
+
+        function openVerifyModal(saleId, requestId) {
+            const sale = allSales.find((s) => Number(s.sale_id) === Number(saleId));
+            const request = sale && (sale.payment_requests || []).find((r) => Number(r.id) === Number(requestId));
+
+            if (!sale || !request) {
+                showMessage('That payment request is no longer available. Refreshing.', 'error');
                 loadSales();
+                return;
+            }
+
+            verifyContext = { requestId };
+
+            const amount = Number(request.amount);
+            const total = Number(sale.total_amount);
+            const paid = Number(sale.paid_amount);
+            const balance = Number(sale.balance_due);
+            const applied = Math.min(amount, balance);
+
+            document.getElementById('vfSaleId').textContent = '#' + sale.sale_id;
+            document.getElementById('vfCustomer').textContent = sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in Customer';
+            document.getElementById('vfAmount').textContent = formatCurrency(amount);
+            document.getElementById('vfReference').textContent = request.reference_no || 'none given';
+            document.getElementById('vfTotal').textContent = formatCurrency(total);
+            document.getElementById('vfPlan').textContent = PLAN_LABELS[sale.payment_plan] || sale.payment_plan || 'not recorded';
+            document.getElementById('vfPaid').textContent = formatCurrency(paid);
+            document.getElementById('vfBalance').textContent = formatCurrency(balance);
+            document.getElementById('vfAfter').textContent = formatCurrency(Math.max(balance - applied, 0));
+            document.getElementById('vfNotes').value = '';
+
+            const wrap = document.getElementById('vfProofWrap');
+            const missing = document.getElementById('vfNoProof');
+            const link = document.getElementById('vfProofLink');
+
+            if (request.proof_image_path) {
+                const url = '/storage/' + request.proof_image_path;
+                document.getElementById('vfProof').src = url;
+                link.href = url;
+                wrap.classList.remove('hidden');
+                link.classList.remove('hidden');
+                missing.classList.add('hidden');
+            } else {
+                wrap.classList.add('hidden');
+                link.classList.add('hidden');
+                missing.classList.remove('hidden');
+            }
+
+            // Anything that should make an administrator look twice before approving.
+            const warnings = [];
+            const expected = Math.max(Number(sale.gcash_amount || 0) - paid, 0);
+
+            if (amount > balance) {
+                warnings.push('Claimed ' + formatCurrency(amount) + ' exceeds the ' + formatCurrency(balance)
+                    + ' outstanding. Only ' + formatCurrency(applied) + ' would be applied.');
+            }
+            if (expected > 0 && Math.abs(amount - expected) > 0.01) {
+                warnings.push('The GCash amount agreed at checkout was ' + formatCurrency(expected) + '.');
+            }
+            if (!request.reference_no) {
+                warnings.push('No GCash reference number was supplied.');
+            }
+            if (!request.proof_image_path) {
+                warnings.push('No receipt image was attached.');
+            }
+
+            const warnBox = document.getElementById('vfWarning');
+            warnBox.innerHTML = warnings.map((w) => '<div>&bull; ' + w + '</div>').join('');
+            warnBox.classList.toggle('hidden', warnings.length === 0);
+
+            document.getElementById('verifyModal').classList.remove('hidden');
+        }
+
+        function closeVerifyModal() {
+            document.getElementById('verifyModal').classList.add('hidden');
+            verifyContext = null;
+        }
+
+        async function submitVerification(action) {
+            if (!verifyContext) return;
+
+            const buttons = document.querySelectorAll('#verifyModal button');
+            buttons.forEach((b) => b.disabled = true);
+
+            try {
+                const response = await fetch('/admin-api/payment-requests/' + verifyContext.requestId + '/' + action, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ admin_notes: document.getElementById('vfNotes').value.trim() })
+                });
+
+                const data = await response.json();
+                showMessage(data.message || 'Payment updated.', response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    closeVerifyModal();
+                    loadSales();
+                }
+            } finally {
+                buttons.forEach((b) => b.disabled = false);
             }
         }
 
-        async function rejectPaymentRequest(requestId) {
-            const response = await fetch(`/admin-api/payment-requests/${requestId}/reject`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') closeVerifyModal();
+        });
 
-            const data = await response.json();
-            showMessage(data.message || 'Payment request rejected.', response.ok ? 'success' : 'error');
-
-            if (response.ok) {
-                loadSales();
-            }
-        }
+        document.getElementById('verifyModal').addEventListener('click', (event) => {
+            if (event.target.id === 'verifyModal') closeVerifyModal();
+        });
 
         loadSales();
 </script>

@@ -14,6 +14,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Voluntary early settlement
+    |--------------------------------------------------------------------------
+    | Once the GCash commitment on an order has been met, a customer may still
+    | pay down the cash-on-delivery balance early. Each of those payments costs
+    | an administrator a review, so they carry a floor. Paying off the whole
+    | remaining balance is always allowed, even when it is under this amount.
+    */
+    'minimum_extra_payment' => env('MINIMUM_EXTRA_PAYMENT', 500),
+
+    /*
+    |--------------------------------------------------------------------------
     | Proof of payment
     |--------------------------------------------------------------------------
     | Screenshot rules for a GCash payment request. Kept here so the

@@ -33,6 +33,40 @@ class OrderController extends Controller
     }
 
     /**
+     * Whether a submitted payment amount breaks the settlement rules, as a
+     * message to show the customer. Null when the amount is acceptable.
+     *
+     * An outstanding GCash commitment is settled in one transfer for its whole
+     * value: letting it arrive in fragments buys the customer nothing and costs
+     * an administrator a review for each piece. Once that commitment is met,
+     * paying the delivery balance down early is optional, so it carries a floor
+     * instead - except when the customer is clearing the balance outright.
+     */
+    protected function amountRuleViolation(Sale $sale, float $amount): ?string
+    {
+        $outstanding = $sale->gcashOutstanding();
+
+        if ($outstanding > 0) {
+            if (abs($amount - $outstanding) > 0.01) {
+                return 'This order has a GCash payment of PHP ' . number_format($outstanding, 2)
+                    . ' due. Send that exact amount in a single transfer.';
+            }
+
+            return null;
+        }
+
+        $balance = (float) $sale->balance_due;
+        $floor = min((float) config('payments.minimum_extra_payment', 500), $balance);
+
+        if ($amount < $floor) {
+            return 'Early payments must be at least PHP ' . number_format($floor, 2)
+                . ', or you can settle the remaining PHP ' . number_format($balance, 2) . ' in full.';
+        }
+
+        return null;
+    }
+
+    /**
      * Resolves the chosen payment plan into the amount committed to GCash,
      * rejecting a split that falls under the configured down payment floor.
      */
@@ -308,6 +342,13 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'That reference number has already been submitted. Check your receipt and try again.'
+            ], 422);
+        }
+
+        if ($error = $this->amountRuleViolation($sale, (float) $request->amount)) {
+            return response()->json([
+                'success' => false,
+                'message' => $error,
             ], 422);
         }
 
