@@ -257,11 +257,12 @@ class OrderController extends Controller
     // Get user's orders
     public function getOrders()
     {
-        $orders = Sale::with(['items.product', 'paymentRequests'])
+        $page = Sale::with(['items.product', 'paymentRequests'])
             ->where('user_id', auth()->id())
-            ->orderBy('sale_date', 'desc')
-            ->get()
-            ->map(function ($sale) {
+            ->orderByDesc('sale_date')
+            ->paginate($this->perPage(10));
+
+        return $this->paginated($page, function ($sale) {
                 return [
                     'sale_id' => $sale->sale_id,
                     'receipt_no' => $sale->receipt_no,
@@ -292,12 +293,7 @@ class OrderController extends Controller
                             ? 'to_pay'
                             : ($sale->delivery_status === 'delivered' ? 'delivered' : 'to_receive')),
                 ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'data' => $orders
-        ]);
+        });
     }
 
     // Get order details

@@ -58,22 +58,29 @@ class ProductController extends Controller
     }
 
     // Get all products (API)
-    public function getProducts()
+    public function getProducts(Request $request)
     {
-        $products = Product::with('inventory')
-            ->orderBy('product_id', 'desc')
-            ->get()
-            ->map(function ($product) {
-                $payload = $product->toArray();
-                $payload['image_url'] = $product->image_path ? asset('storage/' . $product->image_path) : null;
+        $query = Product::with('inventory')->orderByDesc('product_id');
 
-                return $payload;
+        // Searching here rather than in the browser, so the term reaches the
+        // whole catalogue instead of only the page already loaded.
+        if ($request->filled('search')) {
+            $term = trim($request->input('search'));
+
+            $query->where(function ($q) use ($term) {
+                $q->where('product_name', 'like', "%{$term}%")
+                    ->orWhere('brand', 'like', "%{$term}%")
+                    ->orWhere('oil_type', 'like', "%{$term}%")
+                    ->orWhere('viscosity_grade', 'like', "%{$term}%");
             });
+        }
 
-        return response()->json([
-            'success' => true,
-            'data' => $products
-        ]);
+        return $this->paginated($query->paginate($this->perPage()), function ($product) {
+            $payload = $product->toArray();
+            $payload['image_url'] = $product->image_path ? asset('storage/' . $product->image_path) : null;
+
+            return $payload;
+        });
     }
 
     // Get single product

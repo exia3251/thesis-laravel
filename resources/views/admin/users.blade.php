@@ -61,6 +61,7 @@
             <div id="logsList" class="space-y-2 text-sm text-gray-700">
                 <p class="text-gray-500">Loading logs...</p>
             </div>
+            <div id="logsPagination"></div>
         </div>
     </div>
 </div>
@@ -275,6 +276,8 @@
             document.getElementById('userModal').classList.add('hidden');
         }
 
+        let activeLogType = 'all';
+
         async function loadUsers() {
             const response = await fetch('/admin-api/users', { headers: { Accept: 'application/json' } });
             const data = await response.json();
@@ -427,7 +430,8 @@
                 : '<p class="text-gray-500">No activity logs yet.</p>';
         }
 
-        async function loadLogs(type = 'all') {
+        async function loadLogs(type = 'all', page = 1) {
+            activeLogType = type;
             document.querySelectorAll('.log-tab').forEach(btn => {
                 btn.classList.remove('bg-gray-900', 'text-white', 'border-gray-900');
                 btn.classList.add('text-gray-600', 'border-gray-300');
@@ -441,10 +445,12 @@
             const container = document.getElementById('logsList');
             container.innerHTML = '<p class="text-gray-500">Loading logs...</p>';
 
-            const response = await fetch(`/admin-api/logs?type=${type}`, { headers: { Accept: 'application/json' } });
+            const response = await fetch(`/admin-api/logs?type=${type}&page=${page}`, { headers: { Accept: 'application/json' } });
             const data = await response.json();
             currentLogs = data.data || [];
+
             renderCurrentLogs();
+            renderPagination('logsPagination', data.meta, (next) => loadLogs(activeLogType, next));
         }
 
         let _deactivateCheckbox = null;

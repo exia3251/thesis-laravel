@@ -17,7 +17,7 @@
 
     <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
         <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
-            <input type="text" id="salesSearch" oninput="renderSales()" placeholder="Search customer or sale ID..." class="rounded border border-gray-300 px-3 py-2 text-sm w-64 focus:outline-none focus:border-blue-400">
+            <input type="text" id="salesSearch" oninput="searchSales()" placeholder="Search customer or sale ID..." class="rounded border border-gray-300 px-3 py-2 text-sm w-64 focus:outline-none focus:border-blue-400">
             <div class="flex gap-2 text-sm">
                 <button onclick="setPaymentFilter('all')" id="payFilter-all" class="pay-filter-btn px-3 py-1.5 rounded border font-medium bg-gray-900 text-white border-gray-900">All</button>
                 <button onclick="setPaymentFilter('paid')" id="payFilter-paid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Paid</button>
@@ -250,6 +250,7 @@
                         </tr>
                     </tbody>
                 </table>
+                <div id="salesPagination"></div>
             </div>
         </div>
 
@@ -313,6 +314,7 @@
 
         let allSales = [];
         let activePaymentFilter = 'all';
+        let salesMeta = null;
 
         function setPaymentFilter(filter) {
             activePaymentFilter = filter;
@@ -325,19 +327,12 @@
                 active.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
                 active.classList.remove('text-gray-600', 'border-gray-300');
             }
-            renderSales();
+            loadSales(1);
         }
 
         function renderSales() {
-            const search = document.getElementById('salesSearch').value.toLowerCase();
             const tbody = document.getElementById('salesBody');
-
-            const sales = allSales.filter(sale => {
-                const customerName = (sale.customer_name || (sale.user && sale.user.full_name) || '').toLowerCase();
-                const matchSearch = customerName.includes(search) || String(sale.sale_id).includes(search);
-                const matchFilter = activePaymentFilter === 'all' || sale.payment_status === activePaymentFilter;
-                return matchSearch && matchFilter;
-            });
+            const sales = allSales;
 
             tbody.innerHTML = sales.length
                 ? sales.map((sale) => {
@@ -391,13 +386,25 @@
                 : '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No matching sales records.</td></tr>';
         }
 
-        async function loadSales() {
-            const response = await fetch('/admin-api/sales', { headers: { Accept: 'application/json' } });
+        async function loadSales(page = 1) {
+            const params = new URLSearchParams({ page });
+            const search = document.getElementById('salesSearch').value.trim();
+
+            if (search) params.set('search', search);
+            if (activePaymentFilter !== 'all') params.set('payment_status', activePaymentFilter);
+
+            const response = await fetch(`/admin-api/sales?${params}`, { headers: { Accept: 'application/json' } });
             if (response.status === 401) { window.location.href = '/admin/login'; return; }
+
             const data = await response.json();
             allSales = data.data || [];
+            salesMeta = data.meta || null;
+
             renderSales();
+            renderPagination('salesPagination', salesMeta, loadSales);
         }
+
+        const searchSales = debounce(() => loadSales(1));
 
         async function loadSaleProducts() {
             const response = await fetch('/admin-api/sales/products/list', { headers: { Accept: 'application/json' } });

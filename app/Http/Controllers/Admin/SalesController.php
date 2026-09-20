@@ -25,22 +25,49 @@ class SalesController extends Controller
         return view('admin.sales');
     }
 
-    // Get all sales
+    /**
+     * Get sales, a page at a time.
+     *
+     * Searching and filtering happen here rather than in the browser. With a
+     * year of trade the table is far too long to hand over whole, and once it
+     * is paged a filter applied in the browser would only ever search the page
+     * already on screen.
+     */
     public function getSales(Request $request)
     {
+        $request->validate([
+            'search' => 'nullable|string|max:100',
+            'payment_status' => 'nullable|in:all,unpaid,processing,partial,paid',
+            'from' => 'nullable|date',
+            'to' => 'nullable|date',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer',
+        ]);
+
         $query = Sale::with(['items.product', 'user', 'paymentRequests.user', 'paymentRequests.reviewer']);
 
-        // Filter by date range if provided
-        if ($request->has('from') && $request->has('to')) {
+        if ($request->filled('from') && $request->filled('to')) {
             $query->whereBetween('sale_date', [$request->from, $request->to]);
         }
 
-        $sales = $query->orderBy('sale_date', 'desc')->get();
+        if ($request->filled('payment_status') && $request->payment_status !== 'all') {
+            $query->where('payment_status', $request->payment_status);
+        }
 
-        return response()->json([
-            'success' => true,
-            'data' => $sales
-        ]);
+        if ($request->filled('search')) {
+            $term = trim($request->search);
+
+            $query->where(function ($q) use ($term) {
+                $q->where('customer_name', 'like', "%{$term}%")
+                    ->orWhere('receipt_no', 'like', "%{$term}%")
+                    ->orWhere('sale_id', $term)
+                    ->orWhereHas('user', fn ($u) => $u->where('full_name', 'like', "%{$term}%"));
+            });
+        }
+
+        return $this->paginated(
+            $query->orderByDesc('sale_date')->paginate($this->perPage())
+        );
     }
 
     // Get single sale

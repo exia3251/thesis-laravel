@@ -324,7 +324,7 @@ class UserManagementController extends Controller
         $staffActions   = ['admin_login', 'logout', 'single_session_replaced', 'session_invalidated', 'user_created', 'user_updated', 'user_deleted', 'product_created', 'product_updated', 'product_deleted', 'product_catalog_imported', 'stock_in', 'stock_out', 'sale_created', 'sale_status_updated', 'payment_request_approved', 'payment_request_rejected', 'sales_report_exported', 'inventory_report_exported'];
         $customerActions = ['customer_login', 'logout', 'single_session_replaced', 'session_invalidated', 'customer_registered', 'order_placed', 'payment_request_submitted', 'profile_updated', 'password_changed', 'password_set'];
 
-        $query = ActivityLog::with('user')->orderByDesc('log_id')->limit(200);
+        $query = ActivityLog::with('user')->orderByDesc('log_id');
 
         if ($type === 'admin') {
             $query->whereIn('action', $staffActions)
@@ -334,11 +334,6 @@ class UserManagementController extends Controller
                   ->whereHas('user', fn($q) => $q->where('role', User::ROLE_CUSTOMER));
         }
 
-        $logs = $query->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $logs,
-        ]);
+        return $this->paginated($query->paginate($this->perPage(25)));
     }
 }

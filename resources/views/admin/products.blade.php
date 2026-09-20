@@ -24,7 +24,7 @@
 
     <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
         <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
-            <input type="text" id="productSearch" oninput="renderProducts()" placeholder="Search product, brand, or type..." class="rounded-xl border border-[var(--line)] px-3 py-2 text-sm w-72 focus:outline-none">
+            <input type="text" id="productSearch" oninput="searchProducts()" placeholder="Search product, brand, or type..." class="rounded-xl border border-[var(--line)] px-3 py-2 text-sm w-72 focus:outline-none">
         </div>
         <table class="min-w-full">
             <thead class="bg-[var(--surface)]">
@@ -45,6 +45,7 @@
                 </tr>
             </tbody>
         </table>
+        <div id="productsPagination"></div>
     </div>
 </div>
     </div>
@@ -283,17 +284,22 @@
                 : '<tr><td colspan="8" class="px-6 py-4 text-center text-[var(--muted)]">No matching products found.</td></tr>';
         }
 
-        async function loadProducts() {
-            try {
-                const response = await fetch('/admin-api/products', { headers: { Accept: 'application/json' } });
-                if (response.status === 401) { window.location.href = '/admin/login'; return; }
-                const data = await response.json();
-                products = data.data || [];
-                renderProducts();
-            } catch (error) {
-                showMessage('Failed to load products.', 'error');
-            }
+        async function loadProducts(page = 1) {
+            const params = new URLSearchParams({ page });
+            const search = document.getElementById('productSearch').value.trim();
+            if (search) params.set('search', search);
+
+            const response = await fetch(`/admin-api/products?${params}`, { headers: { Accept: 'application/json' } });
+            if (response.status === 401) { window.location.href = '/admin/login'; return; }
+
+            const data = await response.json();
+            products = data.data || [];
+
+            renderProducts();
+            renderPagination('productsPagination', data.meta, loadProducts);
         }
+
+        const searchProducts = debounce(() => loadProducts(1));
 
         function editProduct(productId) {
             const product = products.find((item) => item.product_id === productId);

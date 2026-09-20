@@ -45,6 +45,7 @@
                     </tbody>
                 </table>
             </div>
+            <div id="ordersPagination"></div>
         </section>
     </main>
 
@@ -151,11 +152,13 @@
                 : '<tr><td colspan="7" class="px-6 py-6 text-center text-[var(--muted)]">No orders found in this status.</td></tr>';
         }
 
-        async function loadOrders() {
-            const response = await fetch('/shop-api/orders', { headers: { Accept: 'application/json' } });
+        async function loadOrders(page = 1) {
+            const response = await fetch(`/shop-api/orders?page=${page}`, { headers: { Accept: 'application/json' } });
             const data = await response.json();
             allOrders = data.data || [];
+
             renderOrders();
+            renderPagination('ordersPagination', data.meta, loadOrders);
         }
 
 
