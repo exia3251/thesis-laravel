@@ -10,8 +10,10 @@ use App\Models\Inventory;
 use App\Models\StockTransaction;
 use App\Models\ActivityLog;
 use App\Models\PaymentRequest;
+use App\Services\OrderCancellation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class SalesController extends Controller
 {
@@ -314,6 +316,148 @@ class SalesController extends Controller
             'success' => true,
             'message' => 'Payment request rejected.',
             'data' => $paymentRequest->fresh(['sale', 'user', 'reviewer']),
+        ]);
+    }
+
+    /**
+     * Call off an order from the back office, for a customer who phoned in or
+     * an order that cannot be fulfilled.
+     */
+    public function cancelSale(Request $request, int $id, OrderCancellation $cancellation)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ], [
+            'reason.required' => 'Give a reason so the cancellation can be explained later.',
+        ]);
+
+        $sale = Sale::with('items')->find($id);
+
+        if (!$sale) {
+            return response()->json(['success' => false, 'message' => 'Sale not found.'], 404);
+        }
+
+        try {
+            $sale = $cancellation->cancel($sale, auth()->user(), $request->reason, $request->ip());
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $sale->owesRefund()
+                ? 'Order cancelled. A PHP ' . number_format((float) $sale->refund_amount, 2) . ' refund is now owed.'
+                : 'Order cancelled. Stock has been returned.',
+            'data' => $sale->fresh(),
+        ]);
+    }
+
+    /**
+     * Record that a refund owed on a cancelled order has been sent. The
+     * transfer itself happens in GCash, outside this system.
+     */
+    public function recordRefund(Request $request, int $id, OrderCancellation $cancellation)
+    {
+        $request->validate([
+            'reference' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9][A-Za-z0-9\-]*$/'],
+            'notes' => 'nullable|string|max:500',
+        ], [
+            'reference.regex' => 'A reference may use letters, numbers and hyphens only.',
+        ]);
+
+        $sale = Sale::find($id);
+
+        if (!$sale) {
+            return response()->json(['success' => false, 'message' => 'Sale not found.'], 404);
+        }
+
+        try {
+            $sale = $cancellation->markRefunded($sale, auth()->user(), $request->reference, $request->notes, $request->ip());
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Refund recorded.',
+            'data' => $sale->fresh(),
+        ]);
+    }
+
+    /**
+     * Attach a handover photo and close the delivery out. Mirrors how a
+     * customer proves a payment, so the same evidence trail covers both ends
+     * of the transaction.
+     */
+    public function uploadDeliveryProof(Request $request, int $id)
+    {
+        $proof = config('payments.proof');
+
+        $request->validate([
+            'delivery_proof' => [
+                'required',
+                'image',
+                'mimes:' . implode(',', $proof['mimes']),
+                'max:' . $proof['max_kilobytes'],
+                'dimensions:min_width=' . $proof['min_width'] . ',min_height=' . $proof['min_height'],
+            ],
+            'notes' => 'nullable|string|max:500',
+        ], [
+            'delivery_proof.required' => 'Attach a photo taken at handover.',
+            'delivery_proof.dimensions' => 'That image is too small. Upload the full photo, at least '
+                . $proof['min_width'] . ' by ' . $proof['min_height'] . ' pixels.',
+        ]);
+
+        $sale = Sale::find($id);
+
+        if (!$sale) {
+            return response()->json(['success' => false, 'message' => 'Sale not found.'], 404);
+        }
+
+        if ($sale->isCancelled()) {
+            return response()->json(['success' => false, 'message' => 'This order was cancelled.'], 422);
+        }
+
+        // Test against money actually collected rather than the status string:
+        // a 'processing' order has a payment claimed but not yet approved, so
+        // nothing has been received on it.
+        if ((float) $sale->paid_amount <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No payment has been collected on this order yet. Record what the customer paid before closing it out.',
+            ], 422);
+        }
+
+        if ($sale->paymentRequests()->where('status', 'processing')->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A payment on this order is still awaiting review. Approve or reject it first.',
+            ], 422);
+        }
+
+        // Replace rather than accumulate, so one order keeps one handover photo.
+        if ($sale->delivery_proof_path) {
+            Storage::disk('public')->delete($sale->delivery_proof_path);
+        }
+
+        $sale->delivery_proof_path = $request->file('delivery_proof')->store('delivery-proofs', 'public');
+        $sale->delivered_at = now();
+        $sale->delivery_confirmed_by = auth()->id();
+        $sale->delivery_status = 'delivered';
+        $sale->save();
+
+        ActivityLog::logAction(
+            auth()->id(),
+            'delivery_confirmed',
+            auth()->user()->full_name . " confirmed delivery of order #{$sale->sale_id} ({$sale->customer_name})"
+                . ($request->notes ? " - {$request->notes}" : ''),
+            $request->ip()
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Delivery confirmed.',
+            'data' => $sale->fresh(),
         ]);
     }
 }

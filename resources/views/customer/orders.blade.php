@@ -21,6 +21,7 @@
             <button type="button" onclick="setStatusFilter('to_pay')" id="tab_to_pay" class="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--muted)]">To Pay</button>
             <button type="button" onclick="setStatusFilter('to_receive')" id="tab_to_receive" class="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--muted)]">To Receive</button>
             <button type="button" onclick="setStatusFilter('delivered')" id="tab_delivered" class="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--muted)]">Delivered</button>
+            <button type="button" onclick="setStatusFilter('cancelled')" id="tab_cancelled" class="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--muted)]">Cancelled</button>
         </section>
 
         <section class="overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--card-solid)] shadow-lg">
@@ -55,7 +56,7 @@
         function setStatusFilter(filter) {
             activeFilter = filter;
 
-            ['all', 'to_pay', 'to_receive', 'delivered'].forEach((tab) => {
+            ['all', 'to_pay', 'to_receive', 'delivered', 'cancelled'].forEach((tab) => {
                 const element = document.getElementById(`tab_${tab}`);
                 if (!element) {
                     return;
@@ -79,20 +80,35 @@
 
             tbody.innerHTML = orders.length
                 ? orders.map((order) => `
-                    <tr class="border-b border-[var(--line)]">
+                    <tr class="border-b border-[var(--line)] ${order.order_status === 'cancelled' ? 'bg-slate-50' : ''}">
                         <td class="px-6 py-4 font-semibold text-[var(--ink)]">#${order.sale_id}</td>
                         <td class="px-6 py-4 text-[var(--muted)]">${new Date(order.sale_date).toLocaleString()}</td>
                         <td class="px-6 py-4">
-                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ${order.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : order.payment_status === 'partial' ? 'bg-amber-100 text-amber-700' : order.payment_status === 'processing' ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-700'}">
-                                ${order.payment_status}
-                            </span>
-                            ${order.processing_requests > 0 ? '<div class="mt-2 text-xs font-medium text-sky-700">Payment request under review</div>' : ''}
+                            ${order.order_status === 'cancelled'
+                                ? `<span class="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">Cancelled</span>
+                                   ${order.refund_status === 'pending' ? '<div class="mt-2 text-xs font-medium text-amber-700">Refund of ' + formatCurrency(order.refund_amount) + ' on its way</div>' : ''}
+                                   ${order.refund_status === 'refunded' ? '<div class="mt-2 text-xs font-medium text-emerald-700">' + formatCurrency(order.refund_amount) + ' refunded</div>' : ''}`
+                                : `<span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ${order.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : order.payment_status === 'partial' ? 'bg-amber-100 text-amber-700' : order.payment_status === 'processing' ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-700'}">
+                                        ${order.payment_status}
+                                    </span>
+                                    ${order.processing_requests > 0 ? '<div class="mt-2 text-xs font-medium text-sky-700">Payment request under review</div>' : ''}`}
                         </td>
-                        <td class="px-6 py-4 capitalize text-[var(--muted)]">${order.delivery_status.replaceAll('_', ' ')}</td>
+                        <td class="px-6 py-4 capitalize text-[var(--muted)]">
+                            ${order.order_status === 'cancelled' ? '&mdash;' : order.delivery_status.replaceAll('_', ' ')}
+                            ${order.received_at ? '<div class="mt-1 text-xs text-emerald-700">You confirmed receipt</div>' : ''}
+                        </td>
                         <td class="px-6 py-4">${formatCurrency(order.balance_due)}</td>
                         <td class="px-6 py-4 font-semibold text-[var(--ink)]">${formatCurrency(order.total_amount)}</td>
                         <td class="px-6 py-4">
-                            <a href="/orders/${order.sale_id}" class="font-semibold text-[var(--primary)] transition hover:text-[var(--ink)]">View Receipt</a>
+                            <div class="flex flex-col items-start gap-2">
+                                <a href="/orders/${order.sale_id}" class="font-semibold text-[var(--primary)] transition hover:text-[var(--ink)]">View Receipt</a>
+                                ${order.can_confirm_receipt && order.delivery_status !== 'delivered'
+                                    ? `<button type="button" onclick="confirmReceipt(${order.sale_id})" class="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100">Mark as received</button>`
+                                    : ''}
+                                ${order.can_cancel
+                                    ? `<button type="button" onclick="cancelOrder(${order.sale_id}, ${Number(order.paid_amount) > 0})" class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50">Cancel order</button>`
+                                    : ''}
+                            </div>
                         </td>
                     </tr>
                 `).join('')
@@ -104,6 +120,44 @@
             const data = await response.json();
             allOrders = data.data || [];
             renderOrders();
+        }
+
+
+        async function cancelOrder(saleId, hasPaid) {
+            const warning = hasPaid
+                ? '\n\nWhat you have already paid will be refunded to your GCash by our staff.'
+                : '';
+
+            if (!confirm(`Cancel order #${saleId}?${warning}`)) return;
+
+            const reason = prompt('Tell us why, so we can improve (optional):') || null;
+
+            const response = await fetch(`/shop-api/orders/${saleId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ reason })
+            });
+
+            const data = await response.json();
+            alert(data.message || (response.ok ? 'Order cancelled.' : 'Could not cancel this order.'));
+            if (response.ok) loadOrders();
+        }
+
+        async function confirmReceipt(saleId) {
+            if (!confirm(`Confirm that order #${saleId} has arrived?`)) return;
+
+            const response = await fetch(`/shop-api/orders/${saleId}/receipt`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            });
+
+            const data = await response.json();
+            alert(data.message || (response.ok ? 'Thank you.' : 'Could not confirm this order.'));
+            if (response.ok) loadOrders();
         }
 
         loadOrders();

@@ -10,6 +10,8 @@ use App\Models\Inventory;
 use App\Models\StockTransaction;
 use App\Models\CustomerProfile;
 use App\Models\PaymentRequest;
+use App\Models\ActivityLog;
+use App\Services\OrderCancellation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -253,11 +255,20 @@ class OrderController extends Controller
                     'paid_amount' => $sale->paid_amount,
                     'balance_due' => $sale->balance_due,
                     'delivery_status' => $sale->delivery_status,
+                    'order_status' => $sale->order_status,
+                    'status_label' => $sale->statusLabel(),
+                    'refund_status' => $sale->refund_status,
+                    'refund_amount' => $sale->refund_amount,
+                    'received_at' => $sale->received_at,
+                    'can_cancel' => $sale->canBeCancelledByCustomer(),
+                    'can_confirm_receipt' => !$sale->isCancelled() && !$sale->received_at,
                     'item_count' => $sale->items->count(),
                     'processing_requests' => $sale->paymentRequests->where('status', 'processing')->count(),
-                    'status_group' => $sale->payment_status !== 'paid'
-                        ? 'to_pay'
-                        : ($sale->delivery_status === 'delivered' ? 'delivered' : 'to_receive'),
+                    'status_group' => $sale->isCancelled()
+                        ? 'cancelled'
+                        : ($sale->payment_status !== 'paid'
+                            ? 'to_pay'
+                            : ($sale->delivery_status === 'delivered' ? 'delivered' : 'to_receive')),
                 ];
             });
 
@@ -285,6 +296,97 @@ class OrderController extends Controller
         return response()->json([
             'success' => true,
             'data' => $sale
+        ]);
+    }
+
+    /**
+     * Cancel an order the customer no longer wants.
+     */
+    public function cancelOrder(Request $request, $saleId, OrderCancellation $cancellation)
+    {
+        $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $sale = Sale::with('items')
+            ->where('sale_id', $saleId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        if ($sale->isCancelled()) {
+            return response()->json(['success' => false, 'message' => 'This order is already cancelled.'], 422);
+        }
+
+        if ($sale->isDelivered()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order has already been delivered. Contact us if there is a problem with it.',
+            ], 422);
+        }
+
+        if (!$sale->canBeCancelledByCustomer()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your payment is still being reviewed. Wait for that to finish before cancelling.',
+            ], 422);
+        }
+
+        try {
+            $sale = $cancellation->cancel($sale, auth()->user(), $request->reason, $request->ip());
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $sale->owesRefund()
+                ? 'Order cancelled. Your PHP ' . number_format((float) $sale->refund_amount, 2) . ' payment will be refunded to your GCash.'
+                : 'Order cancelled.',
+            'data' => ['refund_owed' => (float) $sale->refund_amount],
+        ]);
+    }
+
+    /**
+     * The customer's own acknowledgement that the goods arrived. An order is
+     * only closed out when nothing is still owed on it, so a cash-on-delivery
+     * balance still has to be recorded by staff.
+     */
+    public function confirmReceipt(Request $request, $saleId)
+    {
+        $sale = Sale::where('sale_id', $saleId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        if ($sale->isCancelled()) {
+            return response()->json(['success' => false, 'message' => 'This order was cancelled.'], 422);
+        }
+
+        if ($sale->received_at) {
+            return response()->json(['success' => false, 'message' => 'You have already confirmed this order.'], 422);
+        }
+
+        $sale->received_at = now();
+        $settled = (float) $sale->balance_due <= 0;
+
+        if ($settled) {
+            $sale->delivery_status = 'delivered';
+            $sale->delivered_at = $sale->delivered_at ?: now();
+        }
+
+        $sale->save();
+
+        ActivityLog::logAction(
+            auth()->id(),
+            'order_received',
+            "Customer {$sale->customer_name} confirmed receipt of order #{$sale->sale_id}",
+            $request->ip()
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => $settled
+                ? 'Thank you. This order is now complete.'
+                : 'Receipt confirmed. The remaining PHP ' . number_format((float) $sale->balance_due, 2) . ' is still due and will be recorded by our staff.',
         ]);
     }
 

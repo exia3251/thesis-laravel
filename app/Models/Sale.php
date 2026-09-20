@@ -15,6 +15,13 @@ class Sale extends Model
         self::PLAN_SPLIT      => 'Split - GCash down payment, balance on delivery',
     ];
 
+    public const STATUS_ACTIVE    = 'active';
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const REFUND_NONE     = 'none';
+    public const REFUND_PENDING  = 'pending';
+    public const REFUND_DONE     = 'refunded';
+
     protected $primaryKey = 'sale_id';
     protected $fillable = [
         'user_id',
@@ -29,6 +36,20 @@ class Sale extends Model
         'paid_amount',
         'balance_due',
         'delivery_status',
+        'order_status',
+        'cancelled_at',
+        'cancellation_reason',
+        'cancelled_by',
+        'refund_status',
+        'refund_amount',
+        'refund_reference',
+        'refund_notes',
+        'refunded_at',
+        'refunded_by',
+        'delivery_proof_path',
+        'delivered_at',
+        'delivery_confirmed_by',
+        'received_at',
         'sale_date',
     ];
     protected $casts = [
@@ -36,7 +57,12 @@ class Sale extends Model
         'gcash_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'balance_due' => 'decimal:2',
+        'refund_amount' => 'decimal:2',
         'sale_date' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'refunded_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'received_at' => 'datetime',
     ];
 
     public function user()
@@ -52,6 +78,21 @@ class Sale extends Model
     public function paymentRequests()
     {
         return $this->hasMany(PaymentRequest::class, 'sale_id', 'sale_id')->latest();
+    }
+
+    public function canceller()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by', 'user_id');
+    }
+
+    public function refunder()
+    {
+        return $this->belongsTo(User::class, 'refunded_by', 'user_id');
+    }
+
+    public function deliveryConfirmer()
+    {
+        return $this->belongsTo(User::class, 'delivery_confirmed_by', 'user_id');
     }
 
     public function planLabel(): string
@@ -83,5 +124,52 @@ class Sale extends Model
         $percent = (float) config('payments.minimum_down_payment_percent', 20);
 
         return round($total * $percent / 100, 2);
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->order_status === self::STATUS_CANCELLED;
+    }
+
+    public function isDelivered(): bool
+    {
+        return $this->delivery_status === 'delivered';
+    }
+
+    /**
+     * An order can be called off until it has been handed over. After that it
+     * would be a return, which is a different process and out of scope here.
+     */
+    public function canBeCancelled(): bool
+    {
+        return !$this->isCancelled() && !$this->isDelivered();
+    }
+
+    /**
+     * A customer may not cancel while a payment of theirs is still being
+     * reviewed, or the refund owed would move underneath the decision.
+     */
+    public function canBeCancelledByCustomer(): bool
+    {
+        return $this->canBeCancelled()
+            && !$this->paymentRequests()->where('status', 'processing')->exists();
+    }
+
+    public function owesRefund(): bool
+    {
+        return $this->refund_status === self::REFUND_PENDING;
+    }
+
+    public function statusLabel(): string
+    {
+        if ($this->isCancelled()) {
+            return match ($this->refund_status) {
+                self::REFUND_PENDING => 'Cancelled - refund owed',
+                self::REFUND_DONE    => 'Cancelled - refunded',
+                default              => 'Cancelled',
+            };
+        }
+
+        return $this->isDelivered() ? 'Delivered' : 'In progress';
     }
 }
