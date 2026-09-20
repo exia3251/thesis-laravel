@@ -53,6 +53,59 @@
          actually owes, so both sit side by side rather than in a table cell. --}}
     {{-- Every payment ever claimed against one order, so a disputed amount can
          be traced back to the receipt and reference it came from. --}}
+    {{-- Handover photo, the delivery-side counterpart to a payment receipt. --}}
+    <div id="deliveryModal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto">
+        <div class="mx-auto my-16 w-full max-w-lg rounded-[1.5rem] bg-white shadow-2xl">
+            <div class="flex items-start justify-between border-b border-[var(--line)] px-6 py-4">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Confirm delivery</p>
+                    <h2 class="mt-1 text-xl font-black text-[var(--ink)]">Order <span id="dlSaleId"></span></h2>
+                </div>
+                <button type="button" onclick="closeDeliveryModal()" class="rounded-full p-2 text-[var(--muted)] transition hover:bg-[var(--surface)]">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <div id="dlBalanceWarning" class="mb-4 hidden rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900"></div>
+                <label class="block text-sm font-medium text-[var(--ink)]">Photo taken at handover <span class="text-red-500">*</span></label>
+                <input id="dlProof" type="file" accept="image/*" class="mt-2 block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm">
+                <p class="mt-2 text-xs text-[var(--muted)]">{{ strtoupper(implode(', ', config('payments.proof.mimes'))) }} &middot; up to {{ round(config('payments.proof.max_kilobytes') / 1024) }} MB &middot; at least {{ config('payments.proof.min_width') }}&times;{{ config('payments.proof.min_height') }} pixels.</p>
+                <label class="mt-4 block text-sm font-medium text-[var(--ink)]">Notes</label>
+                <textarea id="dlNotes" rows="2" maxlength="500" placeholder="e.g. received by the shop supervisor" class="mt-2 block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]"></textarea>
+                <p id="dlError" class="mt-3 hidden text-xs font-semibold text-red-600"></p>
+                <button type="button" onclick="submitDeliveryProof()" class="mt-4 w-full rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:bg-[var(--primary-dark)]">Confirm delivery</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- The transfer happens in GCash; this only records that it was done. --}}
+    <div id="refundModal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto">
+        <div class="mx-auto my-16 w-full max-w-lg rounded-[1.5rem] bg-white shadow-2xl">
+            <div class="flex items-start justify-between border-b border-[var(--line)] px-6 py-4">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Record refund</p>
+                    <h2 class="mt-1 text-xl font-black text-[var(--ink)]">Order <span id="rfSaleId"></span></h2>
+                </div>
+                <button type="button" onclick="closeRefundModal()" class="rounded-full p-2 text-[var(--muted)] transition hover:bg-[var(--surface)]">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-800">Amount owed back</div>
+                    <div id="rfAmount" class="mt-1 text-3xl font-black text-amber-900">PHP 0.00</div>
+                    <p class="mt-2 text-xs leading-5 text-amber-900">Send this through GCash first, then record it here. This form does not move any money.</p>
+                </div>
+                <label class="mt-4 block text-sm font-medium text-[var(--ink)]">GCash reference of your transfer</label>
+                <input id="rfReference" type="text" maxlength="100" placeholder="e.g. 1029384756" class="mt-2 block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]">
+                <label class="mt-4 block text-sm font-medium text-[var(--ink)]">Notes</label>
+                <textarea id="rfNotes" rows="2" maxlength="500" placeholder="e.g. sent to 09XXXXXXXXX" class="mt-2 block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]"></textarea>
+                <p id="rfError" class="mt-3 hidden text-xs font-semibold text-red-600"></p>
+                <button type="button" onclick="submitRefund()" class="mt-4 w-full rounded-xl bg-amber-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-amber-700">Mark as refunded</button>
+            </div>
+        </div>
+    </div>
+
     <div id="historyModal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto">
         <div class="mx-auto my-8 w-full max-w-3xl rounded-[1.5rem] bg-white shadow-2xl">
             <div class="flex items-start justify-between border-b border-[var(--line)] px-6 py-4">
@@ -321,9 +374,10 @@
                         <td class="px-6 py-4">
                             <div class="space-y-2">
                                 <div class="flex flex-wrap gap-2">
-                                    <button type="button" onclick="updateSaleStatus(${sale.sale_id})" class="rounded border border-[var(--line)] px-2 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-50">Update</button>
+                                    ${sale.order_status === 'cancelled' ? '' : `<button type="button" onclick="updateSaleStatus(${sale.sale_id})" class="rounded border border-[var(--line)] px-2 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-50">Update</button>`}
                                     <button type="button" onclick="openHistoryModal(${sale.sale_id})" class="rounded border border-[var(--line)] px-2 py-1 text-xs font-semibold text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]">History${(sale.payment_requests || []).length ? ` (${(sale.payment_requests || []).length})` : ''}</button>
                                 </div>
+                                ${renderLifecycleActions(sale)}
                                 ${pendingRequestsHtml}
                             </div>
                         </td>
@@ -604,6 +658,8 @@
             if (event.key !== 'Escape') return;
             closeVerifyModal();
             closeHistoryModal();
+            closeDeliveryModal();
+            closeRefundModal();
         });
 
         document.getElementById('verifyModal').addEventListener('click', (event) => {
@@ -676,6 +732,171 @@
 
         document.getElementById('historyModal').addEventListener('click', (event) => {
             if (event.target.id === 'historyModal') closeHistoryModal();
+        });
+
+
+        // ---- Cancellation, refunds and delivery --------------------------
+        let deliveryContext = null;
+        let refundContext = null;
+
+        function renderLifecycleActions(sale) {
+            if (sale.order_status === 'cancelled') {
+                const refunded = sale.refund_status === 'refunded';
+                const owed = sale.refund_status === 'pending';
+
+                return `
+                    <div class="rounded-lg border ${owed ? 'border-amber-300 bg-amber-50' : 'border-[var(--line)] bg-[var(--surface)]'} p-2 text-xs">
+                        <div class="font-semibold ${owed ? 'text-amber-900' : 'text-[var(--muted)]'}">Cancelled</div>
+                        ${sale.cancellation_reason ? `<div class="mt-1 text-[var(--muted)]">${sale.cancellation_reason}</div>` : ''}
+                        ${owed ? `<button type="button" onclick="openRefundModal(${sale.sale_id})" class="mt-2 w-full rounded bg-amber-600 px-2 py-1.5 font-semibold text-white transition hover:bg-amber-700">Record ${formatCurrency(sale.refund_amount)} refund</button>` : ''}
+                        ${refunded ? `<div class="mt-1 font-semibold text-emerald-700">${formatCurrency(sale.refund_amount)} refunded${sale.refund_reference ? ' - ' + sale.refund_reference : ''}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            const buttons = [];
+
+            if (sale.delivery_status !== 'delivered') {
+                buttons.push(`<button type="button" onclick="openDeliveryModal(${sale.sale_id})" class="flex-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100">Confirm delivery</button>`);
+                buttons.push(`<button type="button" onclick="cancelSale(${sale.sale_id})" class="flex-1 rounded border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-50">Cancel</button>`);
+            } else if (sale.delivery_proof_path) {
+                buttons.push(`<a href="/storage/${sale.delivery_proof_path}" target="_blank" class="flex-1 rounded border border-[var(--line)] px-2 py-1 text-center text-xs font-semibold text-[var(--muted)] transition hover:bg-[var(--surface)]">Delivery photo</a>`);
+            }
+
+            return buttons.length ? `<div class="flex gap-2">${buttons.join('')}</div>` : '';
+        }
+
+        function openDeliveryModal(saleId) {
+            const sale = allSales.find((s) => Number(s.sale_id) === Number(saleId));
+            if (!sale) return;
+
+            deliveryContext = { saleId };
+            document.getElementById('dlSaleId').textContent = '#' + saleId;
+            document.getElementById('dlProof').value = '';
+            document.getElementById('dlNotes').value = '';
+            document.getElementById('dlError').classList.add('hidden');
+
+            const balance = Number(sale.balance_due);
+            const warning = document.getElementById('dlBalanceWarning');
+            warning.textContent = balance > 0
+                ? `This order still owes ${formatCurrency(balance)}. Record the cash collected on delivery first, or this will be refused.`
+                : '';
+            warning.classList.toggle('hidden', balance <= 0);
+
+            document.getElementById('deliveryModal').classList.remove('hidden');
+        }
+
+        function closeDeliveryModal() {
+            document.getElementById('deliveryModal').classList.add('hidden');
+            deliveryContext = null;
+        }
+
+        async function submitDeliveryProof() {
+            if (!deliveryContext) return;
+
+            const file = document.getElementById('dlProof').files[0];
+            const error = document.getElementById('dlError');
+
+            if (!file) {
+                error.textContent = 'Attach the handover photo first.';
+                error.classList.remove('hidden');
+                return;
+            }
+
+            const body = new FormData();
+            body.append('delivery_proof', file);
+            body.append('notes', document.getElementById('dlNotes').value.trim());
+
+            const response = await fetch(`/admin-api/sales/${deliveryContext.saleId}/delivery-proof`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                closeDeliveryModal();
+                showMessage(data.message || 'Delivery confirmed.', 'success');
+                loadSales();
+                return;
+            }
+
+            error.textContent = data.message || Object.values(data.errors || {})[0]?.[0] || 'Could not confirm delivery.';
+            error.classList.remove('hidden');
+        }
+
+        async function cancelSale(saleId) {
+            const reason = prompt(`Cancel order #${saleId}?\n\nStock goes back and any payment becomes a refund you owe.\n\nReason:`);
+            if (reason === null) return;
+
+            if (!reason.trim()) {
+                showMessage('A reason is required so the cancellation can be explained later.', 'error');
+                return;
+            }
+
+            const response = await fetch(`/admin-api/sales/${saleId}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: JSON.stringify({ reason: reason.trim() })
+            });
+
+            const data = await response.json();
+            showMessage(data.message || 'Order cancelled.', response.ok ? 'success' : 'error');
+            if (response.ok) loadSales();
+        }
+
+        function openRefundModal(saleId) {
+            const sale = allSales.find((s) => Number(s.sale_id) === Number(saleId));
+            if (!sale) return;
+
+            refundContext = { saleId };
+            document.getElementById('rfSaleId').textContent = '#' + saleId;
+            document.getElementById('rfAmount').textContent = formatCurrency(sale.refund_amount);
+            document.getElementById('rfReference').value = '';
+            document.getElementById('rfNotes').value = '';
+            document.getElementById('rfError').classList.add('hidden');
+            document.getElementById('refundModal').classList.remove('hidden');
+        }
+
+        function closeRefundModal() {
+            document.getElementById('refundModal').classList.add('hidden');
+            refundContext = null;
+        }
+
+        async function submitRefund() {
+            if (!refundContext) return;
+
+            const response = await fetch(`/admin-api/sales/${refundContext.saleId}/refund`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: JSON.stringify({
+                    reference: document.getElementById('rfReference').value.trim() || null,
+                    notes: document.getElementById('rfNotes').value.trim() || null
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                closeRefundModal();
+                showMessage(data.message || 'Refund recorded.', 'success');
+                loadSales();
+                return;
+            }
+
+            const error = document.getElementById('rfError');
+            error.textContent = data.message || Object.values(data.errors || {})[0]?.[0] || 'Could not record the refund.';
+            error.classList.remove('hidden');
+        }
+
+        ['deliveryModal', 'refundModal'].forEach((id) => {
+            document.getElementById(id).addEventListener('click', (event) => {
+                if (event.target.id === id) {
+                    closeDeliveryModal();
+                    closeRefundModal();
+                }
+            });
         });
 
         loadSales();
