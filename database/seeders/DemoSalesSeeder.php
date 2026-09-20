@@ -37,32 +37,82 @@ class DemoSalesSeeder extends Seeder
             return;
         }
 
-        $customers = User::where('role', User::ROLE_CUSTOMER)->pluck('user_id')->all();
+        $this->clear();
 
-        if (!$customers) {
+        $buyers = $this->makeCustomers();
+
+        if (!$buyers) {
             $this->command?->warn('No customer accounts to attribute demo orders to.');
             return;
         }
 
-        $this->clear();
-
-        $names = [
-            'Ramon Villanueva', 'Liza Bautista', 'Arnel Cruz', 'Divina Ramos',
-            'Ferdinand Lim', 'Maricel Aquino', 'Noel Tolentino', 'Grace Mendoza',
-            'Rodel Santiago', 'Cherry Ann Dizon', 'Bert Navarro', 'Imelda Reyes',
-        ];
+        // Trade concentrates: a handful of fleet accounts buy constantly while
+        // most customers order occasionally. Weighting the draw this way is
+        // what makes a Pareto curve meaningful rather than a straight line.
+        $weighted = [];
+        foreach (array_values($buyers) as $rank => $id) {
+            foreach (range(1, (int) max(1, round(60 / ($rank + 1.6)))) as $ignored) {
+                $weighted[] = $id;
+            }
+        }
 
         $created = 0;
         $start = now()->subMonths(11)->startOfMonth();
 
         for ($day = $start->copy(); $day->lte(now()); $day->addDay()) {
             foreach (range(1, $this->ordersFor($day)) as $ignored) {
-                $this->makeOrder($day, $products, $customers, $names);
+                $this->makeOrder($day, $products, $weighted);
                 $created++;
             }
         }
 
         $this->command?->info("Created {$created} demo orders across " . $start->format('M Y') . ' to ' . now()->format('M Y') . '.');
+    }
+
+    /** @var array<int, User> */
+    private array $buyerCache = [];
+
+    /**
+     * A demo customer base with a realistic spread: a few named fleet and
+     * workshop accounts that buy heavily, then a long tail of individuals.
+     *
+     * @return array<int, int> user ids, heaviest buyers first
+     */
+    private function makeCustomers(): array
+    {
+        $fleet = [
+            'Southway Transport Co', 'Batangas Haulers Inc', 'Delgado Motor Works',
+            'Pampanga Bus Lines', 'Cavite Freight Services', 'Sta Rosa Auto Care',
+        ];
+
+        $trade = [
+            'Ramon Villanueva', 'Liza Bautista', 'Arnel Cruz', 'Divina Ramos',
+            'Ferdinand Lim', 'Maricel Aquino', 'Noel Tolentino', 'Grace Mendoza',
+            'Rodel Santiago', 'Cherry Ann Dizon', 'Bert Navarro', 'Imelda Reyes',
+            'Joseph Ocampo', 'Rowena Pascual', 'Danilo Estrada', 'Marites Galang',
+            'Eduardo Flores', 'Jocelyn Rivera', 'Alfredo Panganiban', 'Nenita Corpuz',
+            'Ricardo Salazar', 'Melinda Torres', 'Efren Bacani', 'Lourdes Yap',
+            'Wilfredo Agustin', 'Aileen Fabros', 'Nestor Mangubat', 'Teresita Uy',
+            'Benjamin Carandang', 'Evelyn Sarmiento', 'Rogelio Herrera', 'Susana Bolante',
+        ];
+
+        $ids = [];
+
+        foreach (array_merge($fleet, $trade) as $index => $name) {
+            $slug = 'demo' . ($index + 1) . '@raney.test';
+
+            $user = User::updateOrCreate(['email' => $slug], [
+                'password' => 'demo12345',
+                'full_name' => self::TAG . $name,
+                'role' => User::ROLE_CUSTOMER,
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]);
+
+            $ids[] = $user->user_id;
+        }
+
+        return $ids;
     }
 
     /**
@@ -86,8 +136,11 @@ class DemoSalesSeeder extends Seeder
         return max(0, $base + random_int(-1, 2));
     }
 
-    private function makeOrder(\Carbon\Carbon $day, $products, array $customers, array $names): void
+    private function makeOrder(\Carbon\Carbon $day, $products, array $weightedBuyers): void
     {
+        $buyerId = $weightedBuyers[array_rand($weightedBuyers)];
+        $buyer = $this->buyerCache[$buyerId] ??= User::find($buyerId);
+
         $placedAt = $day->copy()->setTime(random_int(8, 17), random_int(0, 59));
         $lines = $products->random(random_int(1, 4));
 
@@ -118,8 +171,8 @@ class DemoSalesSeeder extends Seeder
         };
 
         $sale = Sale::create([
-            'customer_name' => self::TAG . $names[array_rand($names)],
-            'user_id' => $customers[array_rand($customers)],
+            'customer_name' => self::TAG . $buyer->full_name,
+            'user_id' => $buyerId,
             'delivery_address' => 'Demo address, Metro Manila',
             'contact_phone' => '09' . random_int(100000000, 999999999),
             'total_amount' => $total,
@@ -200,6 +253,7 @@ class DemoSalesSeeder extends Seeder
         }
 
         DB::table('sale_items')->whereIn('sale_id', $ids)->delete();
+        DB::table('payment_requests')->whereIn('sale_id', $ids)->delete();
         Sale::whereIn('sale_id', $ids)->delete();
 
         $this->command?->info("Removed {$ids->count()} demo orders from a previous run.");

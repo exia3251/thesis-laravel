@@ -52,6 +52,13 @@ class AnalyticsController extends Controller
                 'monthly' => $this->monthly($from, $to),
                 'top_products' => $this->topProducts($from, $to),
                 'by_brand' => $this->byBrand($from, $to),
+                'breakdown' => [
+                    'product' => $this->breakdownBy('products.product_name', $from, $to, 10),
+                    'type' => $this->breakdownBy('products.oil_type', $from, $to),
+                    'brand' => $this->breakdownBy('products.brand', $from, $to),
+                ],
+                'inventory_health' => $this->inventoryHealth($from, $to),
+                'concentration' => $this->concentration($from, $to),
                 'payment_mix' => $this->paymentMix($from, $to),
                 'receivables' => $this->receivables(),
             ],
@@ -214,6 +221,171 @@ class AnalyticsController extends Controller
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * Sales split along one dimension - the product itself, the kind of oil,
+     * or the brand - so the same trade can be read at three depths without
+     * three different queries.
+     */
+    private function breakdownBy(string $column, Carbon $from, Carbon $to, ?int $limit = null): array
+    {
+        $query = DB::table('sale_items')
+            ->join('sales', 'sales.sale_id', '=', 'sale_items.sale_id')
+            ->join('products', 'products.product_id', '=', 'sale_items.product_id')
+            ->where('sales.order_status', Sale::STATUS_ACTIVE)
+            ->whereBetween('sales.sale_date', [$from, $to])
+            ->groupBy(DB::raw($column))
+            ->selectRaw("{$column} AS label, SUM(sale_items.subtotal) revenue, SUM(sale_items.quantity) units")
+            ->orderByDesc('revenue');
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        $rows = $query->get();
+        $total = (float) $rows->sum('revenue');
+
+        return $rows->map(fn ($row) => [
+            'label' => $row->label,
+            'revenue' => round((float) $row->revenue, 2),
+            'units' => (int) $row->units,
+            'share' => $total > 0 ? round((float) $row->revenue / $total * 100, 1) : 0,
+        ])->all();
+    }
+
+    /**
+     * Stock measured against the rate it actually leaves the shelf.
+     *
+     * Days of cover is what current stock would last at the pace of this
+     * period. Read with units sold it separates two problems that look alike
+     * on a stock report: a fast line about to run out, and a slow line that is
+     * simply money sitting in the warehouse.
+     */
+    private function inventoryHealth(Carbon $from, Carbon $to): array
+    {
+        $days = max($from->diffInDays($to) + 1, 1);
+
+        $sold = DB::table('sale_items')
+            ->join('sales', 'sales.sale_id', '=', 'sale_items.sale_id')
+            ->where('sales.order_status', Sale::STATUS_ACTIVE)
+            ->whereBetween('sales.sale_date', [$from, $to])
+            ->groupBy('sale_items.product_id')
+            ->selectRaw('sale_items.product_id, SUM(sale_items.quantity) units, SUM(sale_items.subtotal) revenue')
+            ->pluck('units', 'sale_items.product_id');
+
+        $revenue = DB::table('sale_items')
+            ->join('sales', 'sales.sale_id', '=', 'sale_items.sale_id')
+            ->where('sales.order_status', Sale::STATUS_ACTIVE)
+            ->whereBetween('sales.sale_date', [$from, $to])
+            ->groupBy('sale_items.product_id')
+            ->selectRaw('sale_items.product_id, SUM(sale_items.subtotal) revenue')
+            ->pluck('revenue', 'sale_items.product_id');
+
+        $items = DB::table('products')
+            ->leftJoin('inventory', 'inventory.product_id', '=', 'products.product_id')
+            ->select('products.product_id', 'products.product_name', 'products.brand', 'products.price',
+                     'products.reorder_level', DB::raw('COALESCE(inventory.quantity, 0) AS stock'))
+            ->get()
+            ->map(function ($row) use ($sold, $revenue, $days) {
+                $units = (int) ($sold[$row->product_id] ?? 0);
+                $velocity = $units / $days;
+                $stock = (int) $row->stock;
+
+                // With no movement at all there is no meaningful cover figure,
+                // so it is reported as null rather than as infinity.
+                $cover = $velocity > 0 ? round($stock / $velocity, 1) : null;
+
+                return [
+                    'product_id' => $row->product_id,
+                    'name' => $row->product_name,
+                    'brand' => $row->brand,
+                    'stock' => $stock,
+                    'reorder_level' => (int) $row->reorder_level,
+                    'units_sold' => $units,
+                    'revenue' => round((float) ($revenue[$row->product_id] ?? 0), 2),
+                    'stock_value' => round($stock * (float) $row->price, 2),
+                    'daily_velocity' => round($velocity, 3),
+                    'days_of_cover' => $cover,
+                    'status' => $this->stockStatus($stock, $units, $cover),
+                ];
+            })
+            ->sortByDesc('units_sold')
+            ->values();
+
+        return [
+            'days_in_period' => $days,
+            'items' => $items->all(),
+            'summary' => [
+                'reorder_now' => $items->where('status', 'reorder')->count(),
+                'out_of_stock' => $items->where('status', 'out')->count(),
+                'dead_capital' => $items->where('status', 'dead')->count(),
+                'dead_capital_value' => round((float) $items->where('status', 'dead')->sum('stock_value'), 2),
+                'healthy' => $items->where('status', 'healthy')->count(),
+            ],
+        ];
+    }
+
+    private function stockStatus(int $stock, int $unitsSold, ?float $cover): string
+    {
+        if ($stock <= 0) {
+            return 'out';
+        }
+
+        // Holding stock that nothing has drawn on all period is the clearest
+        // case of capital doing no work.
+        if ($unitsSold === 0) {
+            return 'dead';
+        }
+
+        return match (true) {
+            $cover !== null && $cover <= 14  => 'reorder',
+            $cover !== null && $cover >= 120 => 'dead',
+            default => 'healthy',
+        };
+    }
+
+    /**
+     * How much of the trade rests on how few customers. A business where a
+     * handful of accounts carry most of the revenue is exposed if one leaves,
+     * which a total alone never shows.
+     */
+    private function concentration(Carbon $from, Carbon $to): array
+    {
+        $rows = $this->activeBetween($from, $to)
+            ->join('users', 'users.user_id', '=', 'sales.user_id')
+            ->groupBy('users.user_id', 'users.full_name')
+            ->selectRaw('users.user_id, users.full_name, COUNT(*) orders, SUM(sales.total_amount) revenue')
+            ->orderByDesc('revenue')
+            ->get();
+
+        $total = (float) $rows->sum('revenue');
+        $count = $rows->count();
+        $running = 0.0;
+
+        $customers = $rows->map(function ($row) use (&$running, $total) {
+            $running += (float) $row->revenue;
+
+            return [
+                'name' => preg_replace('/^\[demo\] /', '', $row->full_name),
+                'orders' => (int) $row->orders,
+                'revenue' => round((float) $row->revenue, 2),
+                'share' => $total > 0 ? round((float) $row->revenue / $total * 100, 1) : 0,
+                'cumulative_share' => $total > 0 ? round($running / $total * 100, 1) : 0,
+            ];
+        })->all();
+
+        $topFifth = (int) ceil($count * 0.2);
+
+        return [
+            'customers' => $customers,
+            'total_customers' => $count,
+            'top_fifth_count' => $topFifth,
+            'top_fifth_share' => $topFifth > 0 && isset($customers[$topFifth - 1])
+                ? $customers[$topFifth - 1]['cumulative_share']
+                : 0,
+            'largest_share' => $customers[0]['share'] ?? 0,
+        ];
     }
 
     /** What is still owed across every live order, whenever it was placed. */
