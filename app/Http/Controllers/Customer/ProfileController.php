@@ -39,7 +39,10 @@ class ProfileController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $profile = CustomerProfile::where('user_id', auth()->id())->first();
+        $user = auth()->user();
+        $profile = CustomerProfile::with('user')
+            ->where('user_id', $user->user_id)
+            ->first();
 
         $request->validate([
             'phone'   => [
@@ -71,9 +74,9 @@ class ProfileController extends Controller
         $profile->update($request->only(['phone', 'email', 'address']));
 
         ActivityLog::logAction(
-            auth()->id(),
+            $user->user_id,
             'profile_updated',
-            "Customer {$profile->user->full_name} (@" . auth()->user()->username . ") updated their profile.",
+            "Customer {$profile->user->full_name} (@{$user->username}) updated their profile.",
             $request->ip()
         );
 
@@ -89,12 +92,14 @@ class ProfileController extends Controller
      */
     public function changePassword(Request $request)
     {
+        $user = auth()->user();
+
         $request->validate([
             'current_password' => 'required',
             'new_password' => 'required|min:8|max:32|confirmed',
         ]);
 
-        $user = User::find(auth()->id());
+        $user = User::findOrFail($user->user_id);
 
         // Verify current password with Hash::check
         if (!Hash::check($request->current_password, $user->password)) {
@@ -116,9 +121,9 @@ class ProfileController extends Controller
         }
 
         ActivityLog::logAction(
-            auth()->id(),
+            $user->user_id,
             'password_changed',
-            "Customer " . auth()->user()->full_name . " (@" . auth()->user()->username . ") changed their password.",
+            "Customer {$user->full_name} (@{$user->username}) changed their password.",
             $request->ip()
         );
 

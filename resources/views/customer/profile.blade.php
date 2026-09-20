@@ -185,7 +185,7 @@
                             </li>
                             <li class="flex items-center gap-3">
                                 <svg class="h-4 w-4 flex-shrink-0 text-[var(--primary)]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                <span>Mon – Sat: 8AM – 6PM</span>
+                                <span>Mon - Sat: 8AM - 6PM</span>
                             </li>
                         </ul>
                     </div>

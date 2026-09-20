@@ -61,7 +61,7 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h1 class="text-3xl font-black text-[var(--ink)]">Sales</h1>
-                    <p class="text-[var(--muted)]">Create sales, record partial payments, and review sales history.</p>
+                    <p class="text-[var(--muted)]">Review sales history, confirm customer payment requests, and manage delivery progress.</p>
                 </div>
                 <button onclick="openSaleModal()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
                     Create New Sale
@@ -78,7 +78,7 @@
                         <button onclick="setPaymentFilter('paid')" id="payFilter-paid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Paid</button>
                         <button onclick="setPaymentFilter('partial')" id="payFilter-partial" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Partial</button>
                         <button onclick="setPaymentFilter('unpaid')" id="payFilter-unpaid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Unpaid</button>
-                        <button onclick="setPaymentFilter('processing')" id="payFilter-processing" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Awaiting</button>
+                        <button onclick="setPaymentFilter('processing')" id="payFilter-processing" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Awaiting Confirmation</button>
                     </div>
                 </div>
                 <table class="min-w-full">
@@ -272,7 +272,7 @@
                         .filter((request) => request.status === 'processing')
                         .map((request) => `
                             <div class="rounded-lg border border-sky-200 bg-sky-50 p-2 text-xs text-sky-900">
-                                <div class="font-semibold">Payment request: ${formatCurrency(request.amount)}</div>
+                                <div class="font-semibold">Customer GCash request: ${formatCurrency(request.amount)}</div>
                                 <div class="mt-1">${request.payment_method}${request.reference_no ? ` | Ref: ${request.reference_no}` : ''}</div>
                                 ${request.proof_image_path ? `<a href="/storage/${request.proof_image_path}" target="_blank" class="mt-1 inline-block font-semibold text-sky-700 hover:underline">View proof</a>` : ''}
                                 <div class="mt-2 flex gap-2">
