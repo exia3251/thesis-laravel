@@ -22,8 +22,7 @@ class EnforceSingleSessionMiddleware
             ActivityLog::logAction(
                 $user->user_id,
                 'session_invalidated',
-                'Session ended because the account was used to sign in on another device.',
-                $request->ip()
+                'Session ended because the account was used to sign in on another device.'
             );
 
             Auth::logout();

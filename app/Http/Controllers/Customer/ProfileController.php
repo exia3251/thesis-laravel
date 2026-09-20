@@ -84,8 +84,7 @@ class ProfileController extends Controller
         ActivityLog::logAction(
             $user->user_id,
             'profile_updated',
-            "Customer {$user->full_name} ({$user->email}) updated their profile.",
-            $request->ip()
+            "Customer {$user->full_name} ({$user->email}) updated their profile."
         );
 
         return response()->json([
@@ -132,8 +131,7 @@ class ProfileController extends Controller
         ActivityLog::logAction(
             $user->user_id,
             $hasPassword ? 'password_changed' : 'password_set',
-            "Customer {$user->full_name} ({$user->email}) " . ($hasPassword ? 'changed' : 'set') . " their password.",
-            $request->ip()
+            "Customer {$user->full_name} ({$user->email}) " . ($hasPassword ? 'changed' : 'set') . " their password."
         );
 
         return response()->json([

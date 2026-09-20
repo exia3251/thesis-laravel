@@ -354,7 +354,7 @@ class OrderController extends Controller
         }
 
         try {
-            $sale = $cancellation->cancel($sale, auth()->user(), $request->reason, $request->ip());
+            $sale = $cancellation->cancel($sale, auth()->user(), $request->reason);
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
@@ -400,8 +400,7 @@ class OrderController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'order_received',
-            "Customer {$sale->customer_name} confirmed receipt of order #{$sale->sale_id}",
-            $request->ip()
+            "Customer {$sale->customer_name} confirmed receipt of order #{$sale->sale_id}"
         );
 
         return response()->json([

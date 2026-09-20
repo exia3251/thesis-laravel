@@ -60,8 +60,7 @@ class ReportController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'sales_report_exported',
-            'Exported sales report CSV',
-            $request->ip()
+            'Exported sales report CSV'
         );
 
         $filename = 'sales-report-' . now()->format('Y-m-d-His') . '.csv';
@@ -111,8 +110,7 @@ class ReportController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'inventory_report_exported',
-            'Exported inventory report CSV',
-            request()->ip()
+            'Exported inventory report CSV'
         );
 
         return response()->streamDownload(function () use ($inventory) {

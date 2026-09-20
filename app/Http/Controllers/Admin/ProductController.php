@@ -126,8 +126,7 @@ class ProductController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'product_created',
-            "Created product: {$product->product_name} by " . auth()->user()->full_name,
-            request()->ip()
+            "Created product: {$product->product_name} by " . auth()->user()->full_name
         );
 
         return response()->json([
@@ -176,8 +175,7 @@ class ProductController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'product_updated',
-            "Updated product: {$product->product_name} by " . auth()->user()->full_name,
-            request()->ip()
+            "Updated product: {$product->product_name} by " . auth()->user()->full_name
         );
 
         return response()->json([
@@ -218,8 +216,7 @@ class ProductController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'product_deleted',
-            "Deleted product: {$productName} by " . auth()->user()->full_name,
-            request()->ip()
+            "Deleted product: {$productName} by " . auth()->user()->full_name
         );
 
         return response()->json([
@@ -337,8 +334,7 @@ class ProductController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'product_catalog_imported',
-            "Bulk imported catalog entries. Added {$imported}, updated {$updated}.",
-            $request->ip()
+            "Bulk imported catalog entries. Added {$imported}, updated {$updated}."
         );
 
         return response()->json([

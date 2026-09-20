@@ -141,8 +141,7 @@ class UserManagementController extends Controller
             ActivityLog::logAction(
                 auth()->id(),
                 'user_created',
-                auth()->user()->full_name . " created {$user->roleLabel()} account: {$user->full_name} ({$user->email})",
-                $request->ip()
+                auth()->user()->full_name . " created {$user->roleLabel()} account: {$user->full_name} ({$user->email})"
             );
 
             DB::commit();
@@ -224,8 +223,7 @@ class UserManagementController extends Controller
             ActivityLog::logAction(
                 auth()->id(),
                 'user_updated',
-                auth()->user()->full_name . " updated {$user->roleLabel()} account: {$user->full_name} ({$user->email})",
-                $request->ip()
+                auth()->user()->full_name . " updated {$user->roleLabel()} account: {$user->full_name} ({$user->email})"
             );
 
             DB::commit();
@@ -300,8 +298,7 @@ class UserManagementController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'user_deleted',
-            auth()->user()->full_name . " deleted {$role} account: {$fullName} ({$email})",
-            $request->ip()
+            auth()->user()->full_name . " deleted {$role} account: {$fullName} ({$email})"
         );
 
         return response()->json([

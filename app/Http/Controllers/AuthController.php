@@ -84,12 +84,11 @@ class AuthController extends Controller
         ActivityLog::logAction(
             $user->user_id,
             $logAction,
-            "{$user->full_name} ({$user->email}) logged in as {$user->roleLabel()}",
-            $request->ip()
+            "{$user->full_name} ({$user->email}) logged in as {$user->roleLabel()}"
         );
 
         if ($previousSessionId && $previousSessionId !== $request->session()->getId()) {
-            ActivityLog::logAction($user->user_id, 'single_session_replaced', $replacedNote, $request->ip());
+            ActivityLog::logAction($user->user_id, 'single_session_replaced', $replacedNote);
         }
     }
 
@@ -249,8 +248,7 @@ class AuthController extends Controller
             ActivityLog::logAction(
                 $user->user_id,
                 'customer_registered',
-                "New customer registered: {$user->full_name} ({$user->email})",
-                $request->ip()
+                "New customer registered: {$user->full_name} ({$user->email})"
             );
 
             return response()->json([
@@ -290,7 +288,7 @@ class AuthController extends Controller
         }
 
         if ($userId) {
-            ActivityLog::logAction($userId, 'logout', $label, $request->ip());
+            ActivityLog::logAction($userId, 'logout', $label);
         }
 
         return response()->json([

@@ -133,8 +133,7 @@ class SalesController extends Controller
             ActivityLog::logAction(
                 auth()->id(),
                 'sale_created',
-                auth()->user()->full_name . " created sale #{$sale->sale_id} for {$sale->customer_name} — total: ₱{$sale->total_amount}, payment: {$sale->payment_status}",
-                $request->ip()
+                auth()->user()->full_name . " created sale #{$sale->sale_id} for {$sale->customer_name} — total: ₱{$sale->total_amount}, payment: {$sale->payment_status}"
             );
 
             DB::commit();
@@ -221,8 +220,7 @@ class SalesController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'sale_status_updated',
-            "Sale #{$sale->sale_id} ({$sale->customer_name}) updated by " . auth()->user()->full_name . " — payment: {$sale->payment_status}, paid: ₱{$sale->paid_amount}, balance: ₱{$sale->balance_due}, delivery: {$sale->delivery_status}",
-            $request->ip()
+            "Sale #{$sale->sale_id} ({$sale->customer_name}) updated by " . auth()->user()->full_name . " — payment: {$sale->payment_status}, paid: ₱{$sale->paid_amount}, balance: ₱{$sale->balance_due}, delivery: {$sale->delivery_status}"
         );
 
         return response()->json([
@@ -268,8 +266,7 @@ class SalesController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'payment_request_approved',
-            "Payment request #{$paymentRequest->id} approved by " . auth()->user()->full_name . " for sale #{$sale->sale_id} ({$sale->customer_name}) — amount: ₱{$approvedAmount}",
-            $request->ip()
+            "Payment request #{$paymentRequest->id} approved by " . auth()->user()->full_name . " for sale #{$sale->sale_id} ({$sale->customer_name}) — amount: ₱{$approvedAmount}"
         );
 
         return response()->json([
@@ -310,8 +307,7 @@ class SalesController extends Controller
         ActivityLog::logAction(
             auth()->id(),
             'payment_request_rejected',
-            "Payment request #{$paymentRequest->id} rejected by " . auth()->user()->full_name . " for sale #{$sale->sale_id} ({$sale->customer_name})",
-            $request->ip()
+            "Payment request #{$paymentRequest->id} rejected by " . auth()->user()->full_name . " for sale #{$sale->sale_id} ({$sale->customer_name})"
         );
 
         return response()->json([
@@ -340,7 +336,7 @@ class SalesController extends Controller
         }
 
         try {
-            $sale = $cancellation->cancel($sale, auth()->user(), $request->reason, $request->ip());
+            $sale = $cancellation->cancel($sale, auth()->user(), $request->reason);
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
@@ -374,7 +370,7 @@ class SalesController extends Controller
         }
 
         try {
-            $sale = $cancellation->markRefunded($sale, auth()->user(), $request->reference, $request->notes, $request->ip());
+            $sale = $cancellation->markRefunded($sale, auth()->user(), $request->reference, $request->notes);
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
@@ -458,8 +454,7 @@ class SalesController extends Controller
             auth()->id(),
             'delivery_confirmed',
             auth()->user()->full_name . " confirmed delivery of order #{$sale->sale_id} ({$sale->customer_name})"
-                . ($request->notes ? " - {$request->notes}" : ''),
-            $request->ip()
+                . ($request->notes ? " - {$request->notes}" : '')
         );
 
         return response()->json([

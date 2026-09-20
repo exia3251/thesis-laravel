@@ -41,7 +41,7 @@ class EmailVerificationController extends Controller
 
         $user->markEmailAsVerified();
 
-        ActivityLog::logAction($user->user_id, 'email_verified', "{$user->full_name} ({$user->email}) confirmed their email address.", $request->ip());
+        ActivityLog::logAction($user->user_id, 'email_verified', "{$user->full_name} ({$user->email}) confirmed their email address.");
 
         return view('auth.verify-result', [
             'ok' => true,

@@ -20,7 +20,7 @@ class OrderCancellation
     /**
      * @throws RuntimeException when the order is past the point of cancelling.
      */
-    public function cancel(Sale $sale, User $actor, ?string $reason, string $ip): Sale
+    public function cancel(Sale $sale, User $actor, ?string $reason): Sale
     {
         if ($sale->isCancelled()) {
             throw new RuntimeException('This order has already been cancelled.');
@@ -30,7 +30,7 @@ class OrderCancellation
             throw new RuntimeException('A delivered order cannot be cancelled.');
         }
 
-        return DB::transaction(function () use ($sale, $actor, $reason, $ip) {
+        return DB::transaction(function () use ($sale, $actor, $reason) {
             // Put the goods back before anything else, so a failure here leaves
             // the order untouched rather than cancelled with stock still held.
             foreach ($sale->items as $item) {
@@ -70,8 +70,7 @@ class OrderCancellation
                 'order_cancelled',
                 "{$who} {$actor->full_name} cancelled order #{$sale->sale_id}"
                     . ($paid > 0 ? " - PHP " . number_format($paid, 2) . ' refund owed' : '')
-                    . ($reason ? ". Reason: {$reason}" : ''),
-                $ip
+                    . ($reason ? ". Reason: {$reason}" : '')
             );
 
             return $sale;
@@ -82,7 +81,7 @@ class OrderCancellation
      * Records that the refund owed on a cancelled order has actually been sent.
      * The transfer itself happens outside the system, in GCash.
      */
-    public function markRefunded(Sale $sale, User $actor, ?string $reference, ?string $notes, string $ip): Sale
+    public function markRefunded(Sale $sale, User $actor, ?string $reference, ?string $notes): Sale
     {
         if (!$sale->owesRefund()) {
             throw new RuntimeException('This order has no refund outstanding.');
@@ -100,8 +99,7 @@ class OrderCancellation
             'refund_recorded',
             "{$actor->full_name} recorded a PHP " . number_format((float) $sale->refund_amount, 2)
                 . " refund for order #{$sale->sale_id}"
-                . ($reference ? " (ref {$reference})" : ''),
-            $ip
+                . ($reference ? " (ref {$reference})" : '')
         );
 
         return $sale;

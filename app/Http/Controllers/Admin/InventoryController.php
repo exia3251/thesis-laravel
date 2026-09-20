@@ -68,8 +68,7 @@ class InventoryController extends Controller
             ActivityLog::logAction(
                 auth()->id(),
                 'stock_in',
-                "Stock in: {$request->quantity} units of {$product->product_name} by " . auth()->user()->full_name,
-                $request->ip()
+                "Stock in: {$request->quantity} units of {$product->product_name} by " . auth()->user()->full_name
             );
 
             DB::commit();
@@ -124,8 +123,7 @@ class InventoryController extends Controller
             ActivityLog::logAction(
                 auth()->id(),
                 'stock_out',
-                "Stock out: {$request->quantity} units of {$product->product_name} by " . auth()->user()->full_name,
-                $request->ip()
+                "Stock out: {$request->quantity} units of {$product->product_name} by " . auth()->user()->full_name
             );
 
             DB::commit();
