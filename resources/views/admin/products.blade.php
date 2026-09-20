@@ -1,189 +1,133 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>RANEY LUBRICANTS TRADING — Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root {
-            --primary:       #148a67;
-            --primary-dark:  #0f6b50;
-            --primary-soft:  rgba(20,138,103,0.10);
-            --accent:        #d9b14a;
-            --accent-soft:   rgba(217,177,74,0.12);
-            --ink:           #16202a;
-            --muted:         #6f7d8c;
-            --surface:       #f3f6f9;
-            --card:          #ffffff;
-            --line:          rgba(21,35,54,0.10);
-            --sidebar-bg:    #0d1f18;
-            --sidebar-hover: rgba(20,138,103,0.18);
-            --sidebar-active:rgba(20,138,103,0.28);
-        }
-        body { background: var(--surface); color: var(--ink); }
-        input, select, textarea {
-            border-color: var(--line) !important;
-        }
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--primary) !important;
-            outline: none;
-            box-shadow: 0 0 0 3px var(--primary-soft);
-        }
-    </style>
-</head>
-<body class="bg-[var(--surface)]">
-    <div class="min-h-screen">
-        <div class="fixed inset-y-0 left-0 w-64 bg-[var(--sidebar-bg)] shadow-2xl">
-            <div class="flex h-20 items-center justify-center border-b border-white/10 bg-[linear-gradient(135deg,_rgba(20,138,103,0.15),_transparent)]">
-                <div class="text-center">
-                    <div class="text-lg font-black tracking-tight leading-tight">
-                        <span style="color:#148a67;">RANEY</span><span style="color:#d9b14a;"> LUBRICANTS</span>
-                    </div>
-                    <div class="text-[10px] uppercase tracking-[0.28em] text-white/50 mt-0.5">Trading</div>
-                </div>
-            </div>
-            <nav class="mt-6 space-y-1 px-3">
-                <a href="/admin/dashboard" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Dashboard</a>
-                <a href="/admin/products" class="flex items-center rounded-2xl px-4 py-3 font-semibold text-white bg-[var(--sidebar-active)] ring-1 ring-white/10">Products</a>
-                <a href="/admin/inventory" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Inventory</a>
-                <a href="/admin/sales" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Sales</a>
-                <a href="/admin/reports" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Reports</a>
-                @if(auth()->user()->isSuperAdmin())
-                    <a href="/admin/users" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Users</a>
-                @endif
-                <button type="button" onclick="logout()" class="w-full rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Logout</button>
-            </nav>
+@extends('layouts.admin')
+
+@section('title', 'RANEY LUBRICANTS TRADING — Admin')
+
+@section('content')
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-black text-[var(--ink)]">Products</h1>
+            <p class="text-[var(--muted)]">Create, update, and remove products from the catalog.</p>
         </div>
-
-        <div class="ml-64 p-8">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-3xl font-black text-[var(--ink)]">Products</h1>
-                    <p class="text-[var(--muted)]">Create, update, and remove products from the catalog.</p>
-                </div>
-                <div class="flex gap-3">
-                    {{-- Bulk Import temporarily disabled
-                    <button onclick="openImportModal()" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900">
-                        Bulk Import
-                    </button>
-                    --}}
-                    <button onclick="openForm()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
-                        Add Product
-                    </button>
-                </div>
-            </div>
-
-            <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
-
-            <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
-                <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
-                    <input type="text" id="productSearch" oninput="renderProducts()" placeholder="Search product, brand, or type..." class="rounded-xl border border-[var(--line)] px-3 py-2 text-sm w-72 focus:outline-none">
-                </div>
-                <table class="min-w-full">
-                    <thead class="bg-[var(--surface)]">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Image</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Product Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Brand</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Unit</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Price</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Stock</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productsBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
-                        <tr>
-                            <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading products...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="flex gap-3">
+            {{-- Bulk Import temporarily disabled
+            <button onclick="openImportModal()" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900">
+                Bulk Import
+            </button>
+            --}}
+            <button onclick="openForm()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
+                Add Product
+            </button>
         </div>
     </div>
 
-    <div id="productModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-        <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div class="flex items-center justify-between mb-4">
-                <h3 id="modalTitle" class="text-lg font-bold">Add Product</h3>
-                <button type="button" onclick="closeForm()" class="text-gray-500 hover:text-gray-700">Close</button>
-            </div>
-            <div id="formErrors" class="hidden mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
-            <form id="productForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="hidden" id="productId">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Product Name</label>
-                    <input type="text" id="product_name" required class="mt-1 block w-full rounded-md border px-3 py-2">
-                    <p id="error_product_name" class="mt-1 hidden text-sm text-red-600"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Brand</label>
-                    <input type="text" id="brand" required class="mt-1 block w-full rounded-md border px-3 py-2">
-                    <p id="error_brand" class="mt-1 hidden text-sm text-red-600"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Product Type</label>
-                    <select id="oil_type" required class="mt-1 block w-full rounded-md border px-3 py-2">
-                        <option value="Synthetic">Synthetic</option>
-                        <option value="Semi-Synthetic">Semi-Synthetic</option>
-                        <option value="Mineral">Mineral</option>
-                        <option value="Coolant">Coolant</option>
-                        <option value="Other">Other</option>
-                    </select>
-                    <p id="error_oil_type" class="mt-1 hidden text-sm text-red-600"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Viscosity Grade</label>
-                    <input type="text" id="viscosity_grade" class="mt-1 block w-full rounded-md border px-3 py-2" placeholder="5W-40">
-                    <p id="error_viscosity_grade" class="mt-1 hidden text-sm text-red-600"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Unit</label>
-                    <input type="text" id="unit" class="mt-1 block w-full rounded-md border px-3 py-2" value="1 Liter">
-                    <p id="error_unit" class="mt-1 hidden text-sm text-red-600"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Price</label>
-                    <input type="number" id="price" min="0" step="1" required class="mt-1 block w-full rounded-md border px-3 py-2">
-                    <p id="error_price" class="mt-1 hidden text-sm text-red-600"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Reorder Level</label>
-                    <input type="number" id="reorder_level" min="0" class="mt-1 block w-full rounded-md border px-3 py-2" value="10">
-                    <p id="error_reorder_level" class="mt-1 hidden text-sm text-red-600"></p>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea id="description" rows="4" class="mt-1 block w-full resize-none rounded-md border px-3 py-2"></textarea>
-                    <p id="error_description" class="mt-1 hidden text-sm text-red-600"></p>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700">Product Image</label>
-                    <input type="file" id="image" accept="image/*" class="mt-1 block w-full rounded-md border px-3 py-2">
-                    <p class="mt-1 text-xs text-gray-500">Accepted: JPG, JPEG, PNG, WEBP. Max file size: 2 MB.</p>
-                    <p id="error_image" class="mt-1 hidden text-sm text-red-600"></p>
-                    <div id="imagePreviewWrapper" class="mt-3 hidden">
-                        <img id="imagePreview" src="" alt="Product preview" class="h-28 w-28 rounded border object-cover">
-                    </div>
-                </div>
-                <div class="md:col-span-2 flex gap-2 justify-end">
-                    <button type="button" onclick="closeForm()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
-                    <button type="submit" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">Save Product</button>
-                </div>
-            </form>
+    <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
+
+    <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+        <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
+            <input type="text" id="productSearch" oninput="renderProducts()" placeholder="Search product, brand, or type..." class="rounded-xl border border-[var(--line)] px-3 py-2 text-sm w-72 focus:outline-none">
         </div>
+        <table class="min-w-full">
+            <thead class="bg-[var(--surface)]">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Image</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Product Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Brand</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Unit</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Price</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Stock</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="productsBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
+                <tr>
+                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading products...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+    </div>
+
+    <div id="productModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+<div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+    <div class="flex items-center justify-between mb-4">
+        <h3 id="modalTitle" class="text-lg font-bold">Add Product</h3>
+        <button type="button" onclick="closeForm()" class="text-gray-500 hover:text-gray-700">Close</button>
+    </div>
+    <div id="formErrors" class="hidden mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
+    <form id="productForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="hidden" id="productId">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Product Name</label>
+            <input type="text" id="product_name" required class="mt-1 block w-full rounded-md border px-3 py-2">
+            <p id="error_product_name" class="mt-1 hidden text-sm text-red-600"></p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Brand</label>
+            <input type="text" id="brand" required class="mt-1 block w-full rounded-md border px-3 py-2">
+            <p id="error_brand" class="mt-1 hidden text-sm text-red-600"></p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Product Type</label>
+            <select id="oil_type" required class="mt-1 block w-full rounded-md border px-3 py-2">
+                <option value="Synthetic">Synthetic</option>
+                <option value="Semi-Synthetic">Semi-Synthetic</option>
+                <option value="Mineral">Mineral</option>
+                <option value="Coolant">Coolant</option>
+                <option value="Other">Other</option>
+            </select>
+            <p id="error_oil_type" class="mt-1 hidden text-sm text-red-600"></p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Viscosity Grade</label>
+            <input type="text" id="viscosity_grade" class="mt-1 block w-full rounded-md border px-3 py-2" placeholder="5W-40">
+            <p id="error_viscosity_grade" class="mt-1 hidden text-sm text-red-600"></p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Unit</label>
+            <input type="text" id="unit" class="mt-1 block w-full rounded-md border px-3 py-2" value="1 Liter">
+            <p id="error_unit" class="mt-1 hidden text-sm text-red-600"></p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Price</label>
+            <input type="number" id="price" min="0" step="1" required class="mt-1 block w-full rounded-md border px-3 py-2">
+            <p id="error_price" class="mt-1 hidden text-sm text-red-600"></p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Reorder Level</label>
+            <input type="number" id="reorder_level" min="0" class="mt-1 block w-full rounded-md border px-3 py-2" value="10">
+            <p id="error_reorder_level" class="mt-1 hidden text-sm text-red-600"></p>
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700">Description</label>
+            <textarea id="description" rows="4" class="mt-1 block w-full resize-none rounded-md border px-3 py-2"></textarea>
+            <p id="error_description" class="mt-1 hidden text-sm text-red-600"></p>
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700">Product Image</label>
+            <input type="file" id="image" accept="image/*" class="mt-1 block w-full rounded-md border px-3 py-2">
+            <p class="mt-1 text-xs text-gray-500">Accepted: JPG, JPEG, PNG, WEBP. Max file size: 2 MB.</p>
+            <p id="error_image" class="mt-1 hidden text-sm text-red-600"></p>
+            <div id="imagePreviewWrapper" class="mt-3 hidden">
+                <img id="imagePreview" src="" alt="Product preview" class="h-28 w-28 rounded border object-cover">
+            </div>
+        </div>
+        <div class="md:col-span-2 flex gap-2 justify-end">
+            <button type="button" onclick="closeForm()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+            <button type="submit" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">Save Product</button>
+        </div>
+    </form>
+</div>
     </div>
 
     {{-- Bulk Import Modal temporarily disabled
     <div id="importModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-        ...
-    </div>
-    --}}
+...
+@endsection
 
-    <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+@push('scripts')
+<script>
         let products = [];
         let messageTimeout;
 
@@ -480,21 +424,6 @@
         }
         */
 
-        async function logout() {
-            const response = await fetch('/admin/logout', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                window.location.href = '/admin/login';
-            }
-        }
-
         loadProducts();
-    </script>
-</body>
-</html>
+</script>
+@endpush

@@ -1,193 +1,136 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>RANEY LUBRICANTS TRADING — Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root {
-            --primary:        #148a67;
-            --primary-dark:   #0f6b50;
-            --primary-soft:   rgba(20,138,103,0.10);
-            --accent:         #d9b14a;
-            --accent-soft:    rgba(217,177,74,0.12);
-            --ink:            #16202a;
-            --muted:          #6f7d8c;
-            --surface:        #f3f6f9;
-            --card:           #ffffff;
-            --line:           rgba(21,35,54,0.10);
-            --sidebar-bg:     #0d1f18;
-            --sidebar-hover:  rgba(20,138,103,0.18);
-            --sidebar-active: rgba(20,138,103,0.28);
-        }
-        body { background: var(--surface); color: var(--ink); }
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--primary) !important;
-            outline: none;
-            box-shadow: 0 0 0 3px var(--primary-soft);
-        }
-    </style>
-</head>
-<body class="bg-[var(--surface)]">
-    <div class="min-h-screen bg-[var(--surface)]">
-        <div class="fixed inset-y-0 left-0 w-64 bg-[var(--sidebar-bg)] shadow-2xl">
-            <div class="flex h-20 items-center justify-center border-b border-white/10 bg-[linear-gradient(135deg,_rgba(20,138,103,0.15),_transparent)]">
-                <div class="text-center">
-                    <div class="text-lg font-black tracking-tight leading-tight">
-                        <span style="color:#148a67;">RANEY</span><span style="color:#d9b14a;"> LUBRICANTS</span>
-                    </div>
-                    <div class="text-[10px] uppercase tracking-[0.28em] text-white/50 mt-0.5">Trading</div>
-                </div>
-            </div>
-            <nav class="mt-6 space-y-1 px-3">
-                <a href="/admin/dashboard" class="flex items-center rounded-2xl px-4 py-3 font-semibold text-white bg-[var(--sidebar-active)] ring-1 ring-white/10">Dashboard</a>
-                <a href="/admin/products" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Products</a>
-                <a href="/admin/inventory" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Inventory</a>
-                <a href="/admin/sales" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Sales</a>
-                <a href="/admin/reports" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Reports</a>
-                @if(auth()->user()->isSuperAdmin())
-                    <a href="/admin/users" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Users</a>
-                @endif
-                <button type="button" onclick="logout()" class="w-full rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Logout</button>
-            </nav>
-        </div>
+@extends('layouts.admin')
 
-        <div class="ml-64 p-8">
-            <div class="mb-8 overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,_#0d1f18_0%,_#163d2c_50%,_#0f2a20_100%)] p-8 text-white shadow-2xl">
-                <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
-                    <div>
-                        <div class="inline-flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--accent)]">Operations Dashboard</div>
-                        <h1 class="mt-5 text-4xl font-black">Keep stock moving and sales visible.</h1>
-                        <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-300">A fuel-retail inspired command center for engine oil inventory, sales activity, and reorder monitoring.</p>
+@section('title', 'RANEY LUBRICANTS TRADING — Admin')
+
+@section('content')
+    <div class="mb-8 overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,_#0d1f18_0%,_#163d2c_50%,_#0f2a20_100%)] p-8 text-white shadow-2xl">
+        <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
+            <div>
+                <div class="inline-flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--accent)]">Operations Dashboard</div>
+                <h1 class="mt-5 text-4xl font-black">Keep stock moving and sales visible.</h1>
+                <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-300">A fuel-retail inspired command center for engine oil inventory, sales activity, and reorder monitoring.</p>
+            </div>
+            <div class="flex-shrink-0 rounded-[1.25rem] bg-white/10 border border-white/10 p-4 backdrop-blur">
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-white/60 mb-3">Filter by Date</div>
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-white/70 w-10">From</label>
+                        <input id="dateFrom" type="date" class="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/40">
                     </div>
-                    <div class="flex-shrink-0 rounded-[1.25rem] bg-white/10 border border-white/10 p-4 backdrop-blur">
-                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-white/60 mb-3">Filter by Date</div>
-                        <div class="flex flex-col gap-2">
-                            <div class="flex items-center gap-2">
-                                <label class="text-xs text-white/70 w-10">From</label>
-                                <input id="dateFrom" type="date" class="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/40">
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <label class="text-xs text-white/70 w-10">To</label>
-                                <input id="dateTo" type="date" class="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/40">
-                            </div>
-                            <div class="flex gap-2 mt-1">
-                                <button type="button" onclick="applyDateFilter()" class="flex-1 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-bold text-white transition hover:bg-[var(--primary-dark)]">Apply</button>
-                                <button type="button" onclick="resetDateFilter()" class="flex-1 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20">Reset</button>
-                            </div>
-                        </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-white/70 w-10">To</label>
+                        <input id="dateTo" type="date" class="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/40">
+                    </div>
+                    <div class="flex gap-2 mt-1">
+                        <button type="button" onclick="applyDateFilter()" class="flex-1 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-bold text-white transition hover:bg-[var(--primary-dark)]">Apply</button>
+                        <button type="button" onclick="resetDateFilter()" class="flex-1 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20">Reset</button>
                     </div>
                 </div>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
-                <div class="rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-6 shadow-lg">
-                    <div class="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">Total Products</div>
-                    <div class="mt-3 text-3xl font-black text-[var(--ink)]" id="totalProducts">0</div>
-                </div>
-                <div class="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-6 shadow-lg">
-                    <div class="text-xs font-semibold uppercase tracking-[0.25em] text-amber-700">Out of Stock</div>
-                    <div class="mt-3 text-3xl font-black text-amber-800" id="lowStock">0</div>
-                </div>
-                <div class="rounded-[1.5rem] border border-orange-200 bg-orange-50 p-6 shadow-lg">
-                    <div class="text-xs font-semibold uppercase tracking-[0.25em] text-orange-700">Low Stock Items</div>
-                    <div class="mt-3 text-3xl font-black text-orange-800" id="lowStockItems">0</div>
-                </div>
-                <div class="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-6 shadow-lg">
-                    <div class="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700">Sales Revenue</div>
-                    <div class="mt-3 text-3xl font-black text-emerald-700" id="totalSales">PHP 0.00</div>
-                </div>
-                <div class="rounded-[1.5rem] border border-sky-200 bg-sky-50 p-6 shadow-lg">
-                    <div class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-700">Sales Count</div>
-                    <div class="mt-3 text-3xl font-black text-sky-700" id="ordersToday">0</div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="rounded-2xl bg-amber-50 border border-amber-200 p-6 shadow-lg">
-                    <div class="text-amber-700 text-sm">Open Payment Alerts</div>
-                    <div class="text-3xl font-bold text-amber-900" id="unpaidSales">0</div>
-                    <p class="text-sm text-amber-700 mt-2">Sales that are unpaid or partially paid.</p>
-                </div>
-                <div class="rounded-2xl bg-sky-50 border border-sky-200 p-6 shadow-lg">
-                    <div class="text-sky-700 text-sm">Pending Deliveries</div>
-                    <div class="text-3xl font-bold text-sky-900" id="pendingDeliveries">0</div>
-                    <p class="text-sm text-sky-700 mt-2">Sales waiting to be received or delivered.</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-                <div class="rounded-[1.5rem] bg-[var(--card)] shadow-lg border border-[var(--line)]">
-                    <div class="border-b border-[var(--line)] px-6 py-4">
-                        <h2 class="text-xl font-bold text-[var(--ink)]">Out of Stock</h2>
-                        <p class="text-xs text-[var(--muted)] mt-1">Products with zero remaining stock</p>
-                    </div>
-                    <div class="p-6">
-                        <div id="lowStockAlerts" class="space-y-3 text-sm text-gray-700">
-                            <p class="text-gray-500">Loading...</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="rounded-[1.5rem] bg-[var(--card)] shadow-lg border border-[var(--line)]">
-                    <div class="border-b border-[var(--line)] px-6 py-4">
-                        <h2 class="text-xl font-bold text-[var(--ink)]">Low Stock Alerts</h2>
-                        <p class="text-xs text-[var(--muted)] mt-1">Products at or below half their reorder level</p>
-                    </div>
-                    <div class="p-6">
-                        <div id="lowStockItemAlerts" class="space-y-3 text-sm text-gray-700">
-                            <p class="text-gray-500">Loading...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <div class="rounded-[1.5rem] bg-[var(--card)] shadow-lg border border-[var(--line)]">
-                    <div class="border-b border-[var(--line)] px-6 py-4">
-                        <h2 class="text-xl font-bold text-[var(--ink)]">Recent Products</h2>
-                    </div>
-                    <div class="p-6">
-                        <table class="min-w-full">
-                            <thead>
-                                <tr class="border-b">
-                                    <th class="text-left py-2">Product Name</th>
-                                    <th class="text-left py-2">Brand</th>
-                                    <th class="text-left py-2">Price</th>
-                                    <th class="text-left py-2">Stock</th>
-                                </tr>
-                            </thead>
-                            <tbody id="productsBody">
-                                <tr>
-                                    <td colspan="4" class="text-center py-4 text-gray-500">Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="rounded-[1.5rem] bg-[var(--card)] shadow-lg border border-[var(--line)]">
-                    <div class="border-b border-[var(--line)] px-6 py-4">
-                        <h2 class="text-xl font-bold text-[var(--ink)]">Top Products</h2>
-                    </div>
-                    <div class="p-6">
-                        <div id="topProducts" class="space-y-3 text-sm text-gray-700">
-                            <p class="text-gray-500">Loading...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 
-    <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+        <div class="rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-6 shadow-lg">
+            <div class="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">Total Products</div>
+            <div class="mt-3 text-3xl font-black text-[var(--ink)]" id="totalProducts">0</div>
+        </div>
+        <div class="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-6 shadow-lg">
+            <div class="text-xs font-semibold uppercase tracking-[0.25em] text-amber-700">Out of Stock</div>
+            <div class="mt-3 text-3xl font-black text-amber-800" id="lowStock">0</div>
+        </div>
+        <div class="rounded-[1.5rem] border border-orange-200 bg-orange-50 p-6 shadow-lg">
+            <div class="text-xs font-semibold uppercase tracking-[0.25em] text-orange-700">Low Stock Items</div>
+            <div class="mt-3 text-3xl font-black text-orange-800" id="lowStockItems">0</div>
+        </div>
+        <div class="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-6 shadow-lg">
+            <div class="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700">Sales Revenue</div>
+            <div class="mt-3 text-3xl font-black text-emerald-700" id="totalSales">PHP 0.00</div>
+        </div>
+        <div class="rounded-[1.5rem] border border-sky-200 bg-sky-50 p-6 shadow-lg">
+            <div class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-700">Sales Count</div>
+            <div class="mt-3 text-3xl font-black text-sky-700" id="ordersToday">0</div>
+        </div>
+    </div>
 
-        function formatCurrency(value) {
-            return `PHP ${Number(value || 0).toFixed(2)}`;
-        }
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="rounded-2xl bg-amber-50 border border-amber-200 p-6 shadow-lg">
+            <div class="text-amber-700 text-sm">Open Payment Alerts</div>
+            <div class="text-3xl font-bold text-amber-900" id="unpaidSales">0</div>
+            <p class="text-sm text-amber-700 mt-2">Sales that are unpaid or partially paid.</p>
+        </div>
+        <div class="rounded-2xl bg-sky-50 border border-sky-200 p-6 shadow-lg">
+            <div class="text-sky-700 text-sm">Pending Deliveries</div>
+            <div class="text-3xl font-bold text-sky-900" id="pendingDeliveries">0</div>
+            <p class="text-sm text-sky-700 mt-2">Sales waiting to be received or delivered.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        <div class="rounded-[1.5rem] bg-[var(--card)] shadow-lg border border-[var(--line)]">
+            <div class="border-b border-[var(--line)] px-6 py-4">
+                <h2 class="text-xl font-bold text-[var(--ink)]">Out of Stock</h2>
+                <p class="text-xs text-[var(--muted)] mt-1">Products with zero remaining stock</p>
+            </div>
+            <div class="p-6">
+                <div id="lowStockAlerts" class="space-y-3 text-sm text-gray-700">
+                    <p class="text-gray-500">Loading...</p>
+                </div>
+            </div>
+        </div>
+        <div class="rounded-[1.5rem] bg-[var(--card)] shadow-lg border border-[var(--line)]">
+            <div class="border-b border-[var(--line)] px-6 py-4">
+                <h2 class="text-xl font-bold text-[var(--ink)]">Low Stock Alerts</h2>
+                <p class="text-xs text-[var(--muted)] mt-1">Products at or below half their reorder level</p>
+            </div>
+            <div class="p-6">
+                <div id="lowStockItemAlerts" class="space-y-3 text-sm text-gray-700">
+                    <p class="text-gray-500">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="rounded-[1.5rem] bg-[var(--card)] shadow-lg border border-[var(--line)]">
+            <div class="border-b border-[var(--line)] px-6 py-4">
+                <h2 class="text-xl font-bold text-[var(--ink)]">Recent Products</h2>
+            </div>
+            <div class="p-6">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-2">Product Name</th>
+                            <th class="text-left py-2">Brand</th>
+                            <th class="text-left py-2">Price</th>
+                            <th class="text-left py-2">Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsBody">
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-gray-500">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="rounded-[1.5rem] bg-[var(--card)] shadow-lg border border-[var(--line)]">
+            <div class="border-b border-[var(--line)] px-6 py-4">
+                <h2 class="text-xl font-bold text-[var(--ink)]">Top Products</h2>
+            </div>
+            <div class="p-6">
+                <div id="topProducts" class="space-y-3 text-sm text-gray-700">
+                    <p class="text-gray-500">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@endsection
+
+@push('scripts')
+<script>
 
         async function loadDashboard() {
             try {
@@ -292,20 +235,6 @@
             }
         }
 
-        async function logout() {
-            const response = await fetch('/admin/logout', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                window.location.href = '/admin/login';
-            }
-        }
-
         function applyDateFilter() {
             loadDashboard();
         }
@@ -317,6 +246,5 @@
         }
 
         loadDashboard();
-    </script>
-</body>
-</html>
+</script>
+@endpush

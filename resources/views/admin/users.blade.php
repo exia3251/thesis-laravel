@@ -1,231 +1,175 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>RANEY LUBRICANTS TRADING — Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root {
-            --primary:       #148a67;
-            --primary-dark:  #0f6b50;
-            --primary-soft:  rgba(20,138,103,0.10);
-            --accent:        #d9b14a;
-            --accent-soft:   rgba(217,177,74,0.12);
-            --ink:           #16202a;
-            --muted:         #6f7d8c;
-            --surface:       #f3f6f9;
-            --card:          #ffffff;
-            --line:          rgba(21,35,54,0.10);
-            --sidebar-bg:    #0d1f18;
-            --sidebar-hover: rgba(20,138,103,0.18);
-            --sidebar-active:rgba(20,138,103,0.28);
-        }
-        body { background: var(--surface); color: var(--ink); }
-        input, select, textarea {
-            border-color: var(--line) !important;
-        }
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--primary) !important;
-            outline: none;
-            box-shadow: 0 0 0 3px var(--primary-soft);
-        }
-    </style>
-</head>
-<body class="bg-[var(--surface)]">
-    <div class="min-h-screen">
-        <div class="fixed inset-y-0 left-0 w-64 bg-[var(--sidebar-bg)] shadow-2xl">
-            <div class="flex h-20 items-center justify-center border-b border-white/10 bg-[linear-gradient(135deg,_rgba(20,138,103,0.15),_transparent)]">
-                <div class="text-center">
-                    <div class="text-lg font-black tracking-tight leading-tight">
-                        <span style="color:#148a67;">RANEY</span><span style="color:#d9b14a;"> LUBRICANTS</span>
-                    </div>
-                    <div class="text-[10px] uppercase tracking-[0.28em] text-white/50 mt-0.5">Trading</div>
-                </div>
-            </div>
-            <nav class="mt-6 space-y-1 px-3">
-                <a href="/admin/dashboard" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Dashboard</a>
-                <a href="/admin/products" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Products</a>
-                <a href="/admin/inventory" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Inventory</a>
-                <a href="/admin/sales" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Sales</a>
-                <a href="/admin/reports" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Reports</a>
-                @if(auth()->user()->isSuperAdmin())
-                    <a href="/admin/users" class="flex items-center rounded-2xl px-4 py-3 font-semibold text-white bg-[var(--sidebar-active)] ring-1 ring-white/10">Users</a>
-                @endif
-                <button type="button" onclick="logout()" class="w-full rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Logout</button>
-            </nav>
+@extends('layouts.admin')
+
+@section('title', 'RANEY LUBRICANTS TRADING — Admin')
+
+@section('content')
+    <div class="flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-black text-[var(--ink)]">User Management</h1>
+            <p class="text-[var(--muted)]">Create and manage admin and customer accounts.</p>
         </div>
+        <button onclick="openUserModal()" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)] transition shadow-sm">+ Add User</button>
+    </div>
 
-        <div class="ml-64 p-8 space-y-6">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h1 class="text-3xl font-black text-[var(--ink)]">User Management</h1>
-                    <p class="text-[var(--muted)]">Create and manage admin and customer accounts.</p>
-                </div>
-                <button onclick="openUserModal()" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)] transition shadow-sm">+ Add User</button>
-            </div>
+    <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
-            <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
+    <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+        <table class="min-w-full">
+            <thead class="bg-[var(--surface)]">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Username</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Role</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="usersBody">
+                <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>
+            </tbody>
+        </table>
+    </div>
 
-            <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
-                <table class="min-w-full">
-                    <thead class="bg-[var(--surface)]">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Username</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Role</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersBody">
-                        <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
-                <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap items-center justify-between gap-3">
-                    <h2 class="text-xl font-bold text-[var(--ink)]">Recent Activity Logs</h2>
-                    <div class="flex flex-wrap gap-2 text-sm items-center">
-                        <button onclick="loadLogs('all')" id="tab-all" class="log-tab px-3 py-1 rounded-full border font-medium bg-gray-900 text-white border-gray-900">All</button>
-                        <button onclick="loadLogs('admin')" id="tab-admin" class="log-tab px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Admin</button>
-                        <button onclick="loadLogs('customer')" id="tab-customer" class="log-tab px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Customer</button>
-                        <div class="w-px h-5 bg-gray-200 mx-1"></div>
-                        <button onclick="toggleDateSort()" id="dateSortBtn" class="px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100 flex items-center gap-1">
-                            <span id="dateSortLabel">Newest First</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="px-6 py-3 border-b border-[var(--line)] bg-[var(--surface)] flex flex-wrap items-center gap-4">
-                    <span class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Filter by Date</span>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs text-[var(--muted)]">From</label>
-                        <input id="logDateFrom" type="date" class="rounded-xl border border-[var(--line)] bg-white px-3 py-1.5 text-sm focus:outline-none">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs text-[var(--muted)]">To</label>
-                        <input id="logDateTo" type="date" class="rounded-xl border border-[var(--line)] bg-white px-3 py-1.5 text-sm focus:outline-none">
-                    </div>
-                    <div class="flex gap-2">
-                        <button type="button" onclick="applyLogDateFilter()" class="rounded-full bg-[var(--primary)] px-3 py-1.5 text-xs font-bold text-white hover:bg-[var(--primary-dark)] transition">Apply</button>
-                        <button type="button" onclick="resetLogDateFilter()" class="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)] hover:bg-white transition">Reset</button>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <div id="logsList" class="space-y-2 text-sm text-gray-700">
-                        <p class="text-gray-500">Loading logs...</p>
-                    </div>
-                </div>
+    <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+        <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-xl font-bold text-[var(--ink)]">Recent Activity Logs</h2>
+            <div class="flex flex-wrap gap-2 text-sm items-center">
+                <button onclick="loadLogs('all')" id="tab-all" class="log-tab px-3 py-1 rounded-full border font-medium bg-gray-900 text-white border-gray-900">All</button>
+                <button onclick="loadLogs('admin')" id="tab-admin" class="log-tab px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Admin</button>
+                <button onclick="loadLogs('customer')" id="tab-customer" class="log-tab px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Customer</button>
+                <div class="w-px h-5 bg-gray-200 mx-1"></div>
+                <button onclick="toggleDateSort()" id="dateSortBtn" class="px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100 flex items-center gap-1">
+                    <span id="dateSortLabel">Newest First</span>
+                </button>
             </div>
         </div>
+        <div class="px-6 py-3 border-b border-[var(--line)] bg-[var(--surface)] flex flex-wrap items-center gap-4">
+            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Filter by Date</span>
+            <div class="flex items-center gap-2">
+                <label class="text-xs text-[var(--muted)]">From</label>
+                <input id="logDateFrom" type="date" class="rounded-xl border border-[var(--line)] bg-white px-3 py-1.5 text-sm focus:outline-none">
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="text-xs text-[var(--muted)]">To</label>
+                <input id="logDateTo" type="date" class="rounded-xl border border-[var(--line)] bg-white px-3 py-1.5 text-sm focus:outline-none">
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="applyLogDateFilter()" class="rounded-full bg-[var(--primary)] px-3 py-1.5 text-xs font-bold text-white hover:bg-[var(--primary-dark)] transition">Apply</button>
+                <button type="button" onclick="resetLogDateFilter()" class="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)] hover:bg-white transition">Reset</button>
+            </div>
+        </div>
+        <div class="p-6">
+            <div id="logsList" class="space-y-2 text-sm text-gray-700">
+                <p class="text-gray-500">Loading logs...</p>
+            </div>
+        </div>
+    </div>
+</div>
     </div>
 
     {{-- Deactivate Confirmation Modal --}}
     <div id="deactivateModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div class="w-full max-w-sm mx-4 rounded-2xl bg-white shadow-2xl overflow-hidden">
-            <div class="bg-[linear-gradient(135deg,_#0d1f18_0%,_#163d2c_100%)] px-6 py-5">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-400/20">
-                        <svg class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-white">Deactivate Account</h3>
-                        <p class="text-xs text-white/60 mt-0.5">This action will take effect immediately.</p>
-                    </div>
-                </div>
+<div class="w-full max-w-sm mx-4 rounded-2xl bg-white shadow-2xl overflow-hidden">
+    <div class="bg-[linear-gradient(135deg,_#0d1f18_0%,_#163d2c_100%)] px-6 py-5">
+        <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-400/20">
+                <svg class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
             </div>
-            <div class="px-6 py-5">
-                <p class="text-sm text-[var(--ink)] leading-6">Are you sure you want to <span class="font-semibold text-amber-600">deactivate</span> this account? The user will be logged out of all active sessions immediately.</p>
-            </div>
-            <div class="flex gap-3 border-t border-[var(--line)] px-6 py-4">
-                <button type="button" onclick="cancelDeactivate()" class="flex-1 rounded-full border border-[var(--line)] py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface)] transition">Cancel</button>
-                <button type="button" onclick="confirmDeactivateAction()" class="flex-1 rounded-full bg-amber-500 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition">Yes, Deactivate</button>
+            <div>
+                <h3 class="text-base font-bold text-white">Deactivate Account</h3>
+                <p class="text-xs text-white/60 mt-0.5">This action will take effect immediately.</p>
             </div>
         </div>
+    </div>
+    <div class="px-6 py-5">
+        <p class="text-sm text-[var(--ink)] leading-6">Are you sure you want to <span class="font-semibold text-amber-600">deactivate</span> this account? The user will be logged out of all active sessions immediately.</p>
+    </div>
+    <div class="flex gap-3 border-t border-[var(--line)] px-6 py-4">
+        <button type="button" onclick="cancelDeactivate()" class="flex-1 rounded-full border border-[var(--line)] py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface)] transition">Cancel</button>
+        <button type="button" onclick="confirmDeactivateAction()" class="flex-1 rounded-full bg-amber-500 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition">Yes, Deactivate</button>
+    </div>
+</div>
     </div>
 
     <div id="userModal" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto">
-        <div class="relative mx-auto my-10 w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
-            <div class="flex items-center justify-between border-b border-[var(--line)] px-7 py-5">
-                <div>
-                    <h3 id="userModalTitle" class="text-xl font-bold text-[var(--ink)]">Add User</h3>
-                    <p class="text-xs text-[var(--muted)] mt-0.5">Fill in account details and save.</p>
-                </div>
-                <button type="button" onclick="closeUserModal()" class="rounded-full p-2 text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--ink)]">&#10005;</button>
-            </div>
-            <div class="p-7">
-                <div id="userFormErrors" class="hidden mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1"></div>
-                <form id="userForm" class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <input type="hidden" id="userId">
-                    <div>
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Full Name <span class="text-red-500">*</span></label>
-                        <input type="text" id="full_name" required minlength="5" maxlength="60"
-                               placeholder="e.g. Juan Dela Cruz"
-                               title="At least two words, each with at least 2 letters."
-                               class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
-                        <p id="err_full_name" class="hidden mt-1 text-xs text-red-600"></p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Username <span class="text-red-500">*</span></label>
-                        <input type="text" id="username" required minlength="3" maxlength="20"
-                               pattern="[A-Za-z][A-Za-z0-9._-]*"
-                               placeholder="e.g. juan_dc"
-                               title="Must start with a letter. Letters, numbers, dots, underscores, hyphens only."
-                               class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
-                        <p id="err_username" class="hidden mt-1 text-xs text-red-600"></p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Role <span class="text-red-500">*</span></label>
-                        <select id="role" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
-                            <option value="admin">Admin</option>
-                            <option value="customer">Customer</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Password <span id="passwordRequired" class="text-red-500">*</span></label>
-                        <input type="password" id="password" minlength="8" maxlength="32"
-                               placeholder="Min 8 characters"
-                               class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
-                        <p id="err_password" class="hidden mt-1 text-xs text-red-600"></p>
-                        <p class="mt-1 text-xs text-[var(--muted)]">Leave blank to keep existing password when editing.</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Phone</label>
-                        <input type="text" id="phone" maxlength="13"
-                               placeholder="09XXXXXXXXX or +639XXXXXXXXX"
-                               pattern="^(09[0-9]{9}|\+639[0-9]{9})$"
-                               title="Valid Philippine mobile number e.g. 09XXXXXXXXX"
-                               class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
-                        <p id="err_phone" class="hidden mt-1 text-xs text-red-600"></p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Email</label>
-                        <input type="email" id="email" maxlength="100"
-                               placeholder="you@example.com"
-                               class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
-                        <p id="err_email" class="hidden mt-1 text-xs text-red-600"></p>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-[var(--ink)] mb-1">Address</label>
-                        <textarea id="address" rows="3" maxlength="500" class="block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Delivery address"></textarea>
-                    </div>
-                    <label class="md:col-span-2 inline-flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" id="is_active" checked class="rounded" onchange="confirmDeactivate(this)">
-                        <span class="text-sm text-[var(--ink)]">Active account</span>
-                    </label>
-                </form>
-            </div>
-            <div class="flex justify-end gap-3 border-t border-[var(--line)] px-7 py-5">
-                <button type="button" onclick="closeUserModal()" class="rounded-full border border-[var(--line)] px-5 py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface)] transition">Cancel</button>
-                <button type="button" onclick="document.getElementById('userForm').dispatchEvent(new Event('submit'))" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)] transition">Save User</button>
-            </div>
+<div class="relative mx-auto my-10 w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+    <div class="flex items-center justify-between border-b border-[var(--line)] px-7 py-5">
+        <div>
+            <h3 id="userModalTitle" class="text-xl font-bold text-[var(--ink)]">Add User</h3>
+            <p class="text-xs text-[var(--muted)] mt-0.5">Fill in account details and save.</p>
         </div>
+        <button type="button" onclick="closeUserModal()" class="rounded-full p-2 text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--ink)]">&#10005;</button>
     </div>
+    <div class="p-7">
+        <div id="userFormErrors" class="hidden mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1"></div>
+        <form id="userForm" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <input type="hidden" id="userId">
+            <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Full Name <span class="text-red-500">*</span></label>
+                <input type="text" id="full_name" required minlength="5" maxlength="60"
+                       placeholder="e.g. Juan Dela Cruz"
+                       title="At least two words, each with at least 2 letters."
+                       class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                <p id="err_full_name" class="hidden mt-1 text-xs text-red-600"></p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Username <span class="text-red-500">*</span></label>
+                <input type="text" id="username" required minlength="3" maxlength="20"
+                       pattern="[A-Za-z][A-Za-z0-9._-]*"
+                       placeholder="e.g. juan_dc"
+                       title="Must start with a letter. Letters, numbers, dots, underscores, hyphens only."
+                       class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                <p id="err_username" class="hidden mt-1 text-xs text-red-600"></p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Role <span class="text-red-500">*</span></label>
+                <select id="role" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                    <option value="admin">Admin</option>
+                    <option value="customer">Customer</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Password <span id="passwordRequired" class="text-red-500">*</span></label>
+                <input type="password" id="password" minlength="8" maxlength="32"
+                       placeholder="Min 8 characters"
+                       class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                <p id="err_password" class="hidden mt-1 text-xs text-red-600"></p>
+                <p class="mt-1 text-xs text-[var(--muted)]">Leave blank to keep existing password when editing.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Phone</label>
+                <input type="text" id="phone" maxlength="13"
+                       placeholder="09XXXXXXXXX or +639XXXXXXXXX"
+                       pattern="^(09[0-9]{9}|\+639[0-9]{9})$"
+                       title="Valid Philippine mobile number e.g. 09XXXXXXXXX"
+                       class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                <p id="err_phone" class="hidden mt-1 text-xs text-red-600"></p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Email</label>
+                <input type="email" id="email" maxlength="100"
+                       placeholder="you@example.com"
+                       class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                <p id="err_email" class="hidden mt-1 text-xs text-red-600"></p>
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Address</label>
+                <textarea id="address" rows="3" maxlength="500" class="block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Delivery address"></textarea>
+            </div>
+            <label class="md:col-span-2 inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="is_active" checked class="rounded" onchange="confirmDeactivate(this)">
+                <span class="text-sm text-[var(--ink)]">Active account</span>
+            </label>
+        </form>
+    </div>
+    <div class="flex justify-end gap-3 border-t border-[var(--line)] px-7 py-5">
+        <button type="button" onclick="closeUserModal()" class="rounded-full border border-[var(--line)] px-5 py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface)] transition">Cancel</button>
+        <button type="button" onclick="document.getElementById('userForm').dispatchEvent(new Event('submit'))" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)] transition">Save User</button>
+    </div>
+@endsection
 
-    <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+@push('scripts')
+<script>
         let users = [];
         let messageTimeout;
 
@@ -605,22 +549,7 @@
             }
         });
 
-        async function logout() {
-            const response = await fetch('/admin/logout', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                window.location.href = '/admin/login';
-            }
-        }
-
         loadUsers();
         loadLogs();
-    </script>
-</body>
-</html>
+</script>
+@endpush

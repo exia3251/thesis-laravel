@@ -1,27 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Customer Login - RANEY LUBRICANTS TRADING</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root {
-            --surface: #f6f8fb;
-            --card: rgba(255, 255, 255, 0.82);
-            --card-solid: #ffffff;
-            --ink: #16202a;
-            --muted: #6f7d8c;
-            --line: rgba(21, 35, 54, 0.1);
-            --primary: #148a67;
-            --primary-soft: rgba(20, 138, 103, 0.1);
-            --accent: #d9b14a;
-            --accent-soft: rgba(217, 177, 74, 0.12);
-        }
-    </style>
-</head>
-<body class="bg-[var(--surface)] text-[var(--ink)]">
+@extends('layouts.bare')
+
+@section('title', 'Customer Login - RANEY LUBRICANTS TRADING')
+
+@section('content')
     <div class="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top_right,_rgba(20,138,103,0.09),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(217,177,74,0.10),_transparent_24%),linear-gradient(180deg,_#fbfcfe_0%,_#f3f6f9_100%)] px-4 py-10 sm:px-6">
         <div class="w-full max-w-md">
             <div class="mb-8 text-center">
@@ -71,8 +52,10 @@
         </div>
     </div>
 
-    <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+@endsection
+
+@push('scripts')
+<script>
         const params = new URLSearchParams(window.location.search);
 
         if (params.get('registered') === '1') {
@@ -109,6 +92,5 @@
             errorDiv.textContent = data.message || 'Login failed.';
             errorDiv.classList.remove('hidden');
         });
-    </script>
-</body>
-</html>
+</script>
+@endpush

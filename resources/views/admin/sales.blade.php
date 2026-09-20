@@ -1,194 +1,138 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>RANEY LUBRICANTS TRADING — Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root {
-            --primary:       #148a67;
-            --primary-dark:  #0f6b50;
-            --primary-soft:  rgba(20,138,103,0.10);
-            --accent:        #d9b14a;
-            --accent-soft:   rgba(217,177,74,0.12);
-            --ink:           #16202a;
-            --muted:         #6f7d8c;
-            --surface:       #f3f6f9;
-            --card:          #ffffff;
-            --line:          rgba(21,35,54,0.10);
-            --sidebar-bg:    #0d1f18;
-            --sidebar-hover: rgba(20,138,103,0.18);
-            --sidebar-active:rgba(20,138,103,0.28);
-        }
-        body { background: var(--surface); color: var(--ink); }
-        input, select, textarea {
-            border-color: var(--line) !important;
-        }
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--primary) !important;
-            outline: none;
-            box-shadow: 0 0 0 3px var(--primary-soft);
-        }
-    </style>
-</head>
-<body class="bg-[var(--surface)]">
-    <div class="min-h-screen">
-        <div class="fixed inset-y-0 left-0 w-64 bg-[var(--sidebar-bg)] shadow-2xl">
-            <div class="flex h-20 items-center justify-center border-b border-white/10 bg-[linear-gradient(135deg,_rgba(20,138,103,0.15),_transparent)]">
-                <div class="text-center">
-                    <div class="text-lg font-black tracking-tight leading-tight">
-                        <span style="color:#148a67;">RANEY</span><span style="color:#d9b14a;"> LUBRICANTS</span>
-                    </div>
-                    <div class="text-[10px] uppercase tracking-[0.28em] text-white/50 mt-0.5">Trading</div>
-                </div>
+@extends('layouts.admin')
+
+@section('title', 'RANEY LUBRICANTS TRADING — Admin')
+
+@section('content')
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-black text-[var(--ink)]">Sales</h1>
+            <p class="text-[var(--muted)]">Review sales history, confirm customer payment requests, and manage delivery progress.</p>
+        </div>
+        <button onclick="openSaleModal()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
+            Create New Sale
+        </button>
+    </div>
+
+    <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
+
+    <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+        <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
+            <input type="text" id="salesSearch" oninput="renderSales()" placeholder="Search customer or sale ID..." class="rounded border border-gray-300 px-3 py-2 text-sm w-64 focus:outline-none focus:border-blue-400">
+            <div class="flex gap-2 text-sm">
+                <button onclick="setPaymentFilter('all')" id="payFilter-all" class="pay-filter-btn px-3 py-1.5 rounded border font-medium bg-gray-900 text-white border-gray-900">All</button>
+                <button onclick="setPaymentFilter('paid')" id="payFilter-paid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Paid</button>
+                <button onclick="setPaymentFilter('partial')" id="payFilter-partial" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Partial</button>
+                <button onclick="setPaymentFilter('unpaid')" id="payFilter-unpaid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Unpaid</button>
+                <button onclick="setPaymentFilter('processing')" id="payFilter-processing" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Awaiting Confirmation</button>
             </div>
-            <nav class="mt-6 space-y-1 px-3">
-                <a href="/admin/dashboard" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Dashboard</a>
-                <a href="/admin/products" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Products</a>
-                <a href="/admin/inventory" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Inventory</a>
-                <a href="/admin/sales" class="flex items-center rounded-2xl px-4 py-3 font-semibold text-white bg-[var(--sidebar-active)] ring-1 ring-white/10">Sales</a>
-                <a href="/admin/reports" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Reports</a>
-                @if(auth()->user()->isSuperAdmin())
-                    <a href="/admin/users" class="flex items-center rounded-2xl px-4 py-3 text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Users</a>
-                @endif
-                <button type="button" onclick="logout()" class="w-full rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">Logout</button>
-            </nav>
+        </div>
+        <table class="min-w-full">
+            <thead class="bg-[var(--surface)]">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Sale ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Customer</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Payment</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Delivery</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Paid Amount</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Total Amount</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="salesBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
+                <tr>
+                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading sales...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+    </div>
+
+    <div id="saleModal" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto">
+<div class="relative mx-auto my-10 w-full max-w-4xl rounded-2xl bg-white shadow-2xl">
+
+    {{-- Modal Header --}}
+    <div class="flex items-center justify-between border-b border-slate-200 px-7 py-5">
+        <div>
+            <h3 class="text-xl font-bold text-slate-900">Create New Sale</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Fill in customer details, add products, then save.</p>
+        </div>
+        <button type="button" onclick="closeSaleModal()" class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600">&#10005;</button>
+    </div>
+
+    <div class="p-7 space-y-6">
+
+        {{-- Customer Details --}}
+        <div>
+            <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Customer Details</div>
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Customer Name</label>
+                    <input type="text" id="customer_name" placeholder="Walk-in Customer" required class="block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400">
+                </div>
+                <input type="hidden" id="payment_method" value="cash">
+                <input type="hidden" id="paid_amount" value="0">
+            </div>
         </div>
 
-        <div class="ml-64 p-8">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-3xl font-black text-[var(--ink)]">Sales</h1>
-                    <p class="text-[var(--muted)]">Review sales history, confirm customer payment requests, and manage delivery progress.</p>
-                </div>
-                <button onclick="openSaleModal()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
-                    Create New Sale
-                </button>
-            </div>
-
-            <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
-
-            <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
-                <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
-                    <input type="text" id="salesSearch" oninput="renderSales()" placeholder="Search customer or sale ID..." class="rounded border border-gray-300 px-3 py-2 text-sm w-64 focus:outline-none focus:border-blue-400">
-                    <div class="flex gap-2 text-sm">
-                        <button onclick="setPaymentFilter('all')" id="payFilter-all" class="pay-filter-btn px-3 py-1.5 rounded border font-medium bg-gray-900 text-white border-gray-900">All</button>
-                        <button onclick="setPaymentFilter('paid')" id="payFilter-paid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Paid</button>
-                        <button onclick="setPaymentFilter('partial')" id="payFilter-partial" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Partial</button>
-                        <button onclick="setPaymentFilter('unpaid')" id="payFilter-unpaid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Unpaid</button>
-                        <button onclick="setPaymentFilter('processing')" id="payFilter-processing" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Awaiting Confirmation</button>
+        {{-- Add Product --}}
+        <div>
+            <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Add Product</div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Product</label>
+                        <select id="product_select" class="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
+                        <input type="number" id="product_quantity" min="1" value="1" class="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400">
+                    </div>
+                    <div>
+                        <button type="button" onclick="addSaleItem()" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black transition">+ Add Item</button>
                     </div>
                 </div>
-                <table class="min-w-full">
-                    <thead class="bg-[var(--surface)]">
+            </div>
+        </div>
+
+        {{-- Items Table --}}
+        <div>
+            <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Order Items</div>
+            <div class="rounded-xl border border-slate-200 overflow-hidden">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Sale ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Customer</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Payment</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Delivery</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Paid Amount</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Total Amount</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 w-1/2">Product</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 w-16">Qty</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 w-28">Price</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 w-28">Subtotal</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 w-20">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="salesBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
+                    <tbody id="saleItemsBody" class="divide-y divide-slate-100">
                         <tr>
-                            <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading sales...</td>
+                            <td colspan="5" class="py-6 text-center text-slate-400 text-sm">No items added yet.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
+
     </div>
 
-    <div id="saleModal" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto">
-        <div class="relative mx-auto my-10 w-full max-w-4xl rounded-2xl bg-white shadow-2xl">
-
-            {{-- Modal Header --}}
-            <div class="flex items-center justify-between border-b border-slate-200 px-7 py-5">
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900">Create New Sale</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Fill in customer details, add products, then save.</p>
-                </div>
-                <button type="button" onclick="closeSaleModal()" class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600">&#10005;</button>
-            </div>
-
-            <div class="p-7 space-y-6">
-
-                {{-- Customer Details --}}
-                <div>
-                    <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Customer Details</div>
-                    <div class="grid grid-cols-1 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Customer Name</label>
-                            <input type="text" id="customer_name" placeholder="Walk-in Customer" required class="block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400">
-                        </div>
-                        <input type="hidden" id="payment_method" value="cash">
-                        <input type="hidden" id="paid_amount" value="0">
-                    </div>
-                </div>
-
-                {{-- Add Product --}}
-                <div>
-                    <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Add Product</div>
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Product</label>
-                                <select id="product_select" class="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"></select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
-                                <input type="number" id="product_quantity" min="1" value="1" class="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400">
-                            </div>
-                            <div>
-                                <button type="button" onclick="addSaleItem()" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black transition">+ Add Item</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Items Table --}}
-                <div>
-                    <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Order Items</div>
-                    <div class="rounded-xl border border-slate-200 overflow-hidden">
-                        <table class="min-w-full text-sm">
-                            <thead class="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 w-1/2">Product</th>
-                                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 w-16">Qty</th>
-                                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 w-28">Price</th>
-                                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 w-28">Subtotal</th>
-                                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 w-20">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="saleItemsBody" class="divide-y divide-slate-100">
-                                <tr>
-                                    <td colspan="5" class="py-6 text-center text-slate-400 text-sm">No items added yet.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </div>
-
-            {{-- Modal Footer --}}
-            <div class="flex items-center justify-between border-t border-slate-200 px-7 py-5">
-                <div class="text-lg font-bold text-slate-900">Total: <span id="saleTotal" class="text-blue-600">PHP 0.00</span></div>
-                <div class="flex gap-3">
-                    <button type="button" onclick="closeSaleModal()" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-                    <button type="button" onclick="submitSale()" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)]">Save Sale</button>
-                </div>
-            </div>
+    {{-- Modal Footer --}}
+    <div class="flex items-center justify-between border-t border-slate-200 px-7 py-5">
+        <div class="text-lg font-bold text-slate-900">Total: <span id="saleTotal" class="text-blue-600">PHP 0.00</span></div>
+        <div class="flex gap-3">
+            <button type="button" onclick="closeSaleModal()" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+            <button type="button" onclick="submitSale()" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)]">Save Sale</button>
         </div>
     </div>
+@endsection
 
-    <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+@push('scripts')
+<script>
         let saleProducts = [];
         let saleItems = [];
         let messageTimeout;
@@ -231,10 +175,6 @@
             const cls = styles[status] || 'bg-gray-100 text-gray-800';
             const label = labels[status] || status;
             return `<span class="inline-block rounded-full px-3 py-1 text-xs font-semibold ${cls}">${label}</span>`;
-        }
-
-        function formatCurrency(value) {
-            return `PHP ${Number(value || 0).toFixed(2)}`;
         }
 
         let allSales = [];
@@ -501,21 +441,6 @@
             }
         }
 
-        async function logout() {
-            const response = await fetch('/admin/logout', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                window.location.href = '/admin/login';
-            }
-        }
-
         loadSales();
-    </script>
-</body>
-</html>
+</script>
+@endpush
