@@ -419,7 +419,6 @@
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
                             <span class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${badgeClass}">${label}</span>
                             <span class="text-xs text-gray-500 font-medium">${log.user ? log.user.full_name : 'System'}</span>
-                            <span class="text-xs text-gray-400">&bull; ${log.ip_address || 'No IP'}</span>
                             <span class="text-xs text-gray-400 ml-auto">${logDate}</span>
                         </div>
                         <div class="text-gray-600">${log.description || 'No description provided.'}</div>
