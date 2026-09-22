@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Customer\CartController;
+use App\Http\Controllers\Customer\ChatbotController;
 use App\Http\Controllers\Customer\OrderController;
 use App\Http\Controllers\Customer\ProfileController;
 use App\Http\Controllers\Customer\ShopController;
@@ -170,6 +171,17 @@ Route::post('/email/verify/resend', [EmailVerificationController::class, 'resend
 // Customer pages
 Route::get('/shop', [ShopController::class, 'index'])->name('shop');
 Route::get('/shop/products/{id}', [ShopController::class, 'show'])->name('shop.products.show');
+
+/*
+| The storefront assistant. Open to signed-out visitors, since most of what it
+| answers is asked before anyone has an account; questions about a specific
+| order are refused inside the responder unless there is a signed-in user.
+*/
+Route::middleware('throttle:30,1')->prefix('shop-api/chat')->group(function () {
+    Route::get('/', [ChatbotController::class, 'open']);
+    Route::post('/', [ChatbotController::class, 'send']);
+    Route::post('/reset', [ChatbotController::class, 'reset']);
+});
 
 // The catalogue is readable without signing in, so these two carry their own
 // rate limit rather than relying on an authenticated session to bound them.
