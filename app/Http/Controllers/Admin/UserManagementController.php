@@ -321,7 +321,7 @@ class UserManagementController extends Controller
     {
         $type = $request->get('type', 'all');
 
-        $staffActions   = ['admin_login', 'logout', 'single_session_replaced', 'session_invalidated', 'user_created', 'user_updated', 'user_deleted', 'product_created', 'product_updated', 'product_deleted', 'product_catalog_imported', 'stock_in', 'stock_out', 'sale_created', 'sale_status_updated', 'payment_request_approved', 'payment_request_rejected', 'sales_report_exported', 'inventory_report_exported'];
+        $staffActions   = ['admin_login', 'logout', 'single_session_replaced', 'session_invalidated', 'user_created', 'user_updated', 'user_deleted', 'product_created', 'product_updated', 'product_deleted', 'product_catalog_imported', 'stock_in', 'stock_out', 'sale_created', 'sale_status_updated', 'payment_request_approved', 'payment_request_rejected', 'sales_report_exported', 'inventory_report_exported', 'database_backup_created', 'database_backup_downloaded', 'database_backup_deleted'];
         $customerActions = ['customer_login', 'logout', 'single_session_replaced', 'session_invalidated', 'customer_registered', 'order_placed', 'payment_request_submitted', 'profile_updated', 'password_changed', 'password_set'];
 
         $query = ActivityLog::with('user')->orderByDesc('log_id');

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
@@ -64,6 +65,9 @@ Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function 
 
     Route::get('/users', [UserManagementController::class, 'index'])
         ->middleware('permission:manage_users')->name('admin.users');
+
+    Route::get('/backup', [BackupController::class, 'index'])
+        ->middleware('permission:backup_database')->name('admin.backup');
 });
 
 // Session-backed admin endpoints
@@ -125,6 +129,13 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
 
     Route::get('/logs', [UserManagementController::class, 'getLogs'])
         ->middleware('permission:view_logs');
+
+    Route::middleware('permission:backup_database')->group(function () {
+        Route::get('/backups', [BackupController::class, 'list']);
+        Route::post('/backups', [BackupController::class, 'store']);
+        Route::get('/backups/{filename}/download', [BackupController::class, 'download']);
+        Route::delete('/backups/{filename}', [BackupController::class, 'destroy']);
+    });
 });
 
 // Customer authentication
