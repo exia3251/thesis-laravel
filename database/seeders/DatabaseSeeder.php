@@ -42,7 +42,11 @@ class DatabaseSeeder extends Seeder
             'user_id' => $customer->user_id,
         ], [
             'phone' => '09123456789',
-            'address' => '123 Main Street, Quezon City, Metro Manila',
+            'house_street' => '123 Main Street',
+            'barangay' => 'Bagumbayan',
+            'city' => 'Quezon City',
+            'province' => 'Metro Manila',
+            'postal_code' => '1100',
         ]);
 
         $this->call(ProductCatalogSeeder::class);

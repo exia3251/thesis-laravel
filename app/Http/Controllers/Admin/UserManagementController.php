@@ -59,7 +59,11 @@ class UserManagementController extends Controller
             'role'      => 'required|in:admin,inventory_staff,accounting,customer',
             'is_active' => 'nullable|boolean',
             'phone'     => ['nullable', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
-            'address'   => 'nullable|string|max:500',
+            'house_street' => 'nullable|string|max:160',
+            'barangay'     => 'nullable|string|max:100',
+            'city'         => 'nullable|string|max:100',
+            'province'     => 'nullable|string|max:100',
+            'postal_code'  => ['nullable', 'string', 'regex:/^\d{4}$/'],
             'avatar'    => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:min_width=100,min_height=100'],
         ];
     }
@@ -141,8 +145,7 @@ class UserManagementController extends Controller
                 CustomerProfile::create([
                     'user_id' => $user->user_id,
                     'phone' => $request->phone ?: '',
-                    'address' => $request->address ?: '',
-                ]);
+                ] + $request->only(['house_street', 'barangay', 'city', 'province', 'postal_code']));
             }
 
             ActivityLog::logAction(
@@ -218,10 +221,7 @@ class UserManagementController extends Controller
             if ($user->role === User::ROLE_CUSTOMER) {
                 CustomerProfile::updateOrCreate(
                     ['user_id' => $user->user_id],
-                    [
-                        'phone' => $request->phone ?: '',
-                        'address' => $request->address ?: '',
-                    ]
+                    ['phone' => $request->phone ?: ''] + $request->only(['house_street', 'barangay', 'city', 'province', 'postal_code'])
                 );
             } else {
                 CustomerProfile::where('user_id', $user->user_id)->delete();

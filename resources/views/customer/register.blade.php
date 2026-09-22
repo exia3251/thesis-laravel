@@ -40,9 +40,30 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Address</label>
-                        <textarea id="address" rows="5" required minlength="10" maxlength="500" class="block w-full resize-none rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Complete delivery address"></textarea>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">House or building number and street</label>
+                            <input id="house_street" type="text" required minlength="5" maxlength="160" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="123 Rizal Street, Unit 4B">
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Barangay</label>
+                                <input id="barangay" type="text" required maxlength="100" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Poblacion">
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-[var(--ink)]">City or municipality</label>
+                                <input id="city" type="text" required maxlength="100" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Makati City">
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Province</label>
+                                <input id="province" type="text" required maxlength="100" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Metro Manila">
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Postal code <span class="font-normal text-[var(--muted)]">optional</span></label>
+                                <input id="postal_code" type="text" maxlength="4" inputmode="numeric" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="1200">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">
@@ -93,7 +114,11 @@
                 full_name: document.getElementById('full_name').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
                 email: document.getElementById('email').value.trim(),
-                address: document.getElementById('address').value.trim(),
+                house_street: document.getElementById('house_street').value.trim(),
+                barangay: document.getElementById('barangay').value.trim(),
+                city: document.getElementById('city').value.trim(),
+                province: document.getElementById('province').value.trim(),
+                postal_code: document.getElementById('postal_code').value.trim(),
                 password: document.getElementById('password').value,
                 password_confirmation: document.getElementById('password_confirmation').value
             };

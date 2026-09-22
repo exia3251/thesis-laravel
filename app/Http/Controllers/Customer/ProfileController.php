@@ -57,29 +57,57 @@ class ProfileController extends Controller
                 'regex:/^(09\d{9}|\+639\d{9})$/',
                 'unique:customer_profiles,phone,' . $profile->profile_id . ',profile_id',
             ],
+            'full_name' => [
+                'required', 'string', 'min:2', 'max:100',
+                'regex:/^[A-Za-z][A-Za-z\s\'.-]*$/',
+            ],
             'email'   => [
                 'required', 'email', 'max:150',
                 'unique:users,email,' . $user->user_id . ',user_id',
             ],
-            'address' => 'required|string|min:10|max:500',
+            'house_street' => ['required', 'string', 'min:5', 'max:160'],
+            'barangay'     => ['required', 'string', 'max:100'],
+            'city'         => ['required', 'string', 'max:100'],
+            'province'     => ['required', 'string', 'max:100'],
+            'postal_code'  => ['nullable', 'string', 'regex:/^\d{4}$/'],
         ], [
+            'full_name.required' => 'Your name is required. It appears on your receipts.',
+            'full_name.regex'    => 'A name may use letters, spaces, apostrophes, periods and hyphens.',
             'phone.required' => 'Phone number is required.',
             'phone.regex'    => 'Enter a valid PH number e.g. 09XXXXXXXXX or +639XXXXXXXXX.',
             'phone.unique'   => 'That phone number is already registered to another account.',
             'email.required' => 'Email address is required.',
             'email.email'    => 'Enter a valid email address.',
             'email.unique'   => 'That email address is already registered to another account.',
-            'address.required' => 'Address is required.',
-            'address.min'    => 'Address must be at least 10 characters.',
+            'house_street.required' => 'Enter the house or building number and street.',
+            'house_street.min'      => 'That looks too short to find. Include the number and street.',
+            'barangay.required'     => 'Barangay is required. Couriers here rely on it.',
+            'city.required'         => 'City or municipality is required.',
+            'province.required'     => 'Province is required.',
+            'postal_code.regex'     => 'A Philippine postal code is four digits, such as 1100.',
         ]);
 
-        DB::transaction(function () use ($request, $user, $profile) {
-            $profile->update($request->only(['phone', 'address']));
+        $emailChanged = $request->email !== $user->email;
 
-            if ($request->email !== $user->email) {
-                $user->forceFill(['email' => $request->email])->save();
+        DB::transaction(function () use ($request, $user, $profile, $emailChanged) {
+            $profile->update($request->only(['phone', 'house_street', 'barangay', 'city', 'province', 'postal_code']));
+
+            $changes = ['full_name' => $request->full_name];
+
+            if ($emailChanged) {
+                // A new address is unproven until it has been confirmed, and
+                // ordering is gated on that, so it goes back to unverified
+                // rather than inheriting the old address's standing.
+                $changes['email'] = $request->email;
+                $changes['email_verified_at'] = null;
             }
+
+            $user->forceFill($changes)->save();
         });
+
+        if ($emailChanged) {
+            $user->sendEmailVerificationNotification();
+        }
 
         ActivityLog::logAction(
             $user->user_id,
@@ -89,8 +117,10 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Profile updated successfully',
-            'data' => $profile->fresh('user')
+            'message' => $emailChanged
+                ? 'Saved. Confirm your new email address using the link we just sent.'
+                : 'Saved.',
+            'data' => $profile->fresh('user'),
         ]);
     }
 

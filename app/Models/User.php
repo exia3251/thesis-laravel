@@ -6,10 +6,20 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory;
+
+    /**
+     * Required by MustVerifyEmail: sendEmailVerificationNotification() calls
+     * notify(), which lives here. Without it that call raised "undefined
+     * method notify()", and since both registration and the resend button
+     * catch and log the failure, no verification email was ever sent while
+     * the interface was declared. Nothing looked broken from the outside.
+     */
+    use Notifiable;
 
     /**
      * Deleting an account archives it, keeping the audit trail and every

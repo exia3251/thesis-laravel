@@ -39,7 +39,11 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
             'full_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[A-Za-z][A-Za-z\s\'.-]*$/'],
             'phone' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/', 'unique:customer_profiles,phone'],
-            'address' => ['required', 'string', 'min:10', 'max:500'],
+            'house_street' => ['required', 'string', 'min:5', 'max:160'],
+            'barangay'     => ['required', 'string', 'max:100'],
+            'city'         => ['required', 'string', 'max:100'],
+            'province'     => ['required', 'string', 'max:100'],
+            'postal_code'  => ['nullable', 'string', 'regex:/^\d{4}$/'],
         ];
     }
 
@@ -58,8 +62,12 @@ class AuthController extends Controller
             'phone.required' => 'Phone number is required.',
             'phone.regex'   => 'Phone number must be a valid Philippine mobile number such as 09XXXXXXXXX or +639XXXXXXXXX.',
             'phone.unique'  => 'That phone number is already registered to another account.',
-            'address.required' => 'Address is required.',
-            'address.min' => 'Address must be at least 10 characters long.',
+            'house_street.required' => 'Enter the house or building number and street.',
+            'house_street.min'      => 'That looks too short to find. Include the number and street.',
+            'barangay.required'     => 'Barangay is required. Couriers here rely on it.',
+            'city.required'         => 'City or municipality is required.',
+            'province.required'     => 'Province is required.',
+            'postal_code.regex'     => 'A Philippine postal code is four digits, such as 1100.',
         ];
     }
 
@@ -229,8 +237,7 @@ class AuthController extends Controller
             CustomerProfile::create([
                 'user_id' => $user->user_id,
                 'phone' => $request->phone,
-                'address' => $request->address,
-            ]);
+            ] + $request->only(['house_street', 'barangay', 'city', 'province', 'postal_code']));
 
             DB::commit();
 

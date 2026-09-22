@@ -169,8 +169,24 @@
                 <p id="err_phone" class="hidden mt-1 text-xs text-red-600"></p>
             </div>
             <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Address</label>
-                <textarea id="address" rows="3" maxlength="500" class="block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Delivery address"></textarea>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">House or building number and street</label>
+                <input type="text" id="house_street" maxlength="160" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="123 Rizal Street">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Barangay</label>
+                <input type="text" id="barangay" maxlength="100" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Poblacion">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">City or municipality</label>
+                <input type="text" id="city" maxlength="100" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Makati City">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Province</label>
+                <input type="text" id="province" maxlength="100" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Metro Manila">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Postal code</label>
+                <input type="text" id="postal_code" maxlength="4" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="1200">
             </div>
             <label class="md:col-span-2 inline-flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" id="is_active" checked class="rounded" onchange="confirmDeactivate(this)">
@@ -278,7 +294,9 @@
             document.getElementById('is_active').checked = user.is_active;
             document.getElementById('phone').value = user.customer_profile ? user.customer_profile.phone || '' : '';
             document.getElementById('email').value = user.customer_profile ? user.customer_profile.email || '' : '';
-            document.getElementById('address').value = user.customer_profile ? user.customer_profile.address || '' : '';
+            ['house_street', 'barangay', 'city', 'province', 'postal_code'].forEach((field) => {
+                document.getElementById(field).value = user.customer_profile ? user.customer_profile[field] || '' : '';
+            });
         }
 
         function closeUserModal() {
@@ -625,7 +643,9 @@
             // a multipart body on PUT, so an update posts with _method instead.
             const body = new FormData();
             body.append('full_name', document.getElementById('full_name').value.trim());
-            body.append('address', document.getElementById('address').value.trim());
+            ['house_street', 'barangay', 'city', 'province', 'postal_code'].forEach((field) => {
+                body.append(field, document.getElementById(field).value.trim());
+            });
             body.append('role', document.getElementById('role').value);
             body.append('password', document.getElementById('password').value);
             body.append('phone', document.getElementById('phone').value.trim());

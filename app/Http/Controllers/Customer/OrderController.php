@@ -139,7 +139,7 @@ class OrderController extends Controller
         // Get customer profile before opening a transaction
         $profile = CustomerProfile::where('user_id', auth()->id())->first();
 
-        if (!$profile || blank($profile->address) || blank($profile->phone)) {
+        if (!$profile || !$profile->isComplete()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Please complete your profile address and phone before placing an order.'
@@ -187,7 +187,7 @@ class OrderController extends Controller
             $sale = Sale::create([
                 'customer_name' => auth()->user()->full_name,
                 'user_id' => auth()->id(),
-                'delivery_address' => $profile->address,
+                'delivery_address' => $profile->fullAddress(),
                 'contact_phone' => $profile->phone,
                 'total_amount' => $total,
                 'payment_method' => $plan === Sale::PLAN_COD ? 'cash_on_delivery' : 'gcash',
