@@ -175,6 +175,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->isAdmin();
     }
 
+    /** Editing what the storefront assistant says on the company's behalf. */
+    public function canManageChatbot(): bool
+    {
+        return $this->isAdmin();
+    }
+
     public function canManageProducts(): bool
     {
         return $this->isAdmin() || $this->isInventoryStaff();

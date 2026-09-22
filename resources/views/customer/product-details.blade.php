@@ -1,6 +1,6 @@
 @extends('layouts.customer')
 
-@section('title', '{{ $product->product_name }} - RANEY LUBRICANTS TRADING')
+@section('title', $product->product_name . ' - RANEY LUBRICANTS TRADING')
 
 @section('content')
 

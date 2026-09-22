@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\Admin\ChatbotAdminController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
@@ -69,6 +70,9 @@ Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function 
 
     Route::get('/backup', [BackupController::class, 'index'])
         ->middleware('permission:backup_database')->name('admin.backup');
+
+    Route::get('/assistant', [ChatbotAdminController::class, 'index'])
+        ->middleware('permission:manage_chatbot')->name('admin.assistant');
 });
 
 // Session-backed admin endpoints
@@ -132,6 +136,12 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
 
     Route::get('/logs', [UserManagementController::class, 'getLogs'])
         ->middleware('permission:view_logs');
+
+    Route::middleware('permission:manage_chatbot')->group(function () {
+        Route::get('/assistant/intents', [ChatbotAdminController::class, 'intents']);
+        Route::put('/assistant/intents/{id}', [ChatbotAdminController::class, 'update']);
+        Route::get('/assistant/unanswered', [ChatbotAdminController::class, 'unanswered']);
+    });
 
     Route::middleware('permission:backup_database')->group(function () {
         Route::get('/backups', [BackupController::class, 'list']);

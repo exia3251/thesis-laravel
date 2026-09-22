@@ -21,5 +21,9 @@
     @yield('content')
 
     @includeWhen($showFooter ?? true, 'partials.customer-footer')
+
+    {{-- One include for every storefront page, so the conversation is there
+         wherever the visitor happens to be. --}}
+    @include('partials.chat-widget')
 </div>
 @endsection

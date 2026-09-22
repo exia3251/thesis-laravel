@@ -34,6 +34,7 @@ class PermissionMiddleware
             'manage_users'    => $user->canManageUsers(),
             'view_logs'       => $user->canViewLogs(),
             'backup_database' => $user->canBackupDatabase(),
+            'manage_chatbot'  => $user->canManageChatbot(),
             'manage_inventory' => $user->canManageInventory(),
             'manage_products' => $user->canManageProducts(),
             'view_sales'      => $user->canViewSales(),

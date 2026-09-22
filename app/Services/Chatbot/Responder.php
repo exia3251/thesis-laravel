@@ -66,12 +66,18 @@ class Responder
 
     public function greeting(?User $user): array
     {
-        $name = $user ? ' ' . str($user->full_name)->before(' ') : '';
+        // A signed-out visitor is not offered order lookups, because they
+        // would only reach the sign-in prompt. Offering what cannot be done
+        // is how an assistant loses someone on its first line.
+        $body = $user
+            ? 'Hello ' . str($user->full_name)->before(' ')
+                . '. I can check your orders, explain how payment works, or help you find the right oil.'
+            : 'Hello. I can help you find the right oil, explain how payment and delivery work, '
+                . 'or look up your orders once you are signed in.';
 
-        return $this->reply(
-            "Hello{$name}. I can check your orders, explain how payment works, or help you find the right oil.",
-            ['chips' => $this->chips($this->matcher->suggestions((bool) $user))]
-        );
+        return $this->reply($body, [
+            'chips' => $this->chips($this->matcher->suggestions((bool) $user)),
+        ]);
     }
 
     // ------------------------------------------------------------- orders
