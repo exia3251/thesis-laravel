@@ -295,7 +295,7 @@
 
         async function loadProducts() {
             try {
-                const response = await fetch('/api/products');
+                const response = await fetch('/shop-api/products');
                 const data = await response.json();
 
                 if (data.success && data.data) {

@@ -157,7 +157,13 @@ Route::post('/email/verify/resend', [EmailVerificationController::class, 'resend
 // Customer pages
 Route::get('/shop', [ShopController::class, 'index'])->name('shop');
 Route::get('/shop/products/{id}', [ShopController::class, 'show'])->name('shop.products.show');
-Route::get('/shop-api/featured-products', [ShopController::class, 'getFeaturedProducts']);
+
+// The catalogue is readable without signing in, so these two carry their own
+// rate limit rather than relying on an authenticated session to bound them.
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/shop-api/products', [ShopController::class, 'getProducts']);
+    Route::get('/shop-api/featured-products', [ShopController::class, 'getFeaturedProducts']);
+});
 
 Route::middleware(['customer', 'active_session'])->group(function () {
     Route::get('/cart', function () {
