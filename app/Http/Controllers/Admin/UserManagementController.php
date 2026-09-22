@@ -17,12 +17,18 @@ class UserManagementController extends Controller
         return view('admin.users');
     }
 
-    public function getUsers()
+    public function getUsers(Request $request)
     {
-        $users = User::query()
+        $request->validate(['archived' => 'nullable|boolean']);
+
+        // Archived accounts are a separate view rather than greyed-out rows,
+        // so nobody edits or promotes one by mistake.
+        $base = $request->boolean('archived')
+            ? User::onlyTrashed()->orderByDesc('deleted_at')
+            : User::query()->orderBy('role')->orderBy('full_name');
+
+        $users = $base
             ->with('customerProfile')
-            ->orderBy('role')
-            ->orderBy('full_name')
             ->get()
             ->map(function (User $user) {
                 // Appended rather than sent raw, so the view does not have to
@@ -32,6 +38,7 @@ class UserManagementController extends Controller
                     'initials' => $user->initials(),
                     'avatar_tone' => $user->avatarTone(),
                     'role_label' => $user->roleLabel(),
+                    'archived' => $user->trashed(),
                 ];
             });
 
@@ -62,7 +69,7 @@ class UserManagementController extends Controller
         return [
             'email.required'    => 'Email address is required.',
             'email.email'       => 'Enter a valid email address.',
-            'email.unique'      => 'That email address is already in use.',
+            'email.unique'      => 'That email address is already in use. If the account was archived, restore it instead of creating a new one.',
             'password.required' => 'Password is required.',
             'password.min'      => 'Password must be at least 8 characters.',
             'password.max'      => 'Password must not exceed 32 characters.',
@@ -268,60 +275,67 @@ class UserManagementController extends Controller
             ], 422);
         }
 
-        // sales, stock_transactions and activity_logs all hold restricted foreign
-        // keys to users, so deleting an account with any history raises a
-        // constraint violation. Such accounts are deactivated, never removed,
-        // which also keeps the audit trail intact.
-        if ($this->hasHistory($user)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This account has activity history and cannot be deleted. Deactivate it instead.',
-            ], 422);
-        }
-
         $fullName = $user->full_name;
         $email = $user->email;
         $role = $user->roleLabel();
 
-        try {
-            DB::transaction(function () use ($user) {
-                CustomerProfile::where('user_id', $user->user_id)->delete();
-                $user->delete();
-            });
-        } catch (\Illuminate\Database\QueryException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This account is still referenced by other records and cannot be deleted. Deactivate it instead.',
-            ], 422);
-        }
+        // Archiving rather than removing. Sales, stock movements and the
+        // activity log all hold restricted foreign keys to this row, so a
+        // real delete failed for any account that had ever done anything --
+        // and every account that has signed in once has a log entry.
+        DB::transaction(function () use ($user) {
+            // Whatever they are doing right now stops here.
+            $user->forceFill(['current_session_id' => null])->save();
+            $user->cart()->delete();
+            $user->delete();
+        });
 
         ActivityLog::logAction(
             auth()->id(),
-            'user_deleted',
-            auth()->user()->full_name . " deleted {$role} account: {$fullName} ({$email})"
+            'user_archived',
+            auth()->user()->full_name . " archived {$role} account: {$fullName} ({$email})"
         );
 
         return response()->json([
             'success' => true,
-            'message' => 'User account deleted successfully.',
+            'message' => 'Account archived. Its orders and history are kept, and it can no longer sign in.',
         ]);
     }
 
-    /**
-     * Whether the account is referenced by records that block a hard delete.
-     */
-    protected function hasHistory(User $user): bool
+    /** Returns an archived account to the active list. */
+    public function restore(int $id)
     {
-        return $user->sales()->exists()
-            || $user->activityLogs()->exists()
-            || DB::table('stock_transactions')->where('user_id', $user->user_id)->exists();
+        $user = User::onlyTrashed()->where('user_id', $id)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No archived account with that id.',
+            ], 404);
+        }
+
+        // The email column is unique across archived rows too, so nothing can
+        // have taken the address; the profile phone number is a different
+        // matter and is left to the profile screen to sort out.
+        $user->restore();
+
+        ActivityLog::logAction(
+            auth()->id(),
+            'user_restored',
+            auth()->user()->full_name . " restored {$user->roleLabel()} account: {$user->full_name} ({$user->email})"
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Account restored.',
+        ]);
     }
 
     public function getLogs(Request $request)
     {
         $type = $request->get('type', 'all');
 
-        $staffActions   = ['admin_login', 'logout', 'single_session_replaced', 'session_invalidated', 'user_created', 'user_updated', 'user_deleted', 'product_created', 'product_updated', 'product_deleted', 'product_catalog_imported', 'stock_in', 'stock_out', 'sale_created', 'sale_status_updated', 'payment_request_approved', 'payment_request_rejected', 'sales_report_exported', 'inventory_report_exported', 'database_backup_created', 'database_backup_downloaded', 'database_backup_deleted'];
+        $staffActions   = ['admin_login', 'logout', 'single_session_replaced', 'session_invalidated', 'user_created', 'user_updated', 'user_deleted', 'product_created', 'product_updated', 'product_deleted', 'product_catalog_imported', 'stock_in', 'stock_out', 'sale_created', 'sale_status_updated', 'payment_request_approved', 'payment_request_rejected', 'sales_report_exported', 'inventory_report_exported', 'database_backup_created', 'database_backup_downloaded', 'database_backup_deleted', 'user_archived', 'user_restored', 'product_archived', 'product_restored'];
         $customerActions = ['customer_login', 'logout', 'single_session_replaced', 'session_invalidated', 'customer_registered', 'order_placed', 'payment_request_submitted', 'profile_updated', 'password_changed', 'password_set'];
 
         $query = ActivityLog::with('user')->orderByDesc('log_id');

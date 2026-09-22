@@ -86,6 +86,7 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
         Route::post('/products/{id}', [ProductController::class, 'update']);
         Route::put('/products/{id}', [ProductController::class, 'update']);
         Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+        Route::post('/products/{id}/restore', [ProductController::class, 'restore']);
     });
 
     Route::middleware('permission:manage_inventory')->group(function () {
@@ -125,6 +126,7 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
         Route::post('/users', [UserManagementController::class, 'store']);
         Route::put('/users/{id}', [UserManagementController::class, 'update']);
         Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
+        Route::post('/users/{id}/restore', [UserManagementController::class, 'restore']);
     });
 
     Route::get('/logs', [UserManagementController::class, 'getLogs'])

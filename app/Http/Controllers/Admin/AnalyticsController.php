@@ -282,7 +282,13 @@ class AnalyticsController extends Controller
             ->selectRaw('sale_items.product_id, SUM(sale_items.subtotal) revenue')
             ->pluck('revenue', 'sale_items.product_id');
 
+        // Everything above this point deliberately counts archived products:
+        // a sale made last month happened whether or not the line is still
+        // stocked, and dropping it would quietly restate the history. Stock
+        // health is the opposite -- it describes the shelf as it is today, so
+        // archived lines are excluded from here down.
         $items = DB::table('products')
+            ->whereNull('products.deleted_at')
             ->leftJoin('inventory', 'inventory.product_id', '=', 'products.product_id')
             ->select('products.product_id', 'products.product_name', 'products.brand', 'products.price',
                      'products.reorder_level', DB::raw('COALESCE(inventory.quantity, 0) AS stock'))

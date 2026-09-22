@@ -14,7 +14,7 @@
                 Bulk Import
             </button>
             --}}
-            <button onclick="openForm()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
+            <button id="addProductBtn" onclick="openForm()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
                 Add Product
             </button>
         </div>
@@ -25,6 +25,13 @@
     <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
         <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
             <input type="text" id="productSearch" oninput="searchProducts()" placeholder="Search product, brand, or type..." class="rounded-xl border border-[var(--line)] px-3 py-2 text-sm w-72 focus:outline-none">
+
+            <div class="ml-auto inline-flex rounded-xl border border-[var(--line)] p-1">
+                <button type="button" id="tabActive" onclick="setArchivedView(false)"
+                        class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Active</button>
+                <button type="button" id="tabArchived" onclick="setArchivedView(true)"
+                        class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Archived</button>
+            </div>
         </div>
         <table class="min-w-full">
             <thead class="bg-[var(--surface)]">
@@ -253,16 +260,15 @@
             }
         }
 
+        let showArchived = false;
+
         function renderProducts() {
-            const search = document.getElementById('productSearch').value.toLowerCase();
             const tbody = document.getElementById('productsBody');
-            const filtered = products.filter(p =>
-                p.product_name.toLowerCase().includes(search) ||
-                p.brand.toLowerCase().includes(search) ||
-                p.oil_type.toLowerCase().includes(search)
-            );
-            tbody.innerHTML = filtered.length
-                ? filtered.map((product) => `
+
+            // The server has already searched the whole catalogue. Filtering
+            // again here only hid rows it had matched on viscosity grade.
+            tbody.innerHTML = products.length
+                ? products.map((product) => `
                     <tr>
                         <td class="px-6 py-4">
                             ${product.image_url
@@ -275,19 +281,22 @@
                         <td class="px-6 py-4">${escapeHtml(product.unit || '1 Liter')}</td>
                         <td class="px-6 py-4">PHP ${Number(product.price).toFixed(2)}</td>
                         <td class="px-6 py-4">${product.inventory ? product.inventory.quantity : 0}</td>
-                        <td class="px-6 py-4 space-x-3">
-                            <button type="button" onclick="editProduct(${product.product_id})" class="text-[var(--primary)] hover:text-[var(--primary-dark)]">Edit</button>
-                            ${ /* <button type="button" onclick="deleteProduct(${product.product_id})" class="text-red-600 hover:text-red-900">Delete</button> */ "" }
+                        <td class="px-6 py-4 space-x-3 whitespace-nowrap">
+                            ${showArchived
+                                ? `<button type="button" onclick="restoreProduct(${product.product_id})" class="font-semibold text-[var(--primary)] hover:text-[var(--primary-dark)]">Restore</button>`
+                                : `<button type="button" onclick="editProduct(${product.product_id})" class="text-[var(--primary)] hover:text-[var(--primary-dark)]">Edit</button>
+                                   <button type="button" onclick="archiveProduct(${product.product_id})" class="text-red-600 hover:text-red-900">Archive</button>`}
                         </td>
                     </tr>
                 `).join('')
-                : '<tr><td colspan="8" class="px-6 py-4 text-center text-[var(--muted)]">No matching products found.</td></tr>';
+                : `<tr><td colspan="8" class="px-6 py-4 text-center text-[var(--muted)]">${showArchived ? 'Nothing archived.' : 'No matching products found.'}</td></tr>`;
         }
 
         async function loadProducts(page = 1) {
             const params = new URLSearchParams({ page });
             const search = document.getElementById('productSearch').value.trim();
             if (search) params.set('search', search);
+            if (showArchived) params.set('archived', '1');
 
             const response = await fetch(`/admin-api/products?${params}`, { headers: { Accept: 'application/json' } });
             if (response.status === 401) { window.location.href = '/admin/login'; return; }
@@ -308,8 +317,11 @@
             }
         }
 
-        async function deleteProduct(productId) {
-            if (!confirm('Delete this product?')) {
+        async function archiveProduct(productId) {
+            const product = products.find((item) => item.product_id === productId);
+            const name = product ? product.product_name : 'this product';
+
+            if (!confirm(`Archive ${name}?\n\nIt disappears from the shop and the catalogue, but its past orders stay intact and you can restore it later.`)) {
                 return;
             }
 
@@ -322,11 +334,43 @@
             });
 
             const data = await response.json();
-            showMessage(data.message || 'Delete request completed.', response.ok ? 'success' : 'error');
+            showMessage(data.message || 'Archive request completed.', response.ok ? 'success' : 'error');
 
             if (response.ok) {
                 loadProducts();
             }
+        }
+
+        async function restoreProduct(productId) {
+            const response = await fetch(`/admin-api/products/${productId}/restore`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            showMessage(data.message || 'Restore request completed.', response.ok ? 'success' : 'error');
+
+            if (response.ok) {
+                loadProducts();
+            }
+        }
+
+        function setArchivedView(archived) {
+            showArchived = archived;
+
+            const on = 'bg-[var(--primary)] text-white';
+            const off = 'text-[var(--muted)] hover:text-[var(--ink)]';
+
+            document.getElementById('tabActive').className = `rounded-lg px-4 py-1.5 text-sm font-semibold transition ${archived ? off : on}`;
+            document.getElementById('tabArchived').className = `rounded-lg px-4 py-1.5 text-sm font-semibold transition ${archived ? on : off}`;
+
+            // Adding a product while looking at the archive makes no sense.
+            document.getElementById('addProductBtn').classList.toggle('hidden', archived);
+
+            loadProducts(1);
         }
 
         document.getElementById('productForm').addEventListener('submit', async (e) => {
@@ -430,6 +474,7 @@
         }
         */
 
-        loadProducts();
+        // Paints the toggle and loads the active list.
+        setArchivedView(false);
 </script>
 @endpush

@@ -54,9 +54,12 @@ class ShopController extends Controller
     public function getFeaturedProducts()
     {
         // Get all products ranked by total units sold (descending)
+        // Written as a query builder join rather than through the model, so
+        // the archived-product scope has to be applied by hand here.
         $topSold = DB::table('sale_items')
             ->join('products', 'sale_items.product_id', '=', 'products.product_id')
             ->join('inventory', 'products.product_id', '=', 'inventory.product_id')
+            ->whereNull('products.deleted_at')
             ->select(
                 'products.product_id',
                 'products.product_name',

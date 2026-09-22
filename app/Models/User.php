@@ -4,11 +4,19 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory;
+
+    /**
+     * Deleting an account archives it, keeping the audit trail and every
+     * order it placed readable. An archived account cannot sign in, because
+     * the scope hides it from the query the auth guard runs.
+     */
+    use SoftDeletes;
 
     public const ROLE_ADMIN            = 'admin';
     public const ROLE_INVENTORY_STAFF  = 'inventory_staff';

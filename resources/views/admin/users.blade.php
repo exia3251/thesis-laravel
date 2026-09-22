@@ -8,12 +8,21 @@
             <h1 class="text-3xl font-black text-[var(--ink)]">User Management</h1>
             <p class="text-[var(--muted)]">Create and manage admin and customer accounts.</p>
         </div>
-        <button onclick="openUserModal()" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)] transition shadow-sm">+ Add User</button>
+        <button id="addUserBtn" onclick="openUserModal()" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)] transition shadow-sm">+ Add User</button>
     </div>
 
     <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
     <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-6 py-4">
+            <h2 class="text-xl font-bold text-[var(--ink)]">Accounts</h2>
+            <div class="inline-flex rounded-xl border border-[var(--line)] p-1">
+                <button type="button" id="tabActiveUsers" onclick="setArchivedUsers(false)"
+                        class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Active</button>
+                <button type="button" id="tabArchivedUsers" onclick="setArchivedUsers(true)"
+                        class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Archived</button>
+            </div>
+        </div>
         <table class="min-w-full">
             <thead class="bg-[var(--surface)]">
                 <tr>
@@ -278,8 +287,11 @@
 
         let activeLogType = 'all';
 
+        let showArchivedUsers = false;
+
         async function loadUsers() {
-            const response = await fetch('/admin-api/users', { headers: { Accept: 'application/json' } });
+            const query = showArchivedUsers ? '?archived=1' : '';
+            const response = await fetch(`/admin-api/users${query}`, { headers: { Accept: 'application/json' } });
             const data = await response.json();
             users = data.data || [];
             const tbody = document.getElementById('usersBody');
@@ -299,14 +311,35 @@
                             </div>
                         </td>
                         <td class="px-6 py-4">${escapeHtml(user.email)}</td>
-                                                <td class="px-6 py-4">${user.is_active ? 'Active' : 'Inactive'}</td>
-                        <td class="px-6 py-4 space-x-3">
-                            <button onclick="editUser(${user.user_id})" class="text-blue-600 hover:text-blue-900">Edit</button>
-                            ${ /* <button onclick="deleteUser(${user.user_id})" class="text-red-600 hover:text-red-900">Delete</button> */ "" }
+                        <td class="px-6 py-4">
+                            ${user.archived
+                                ? '<span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Archived</span>'
+                                : (user.is_active
+                                    ? '<span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Active</span>'
+                                    : '<span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">Inactive</span>')}
+                        </td>
+                        <td class="px-6 py-4 space-x-3 whitespace-nowrap">
+                            ${user.archived
+                                ? `<button onclick="restoreUser(${user.user_id})" class="font-semibold text-[var(--primary)] hover:text-[var(--primary-dark)]">Restore</button>`
+                                : `<button onclick="editUser(${user.user_id})" class="text-blue-600 hover:text-blue-900">Edit</button>
+                                   <button onclick="archiveUser(${user.user_id})" class="text-red-600 hover:text-red-900">Archive</button>`}
                         </td>
                     </tr>
                 `).join('')
-                : '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No users found.</td></tr>';
+                : `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">${showArchivedUsers ? 'Nothing archived.' : 'No users found.'}</td></tr>`;
+        }
+
+        function setArchivedUsers(archived) {
+            showArchivedUsers = archived;
+
+            const on = 'bg-[var(--primary)] text-white';
+            const off = 'text-[var(--muted)] hover:text-[var(--ink)]';
+
+            document.getElementById('tabActiveUsers').className = `rounded-lg px-4 py-1.5 text-sm font-semibold transition ${archived ? off : on}`;
+            document.getElementById('tabArchivedUsers').className = `rounded-lg px-4 py-1.5 text-sm font-semibold transition ${archived ? on : off}`;
+            document.getElementById('addUserBtn').classList.toggle('hidden', archived);
+
+            loadUsers();
         }
 
         function editUser(userId) {
@@ -314,8 +347,13 @@
             if (user) openUserModal(user);
         }
 
-        async function deleteUser(userId) {
-            if (!confirm('Delete this user account?')) return;
+        async function archiveUser(userId) {
+            const user = users.find((item) => item.user_id === userId);
+            const name = user ? user.full_name : 'this account';
+
+            if (!confirm(`Archive ${name}?\n\nThey are signed out and can no longer log in. Their orders and the activity log are kept, and you can restore the account later.`)) {
+                return;
+            }
 
             const response = await fetch(`/admin-api/users/${userId}`, {
                 method: 'DELETE',
@@ -326,7 +364,21 @@
             });
 
             const data = await response.json();
-            showMessage(data.message || 'Delete request completed.', response.ok ? 'success' : 'error');
+            showMessage(data.message || 'Archive request completed.', response.ok ? 'success' : 'error');
+            if (response.ok) loadUsers();
+        }
+
+        async function restoreUser(userId) {
+            const response = await fetch(`/admin-api/users/${userId}/restore`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            showMessage(data.message || 'Restore request completed.', response.ok ? 'success' : 'error');
             if (response.ok) loadUsers();
         }
 
@@ -389,9 +441,16 @@
                 user_created: 'bg-green-100 text-green-800',
                 user_updated: 'bg-indigo-100 text-indigo-800',
                 user_deleted: 'bg-red-100 text-red-800',
+                user_archived: 'bg-red-100 text-red-800',
+                user_restored: 'bg-green-100 text-green-800',
                 product_created: 'bg-green-100 text-green-800',
                 product_updated: 'bg-indigo-100 text-indigo-800',
                 product_deleted: 'bg-red-100 text-red-800',
+                product_archived: 'bg-red-100 text-red-800',
+                product_restored: 'bg-green-100 text-green-800',
+                database_backup_created: 'bg-teal-100 text-teal-800',
+                database_backup_downloaded: 'bg-teal-100 text-teal-800',
+                database_backup_deleted: 'bg-red-100 text-red-800',
                 product_catalog_imported: 'bg-purple-100 text-purple-800',
                 stock_in: 'bg-green-100 text-green-800',
                 stock_out: 'bg-orange-100 text-orange-800',
@@ -617,7 +676,8 @@
             }
         });
 
-        loadUsers();
+        // Paints the toggle and loads the active list.
+        setArchivedUsers(false);
         loadLogs();
 </script>
 @endpush

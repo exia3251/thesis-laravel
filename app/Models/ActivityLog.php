@@ -14,7 +14,8 @@ class ActivityLog extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'user_id');
+        // An audit trail that cannot name the person is not an audit trail.
+        return $this->belongsTo(User::class, 'user_id', 'user_id')->withTrashed();
     }
 
     public static function logAction(?int $userId, string $action, ?string $description = null): self

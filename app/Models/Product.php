@@ -4,10 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
     use HasFactory;
+
+    /**
+     * Deleting a product archives it. Sales, stock movements and carts all
+     * hold restricted foreign keys to this table, and a receipt printed a
+     * year ago still has to be able to name what was on it.
+     */
+    use SoftDeletes;
 
     protected $primaryKey = 'product_id';
     

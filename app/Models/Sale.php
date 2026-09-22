@@ -69,7 +69,7 @@ class Sale extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'user_id');
+        return $this->belongsTo(User::class, 'user_id', 'user_id')->withTrashed();
     }
 
     public function items()
@@ -84,17 +84,17 @@ class Sale extends Model
 
     public function canceller()
     {
-        return $this->belongsTo(User::class, 'cancelled_by', 'user_id');
+        return $this->belongsTo(User::class, 'cancelled_by', 'user_id')->withTrashed();
     }
 
     public function refunder()
     {
-        return $this->belongsTo(User::class, 'refunded_by', 'user_id');
+        return $this->belongsTo(User::class, 'refunded_by', 'user_id')->withTrashed();
     }
 
     public function deliveryConfirmer()
     {
-        return $this->belongsTo(User::class, 'delivery_confirmed_by', 'user_id');
+        return $this->belongsTo(User::class, 'delivery_confirmed_by', 'user_id')->withTrashed();
     }
 
     public function planLabel(): string

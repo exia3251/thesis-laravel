@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Inventory;
 use App\Models\Product;
+use App\Models\ShoppingCart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -20,7 +21,11 @@ class ProductController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('products', 'product_name')->ignore($productId, 'product_id'),
+                // Archived products keep their name in the table, so the rule
+                // has to look past them or a name could never be reused.
+                Rule::unique('products', 'product_name')
+                    ->ignore($productId, 'product_id')
+                    ->whereNull('deleted_at'),
             ],
             'brand' => 'required|string|max:100',
             'oil_type' => 'required|in:Synthetic,Semi-Synthetic,Mineral,Coolant,Other',
@@ -60,7 +65,17 @@ class ProductController extends Controller
     // Get all products (API)
     public function getProducts(Request $request)
     {
-        $query = Product::with('inventory')->orderByDesc('product_id');
+        $request->validate([
+            'search' => 'nullable|string|max:100',
+            'archived' => 'nullable|boolean',
+        ]);
+
+        // The archived list is a separate view rather than a mixed one, so a
+        // product that is no longer sold cannot be edited or restocked by
+        // mistake from the ordinary catalogue.
+        $query = $request->boolean('archived')
+            ? Product::onlyTrashed()->with('inventory')->orderByDesc('deleted_at')
+            : Product::with('inventory')->orderByDesc('product_id');
 
         // Searching here rather than in the browser, so the term reaches the
         // whole catalogue instead of only the page already loaded.
@@ -78,6 +93,7 @@ class ProductController extends Controller
         return $this->paginated($query->paginate($this->perPage()), function ($product) {
             $payload = $product->toArray();
             $payload['image_url'] = $product->image_path ? asset('storage/' . $product->image_path) : null;
+            $payload['archived'] = $product->trashed();
 
             return $payload;
         });
@@ -192,7 +208,11 @@ class ProductController extends Controller
         ]);
     }
 
-    // Delete product
+    /**
+     * Archives a product: it leaves the catalogue and the shop, but the rows
+     * that reference it stay readable. Products with sales used to be
+     * undeletable for exactly this reason, and now they no longer need to be.
+     */
     public function destroy($id)
     {
         $product = Product::find($id);
@@ -204,31 +224,70 @@ class ProductController extends Controller
             ], 404);
         }
 
-        // Check if product has sales
-        if ($product->saleItems()->count() > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot delete product with existing sales'
-            ], 400);
-        }
+        // A shopper holding an archived line in their basket would reach
+        // checkout and find it gone, so it is taken out of every cart now.
+        $removedFromCarts = ShoppingCart::where('product_id', $product->product_id)->delete();
 
-        if ($product->image_path) {
-            Storage::disk('public')->delete($product->image_path);
-        }
-
-        $productName = $product->product_name;
-        $productId   = $product->product_id;
+        // The image is left in place. Restoring the product should bring back
+        // the whole product, photograph included.
         $product->delete();
 
         ActivityLog::logAction(
             auth()->id(),
-            'product_deleted',
-            "Deleted product: {$productName} by " . auth()->user()->full_name
+            'product_archived',
+            "Archived product: {$product->product_name} by " . auth()->user()->full_name
         );
 
         return response()->json([
             'success' => true,
-            'message' => 'Product deleted successfully'
+            'message' => $removedFromCarts > 0
+                ? "Product archived. It was removed from {$removedFromCarts} " . ($removedFromCarts === 1 ? 'basket.' : 'baskets.')
+                : 'Product archived. You can restore it from the archived list.',
+        ]);
+    }
+
+    /** Returns an archived product to the catalogue. */
+    public function restore($id)
+    {
+        $product = Product::onlyTrashed()->where('product_id', $id)->first();
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No archived product with that id.'
+            ], 404);
+        }
+
+        // Another product may have taken the name while this one was away.
+        $nameTaken = Product::where('product_name', $product->product_name)
+            ->where('product_id', '!=', $product->product_id)
+            ->exists();
+
+        if ($nameTaken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A product called "' . $product->product_name . '" already exists. Rename that one first.',
+            ], 422);
+        }
+
+        $product->restore();
+
+        // A product archived before inventory existed, or whose row was
+        // removed since, needs one again before it can be restocked.
+        Inventory::firstOrCreate(
+            ['product_id' => $product->product_id],
+            ['quantity' => 0]
+        );
+
+        ActivityLog::logAction(
+            auth()->id(),
+            'product_restored',
+            "Restored product: {$product->product_name} by " . auth()->user()->full_name
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product restored to the catalogue.',
         ]);
     }
 
