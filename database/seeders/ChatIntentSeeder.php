@@ -85,6 +85,15 @@ class ChatIntentSeeder extends Seeder
 
             // ----------------------------------------------- products (flow)
             [
+                'intent_key' => 'vehicle_oil',
+                'category' => 'products',
+                'label' => 'What oil does my car take?',
+                'keywords' => 'car vehicle sasakyan kotse makina engine takes fits suits compatible model make year owner handbook manual',
+                'handler' => 'vehicleOil',
+                'is_suggested' => true,
+                'sort_order' => 55,
+            ],
+            [
                 'intent_key' => 'product_finder',
                 'category' => 'products',
                 'label' => 'Find the right oil',

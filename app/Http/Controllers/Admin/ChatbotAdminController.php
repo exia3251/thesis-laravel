@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\ChatIntent;
 use App\Models\ChatMessage;
+use App\Models\VehicleSpec;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -86,6 +87,113 @@ class ChatbotAdminController extends Controller
         );
 
         return response()->json(['success' => true, 'message' => 'Saved.']);
+    }
+
+    /**
+     * The vehicle table, unverified rows first.
+     *
+     * Those rows are general reference figures rather than readings from the
+     * manufacturers' manuals, and the assistant says so to customers. This is
+     * where somebody here checks one and takes responsibility for it.
+     */
+    public function vehicles(Request $request)
+    {
+        $request->validate([
+            'search' => 'nullable|string|max:60',
+            'only' => 'nullable|in:all,unverified,verified',
+        ]);
+
+        $query = VehicleSpec::query();
+
+        if ($request->filled('search')) {
+            $term = trim($request->input('search'));
+
+            $query->where(function ($q) use ($term) {
+                $q->where('make', 'like', "%{$term}%")
+                    ->orWhere('model', 'like', "%{$term}%")
+                    ->orWhere('aliases', 'like', "%{$term}%");
+            });
+        }
+
+        if ($request->input('only') === 'unverified') {
+            $query->where('is_verified', false);
+        } elseif ($request->input('only') === 'verified') {
+            $query->where('is_verified', true);
+        }
+
+        $specs = $query->orderBy('is_verified')->orderBy('make')->orderBy('model')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'specs' => $specs,
+                'total' => VehicleSpec::count(),
+                'verified' => VehicleSpec::where('is_verified', true)->count(),
+                // Grades the shop cannot currently serve. A customer asking
+                // about one of these is a stocking decision, not a dead end.
+                'unstocked_grades' => VehicleSpec::whereNotIn('viscosity', $this->stockedGrades())
+                    ->select('viscosity')
+                    ->selectRaw('COUNT(*) AS vehicles')
+                    ->groupBy('viscosity')
+                    ->orderByDesc('vehicles')
+                    ->get(),
+            ],
+        ]);
+    }
+
+    public function updateVehicle(Request $request, int $id)
+    {
+        $spec = VehicleSpec::find($id);
+
+        if (!$spec) {
+            return response()->json(['success' => false, 'message' => 'That vehicle is no longer listed.'], 404);
+        }
+
+        $validated = $request->validate([
+            'viscosity' => ['required', 'string', 'max:10', 'regex:/^\d{1,2}W-?\d{2}$/i'],
+            'viscosity_alt' => ['nullable', 'string', 'max:10', 'regex:/^\d{1,2}W-?\d{2}$/i'],
+            'oil_type' => 'nullable|in:Synthetic,Semi-Synthetic,Mineral',
+            'capacity_litres' => 'nullable|numeric|min:0.5|max:99',
+            'notes' => 'nullable|string|max:500',
+            'source' => 'nullable|string|max:120',
+            'is_verified' => 'nullable|boolean',
+        ], [
+            'viscosity.regex' => 'Write the grade as it appears in the handbook, such as 5W-30 or 15W40.',
+            'viscosity_alt.regex' => 'Write the alternative grade as 5W-30 or 15W40.',
+        ]);
+
+        // Stored without the hyphen so it matches the product catalogue,
+        // which is where the recommendation is looked up.
+        $validated['viscosity'] = str_replace('-', '', strtoupper($validated['viscosity']));
+
+        if (filled($validated['viscosity_alt'] ?? null)) {
+            $validated['viscosity_alt'] = str_replace('-', '', strtoupper($validated['viscosity_alt']));
+        }
+
+        $wasVerified = $spec->is_verified;
+        $spec->update($validated + ['is_verified' => $request->boolean('is_verified')]);
+
+        ActivityLog::logAction(
+            auth()->id(),
+            $spec->is_verified && !$wasVerified ? 'vehicle_spec_verified' : 'vehicle_spec_updated',
+            auth()->user()->full_name . ' '
+                . ($spec->is_verified && !$wasVerified ? 'verified' : 'updated')
+                . " the oil spec for {$spec->title()} ({$spec->viscosity})"
+        );
+
+        return response()->json(['success' => true, 'message' => 'Saved.']);
+    }
+
+    /** @return array<int,string> */
+    private function stockedGrades(): array
+    {
+        return DB::table('products')
+            ->whereNull('deleted_at')
+            ->whereNotNull('viscosity_grade')
+            ->where('viscosity_grade', '<>', '')
+            ->distinct()
+            ->pluck('viscosity_grade')
+            ->all();
     }
 
     /**

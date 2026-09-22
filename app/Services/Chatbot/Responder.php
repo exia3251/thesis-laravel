@@ -7,6 +7,7 @@ use App\Models\ChatIntent;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
+use App\Models\VehicleSpec;
 use Illuminate\Support\Collection;
 
 /**
@@ -25,11 +26,21 @@ class Responder
 {
     private const HANDLERS = [
         'orderStatus', 'orderBalance', 'paymentState', 'orderCancel', 'orderList',
-        'productFinder', 'productStock', 'productBrands',
+        'productFinder', 'productStock', 'productBrands', 'vehicleOil',
     ];
 
-    public function __construct(private readonly IntentMatcher $matcher)
-    {
+    /**
+     * Said on every oil recommendation without exception. Putting the wrong
+     * viscosity in an engine causes real damage, and this data describes
+     * other manufacturers' engines rather than anything this business
+     * controls, so the handbook always has the last word.
+     */
+    private const HANDBOOK_NOTE = "Always confirm against your owner's handbook before an oil change.";
+
+    public function __construct(
+        private readonly IntentMatcher $matcher,
+        private readonly VehicleMatcher $vehicles,
+    ) {
     }
 
     /**
@@ -385,6 +396,227 @@ class Responder
             'products' => $this->productCards($inStock->sortBy('price')->take(4)),
             'chips' => [['label' => 'Start again', 'value' => 'Find the right oil', 'intent' => 'product_finder']],
         ]);
+    }
+
+    // ----------------------------------------------------------- vehicles
+
+    /**
+     * Answers "what oil does my car take".
+     *
+     * Reached either from the intent, or straight from the message when a
+     * model name was recognised in it.
+     */
+    public function vehicleOil(ChatConversation $conversation, string $message, ?User $user): array
+    {
+        $found = $this->vehicles->findConfident($message);
+
+        if ($found['matched'] === null) {
+            return $this->askForMake($conversation);
+        }
+
+        return $this->presentSpecs($conversation, $found['specs'], $found['year']);
+    }
+
+    /**
+     * Continues the make-then-model walk. Returns null when the message is
+     * not an answer to the step being asked, so the caller can treat it as a
+     * fresh question rather than forcing it into the flow.
+     */
+    public function continueVehicle(ChatConversation $conversation, string $message): ?array
+    {
+        $context = $conversation->context ?? [];
+
+        if (($context['flow'] ?? null) !== 'vehicle') {
+            return null;
+        }
+
+        $choice = trim($message);
+        $step = $context['step'] ?? 'make';
+
+        if ($step === 'make') {
+            $make = $this->vehicles->makes()->first(fn (string $m) => strcasecmp($m, $choice) === 0);
+
+            if (!$make) {
+                return null;
+            }
+
+            $conversation->update(['context' => ['flow' => 'vehicle', 'step' => 'model', 'make' => $make]]);
+
+            return $this->reply("Which {$make}?", [
+                'chips' => $this->vehicles->modelsFor($make)
+                    ->map(fn (string $model) => ['label' => $model, 'value' => $model])->all(),
+            ]);
+        }
+
+        if ($step === 'model') {
+            $make = $context['make'] ?? '';
+            $model = $this->vehicles->modelsFor($make)->first(fn (string $m) => strcasecmp($m, $choice) === 0);
+
+            if (!$model) {
+                return null;
+            }
+
+            return $this->presentSpecs($conversation, $this->vehicles->specsFor($make, $model), null);
+        }
+
+        return null;
+    }
+
+    private function askForMake(ChatConversation $conversation): array
+    {
+        $conversation->update(['context' => ['flow' => 'vehicle', 'step' => 'make']]);
+
+        return $this->reply(
+            "I can look that up. Which make is it?",
+            ['chips' => $this->vehicles->makes()->map(fn (string $make) => ['label' => $make, 'value' => $make])->all()]
+        );
+    }
+
+    /**
+     * One spec is an answer. Several means the model spans generations that
+     * take different oils, and guessing between them is exactly the mistake
+     * worth avoiding, so the customer picks.
+     */
+    private function presentSpecs(ChatConversation $conversation, Collection $specs, ?int $year): array
+    {
+        if ($specs->isEmpty()) {
+            return $this->askForMake($conversation);
+        }
+
+        if ($specs->count() > 1) {
+            $conversation->clearContext();
+
+            $first = $specs->first();
+
+            return $this->reply(
+                "The {$first->make} {$first->model} comes in versions that take different oils. Which is yours?",
+                [
+                    'chips' => $specs->map(fn (VehicleSpec $spec) => [
+                        'label' => trim(($spec->yearLabel() ? $spec->yearLabel() . ' - ' : '') . $spec->variant),
+                        'value' => $spec->model . ' ' . ($spec->year_from ?: $spec->year_to ?: '') . ' ' . $spec->variant,
+                    ])->all(),
+                ]
+            );
+        }
+
+        $conversation->clearContext();
+
+        return $this->specAnswer($specs->first(), $year);
+    }
+
+    private function specAnswer(VehicleSpec $spec, ?int $year): array
+    {
+        $grade = $this->grade($spec->viscosity);
+        $subject = trim(($year ? $year . ' ' : '') . $spec->make . ' ' . $spec->model);
+        $variant = $spec->variant ? " ({$spec->variant})" : '';
+
+        $stocked = $this->productsWithGrade($spec->viscosity);
+        $body = ucfirst($this->article($subject)) . " {$subject}{$variant} takes {$grade}.";
+
+        if ($spec->capacity_litres) {
+            $body .= "\n\nAbout " . rtrim(rtrim(number_format((float) $spec->capacity_litres, 1), '0'), '.')
+                . ' litres with a filter change' . $this->packAdvice((float) $spec->capacity_litres, $stocked) . '.';
+        }
+
+        $payload = [];
+
+        if ($stocked->isNotEmpty()) {
+            $payload['products'] = $this->productCards($stocked->sortBy('price')->take(3));
+        } else {
+            // Saying so is the point. Selling somebody the wrong grade
+            // because it is what happens to be on the shelf is worse than
+            // telling them we cannot help.
+            $body .= "\n\nWe do not stock {$grade} at the moment.";
+
+            $alternative = $spec->viscosity_alt ? $this->productsWithGrade($spec->viscosity_alt) : collect();
+
+            if ($alternative->isNotEmpty()) {
+                $body .= ' Some handbooks also permit ' . $this->grade($spec->viscosity_alt)
+                    . ', which we do carry. Check yours before using it.';
+                $payload['products'] = $this->productCards($alternative->sortBy('price')->take(3));
+            }
+        }
+
+        if (filled($spec->notes)) {
+            $body .= "\n\n" . $spec->notes;
+        }
+
+        $body .= "\n\n" . self::HANDBOOK_NOTE;
+
+        if (!$spec->is_verified) {
+            $body .= ' This figure is a general reference and has not yet been checked against the manual by our staff.';
+        }
+
+        $payload['chips'] = [['label' => 'Look up another vehicle', 'value' => 'what oil for my car', 'intent' => 'vehicle_oil']];
+
+        return $this->reply($body, $payload);
+    }
+
+    /** In stock, in this grade. */
+    private function productsWithGrade(?string $viscosity): Collection
+    {
+        if (blank($viscosity)) {
+            return collect();
+        }
+
+        return Product::with('inventory')
+            ->where('viscosity_grade', $viscosity)
+            ->get()
+            ->filter(fn (Product $product) => ($product->inventory->quantity ?? 0) > 0)
+            ->values();
+    }
+
+    /**
+     * Turns a capacity into the pack somebody should actually buy, using the
+     * sizes carried in this grade rather than a generic answer.
+     */
+    private function packAdvice(float $litres, Collection $stocked): string
+    {
+        $sizes = $stocked
+            ->map(fn (Product $product) => $this->litresIn($product->unit))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        if ($sizes->isEmpty()) {
+            return '';
+        }
+
+        $single = $sizes->first(fn (float $size) => $size >= $litres);
+
+        if ($single) {
+            return ', so a ' . $this->litreLabel($single) . ' pack covers it';
+        }
+
+        $largest = $sizes->last();
+
+        return ', so you would need ' . (int) ceil($litres / $largest) . ' x ' . $this->litreLabel($largest);
+    }
+
+    /** "20 Liters" -> 20.0 */
+    private function litresIn(?string $unit): ?float
+    {
+        return preg_match('/(\d+(?:\.\d+)?)/', (string) $unit, $m) ? (float) $m[1] : null;
+    }
+
+    private function litreLabel(float $litres): string
+    {
+        $rounded = rtrim(rtrim(number_format($litres, 1), '0'), '.');
+
+        return $rounded . ' litre';
+    }
+
+    /** "an Isuzu", "a Toyota". Reads wrong otherwise, and it is one line. */
+    private function article(string $subject): string
+    {
+        return str_contains('aeiou', mb_strtolower(mb_substr($subject, 0, 1))) ? 'an' : 'a';
+    }
+
+    /** "5W30" -> "5W-30", which is how a handbook prints it. */
+    private function grade(?string $viscosity): string
+    {
+        return preg_replace('/^(\d+W)(\d+)$/i', '$1-$2', (string) $viscosity);
     }
 
     // ------------------------------------------------------------ helpers

@@ -20,6 +20,7 @@ class Assistant
     public function __construct(
         private readonly IntentMatcher $matcher,
         private readonly Responder $responder,
+        private readonly VehicleMatcher $vehicles,
     ) {
     }
 
@@ -82,16 +83,36 @@ class Assistant
     {
         $message = trim($message);
 
-        // A running flow gets first refusal on the message. It declines
+        // A running flow gets first refusal on the message. Each one declines
         // anything that is not an answer to the step it asked, so a visitor
         // who changes the subject mid-flow is not trapped in it.
-        $flowReply = $this->responder->continueFinder($conversation, $message);
+        foreach (['product_finder' => 'continueFinder', 'vehicle_oil' => 'continueVehicle'] as $key => $method) {
+            $flowReply = $this->responder->{$method}($conversation, $message);
 
-        if ($flowReply !== null) {
-            $userMessage = $this->record($conversation, ChatMessage::ROLE_USER, $message, 'product_finder');
-            $botMessage = $this->record($conversation, ChatMessage::ROLE_BOT, $flowReply['body'], 'product_finder', $flowReply['payload']);
+            if ($flowReply !== null) {
+                $userMessage = $this->record($conversation, ChatMessage::ROLE_USER, $message, $key);
+                $botMessage = $this->record($conversation, ChatMessage::ROLE_BOT, $flowReply['body'], $key, $flowReply['payload']);
 
-            return [$this->present($userMessage), $this->present($botMessage)];
+                return [$this->present($userMessage), $this->present($botMessage)];
+            }
+        }
+
+        // A recognised model name answers the question on its own, and no
+        // keyword list could hold 55 of them. Tried before intent matching
+        // because "what oil for my Vios" would otherwise start the generic
+        // product finder; the matcher refuses anything that is not clearly
+        // about a vehicle, so ordinary questions fall straight through.
+        if (!$intentKey) {
+            $vehicle = $this->vehicles->findConfident($message);
+
+            if ($vehicle['matched'] !== null) {
+                $reply = $this->responder->vehicleOil($conversation, $message, $user);
+
+                $userMessage = $this->record($conversation, ChatMessage::ROLE_USER, $message, 'vehicle_oil');
+                $botMessage = $this->record($conversation, ChatMessage::ROLE_BOT, $reply['body'], 'vehicle_oil', $reply['payload']);
+
+                return [$this->present($userMessage), $this->present($botMessage)];
+            }
         }
 
         // Reaching here with a flow still set means the subject changed.

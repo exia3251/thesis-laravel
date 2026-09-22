@@ -52,8 +52,12 @@ class ChatbotMatchingTest extends TestCase
             'delivery areas misspelt'           => ['delivary areas', false, 'delivery_info'],
             'shipping wording'                  => ['what areas do you ship to', false, 'delivery_info'],
 
-            'finding a product'                 => ['i need oil for my car', false, 'product_finder'],
+            // Mentioning a car routes to the vehicle guide, which can give a
+            // grade, rather than the generic finder, which asks the customer
+            // to already know what type they want.
+            'a question about a vehicle'        => ['i need oil for my car', false, 'vehicle_oil'],
             'asking for help choosing'          => ['help me choose an oil', false, 'product_finder'],
+            'browsing without a vehicle'        => ['what oil should i use', false, 'product_finder'],
             'stock'                             => ['what do you have in stock', false, 'product_stock'],
             'brands'                            => ['what brands do you have', false, 'product_brands'],
             'grades explained'                  => ['what does 5W-30 mean', false, 'viscosity_meaning'],

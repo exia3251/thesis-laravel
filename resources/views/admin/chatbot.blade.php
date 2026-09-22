@@ -38,6 +38,112 @@
         <div id="intentList" class="divide-y divide-[var(--line)]"></div>
     </section>
 
+    <section class="mt-5 rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-6 py-5">
+            <div>
+                <h2 class="text-base font-bold text-[var(--ink)]">Vehicle oil guide</h2>
+                <p id="vehicleSummary" class="mt-1 text-xs text-[var(--muted)]">Loading...</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <input type="text" id="vehicleSearch" oninput="searchVehicles()" placeholder="Search make or model"
+                       class="w-56 rounded-xl border border-[var(--line)] px-3 py-2 text-sm outline-none focus:border-[var(--primary)]">
+                <select id="vehicleFilter" onchange="loadVehicles()"
+                        class="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]">
+                    <option value="all">All</option>
+                    <option value="unverified" selected>Not yet checked</option>
+                    <option value="verified">Checked</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="border-b border-amber-200 bg-amber-50 px-6 py-4">
+            <p class="text-sm leading-relaxed text-amber-900">
+                <span class="font-bold">These figures have not been checked against the manufacturers' manuals.</span>
+                They are general reference values seeded to get the guide working. The assistant tells every customer to
+                confirm against their own handbook, and says plainly when a row has not been checked here.
+                Open a row, verify it against the manual, and tick <span class="font-semibold">Checked</span>.
+            </p>
+            <p id="unstockedNote" class="mt-2 text-xs text-amber-900/80"></p>
+        </div>
+
+        <div id="vehicleList" class="divide-y divide-[var(--line)]"></div>
+    </section>
+
+    <div id="vehicleModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+        <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-[1.5rem] bg-white p-6 shadow-2xl">
+            <div class="mb-5 flex items-start justify-between gap-3">
+                <div>
+                    <h3 id="vehicleTitle" class="text-lg font-bold text-[var(--ink)]"></h3>
+                    <p id="vehicleYears" class="mt-0.5 text-xs text-[var(--muted)]"></p>
+                </div>
+                <button type="button" onclick="closeVehicle()" class="rounded-lg p-1.5 text-[var(--muted)] transition hover:bg-[var(--surface)]">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div id="vehicleErrors" class="mb-4 hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
+
+            <form id="vehicleForm" class="space-y-4" onsubmit="saveVehicle(event)">
+                <input type="hidden" id="vehicleId">
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="block text-sm font-semibold text-[var(--ink)]">Grade</label>
+                        <input type="text" id="vehicleViscosity" required placeholder="5W-30"
+                               class="mt-1.5 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-[var(--ink)]">Also permitted</label>
+                        <input type="text" id="vehicleViscosityAlt" placeholder="optional"
+                               class="mt-1.5 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]">
+                    </div>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="block text-sm font-semibold text-[var(--ink)]">Oil type</label>
+                        <select id="vehicleOilType" class="mt-1.5 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]">
+                            <option value="">Not specified</option>
+                            <option value="Synthetic">Synthetic</option>
+                            <option value="Semi-Synthetic">Semi-Synthetic</option>
+                            <option value="Mineral">Mineral</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-[var(--ink)]">Capacity (litres)</label>
+                        <input type="number" step="0.1" min="0.5" max="99" id="vehicleCapacity"
+                               class="mt-1.5 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-[var(--ink)]">Where this came from</label>
+                    <input type="text" id="vehicleSource" maxlength="120" placeholder="e.g. 2019 Vios owner's manual, page 312"
+                           class="mt-1.5 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-[var(--ink)]">Note shown to the customer</label>
+                    <textarea id="vehicleNotes" rows="3" maxlength="500"
+                              class="mt-1.5 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]"></textarea>
+                </div>
+
+                <label class="flex items-start gap-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3.5">
+                    <input type="checkbox" id="vehicleVerified" class="mt-0.5 h-4 w-4 rounded border-[var(--line)]">
+                    <span class="text-sm text-[var(--ink)]">
+                        <span class="font-semibold">Checked against the manual</span>
+                        <span class="mt-0.5 block text-xs text-[var(--muted)]">Until this is ticked the assistant tells customers the figure is unverified.</span>
+                    </span>
+                </label>
+
+                <div class="flex justify-end gap-3 border-t border-[var(--line)] pt-5">
+                    <button type="button" onclick="closeVehicle()" class="rounded-xl border border-[var(--line)] px-5 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--surface)]">Cancel</button>
+                    <button type="submit" class="rounded-xl bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="intentModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
         <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[1.5rem] bg-white p-6 shadow-2xl">
             <div class="mb-5 flex items-start justify-between gap-3">
@@ -238,7 +344,123 @@
         await loadIntents();
     }
 
+    let vehicles = [];
+
+    async function loadVehicles() {
+        const params = new URLSearchParams({ only: document.getElementById('vehicleFilter').value });
+        const search = document.getElementById('vehicleSearch').value.trim();
+        if (search) params.set('search', search);
+
+        const response = await fetch(`/admin-api/assistant/vehicles?${params}`, { headers: { Accept: 'application/json' } });
+        if (response.status === 401) { window.location.href = '/admin/login'; return; }
+
+        const { data } = await response.json();
+        vehicles = data.specs;
+
+        document.getElementById('vehicleSummary').textContent =
+            `${data.verified} of ${data.total} checked against a manual`;
+
+        /* Grades a customer will be told about but cannot buy here. That is a
+           stocking decision, so it is worth naming rather than hiding. */
+        document.getElementById('unstockedNote').textContent = data.unstocked_grades.length
+            ? 'Not stocked: ' + data.unstocked_grades
+                .map((row) => `${row.viscosity} (${row.vehicles} ${row.vehicles === 1 ? 'vehicle' : 'vehicles'})`)
+                .join(', ') + '. The assistant says so rather than offering a different grade.'
+            : 'Every grade in this table is stocked.';
+
+        document.getElementById('vehicleList').innerHTML = vehicles.length
+            ? vehicles.map((spec) => `
+                <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-sm font-semibold text-[var(--ink)]">${escapeHtml(spec.make)} ${escapeHtml(spec.model)}</span>
+                            ${spec.variant ? `<span class="text-xs text-[var(--muted)]">${escapeHtml(spec.variant)}</span>` : ''}
+                            ${spec.is_verified
+                                ? '<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Checked</span>'
+                                : '<span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Not checked</span>'}
+                        </div>
+                        <div class="mt-1 text-xs text-[var(--muted)]">
+                            ${escapeHtml(spec.viscosity)}${spec.viscosity_alt ? ' or ' + escapeHtml(spec.viscosity_alt) : ''}
+                            ${spec.capacity_litres ? ' &middot; ' + escapeHtml(String(spec.capacity_litres)) + ' L' : ''}
+                            ${spec.year_from || spec.year_to ? ' &middot; ' + escapeHtml([spec.year_from, spec.year_to].filter(Boolean).join(' to ')) : ''}
+                        </div>
+                    </div>
+                    <button type="button" data-id="${spec.spec_id}" onclick="openVehicle(this.dataset.id)"
+                            class="shrink-0 rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">Check</button>
+                </div>`).join('')
+            : '<p class="px-6 py-10 text-center text-sm text-[var(--muted)]">Nothing matches that.</p>';
+    }
+
+    const searchVehicles = debounce(() => loadVehicles());
+
+    function openVehicle(id) {
+        const spec = vehicles.find((item) => String(item.spec_id) === String(id));
+        if (!spec) return;
+
+        document.getElementById('vehicleId').value = spec.spec_id;
+        document.getElementById('vehicleTitle').textContent = `${spec.make} ${spec.model}${spec.variant ? ' — ' + spec.variant : ''}`;
+        document.getElementById('vehicleYears').textContent =
+            [spec.year_from, spec.year_to].filter(Boolean).join(' to ') || 'All model years';
+        document.getElementById('vehicleViscosity').value = spec.viscosity || '';
+        document.getElementById('vehicleViscosityAlt').value = spec.viscosity_alt || '';
+        document.getElementById('vehicleOilType').value = spec.oil_type || '';
+        document.getElementById('vehicleCapacity').value = spec.capacity_litres || '';
+        document.getElementById('vehicleSource').value = spec.source || '';
+        document.getElementById('vehicleNotes').value = spec.notes || '';
+        document.getElementById('vehicleVerified').checked = !!spec.is_verified;
+        document.getElementById('vehicleErrors').classList.add('hidden');
+
+        const modal = document.getElementById('vehicleModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeVehicle() {
+        const modal = document.getElementById('vehicleModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    async function saveVehicle(event) {
+        event.preventDefault();
+
+        const id = document.getElementById('vehicleId').value;
+
+        const response = await fetch(`/admin-api/assistant/vehicles/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                Accept: 'application/json',
+            },
+            body: JSON.stringify({
+                viscosity: document.getElementById('vehicleViscosity').value,
+                viscosity_alt: document.getElementById('vehicleViscosityAlt').value || null,
+                oil_type: document.getElementById('vehicleOilType').value || null,
+                capacity_litres: document.getElementById('vehicleCapacity').value || null,
+                source: document.getElementById('vehicleSource').value || null,
+                notes: document.getElementById('vehicleNotes').value || null,
+                is_verified: document.getElementById('vehicleVerified').checked,
+            }),
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+            const errors = payload.errors ? Object.values(payload.errors).flat() : [payload.message || 'Could not save.'];
+            const box = document.getElementById('vehicleErrors');
+            box.innerHTML = errors.map(escapeHtml).join('<br>');
+            box.classList.remove('hidden');
+            return;
+        }
+
+        closeVehicle();
+        showMessage(payload.message || 'Saved.');
+        await loadVehicles();
+    }
+
     loadUnanswered();
     loadIntents();
+    loadVehicles();
 </script>
 @endpush

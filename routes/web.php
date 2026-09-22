@@ -141,6 +141,8 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
         Route::get('/assistant/intents', [ChatbotAdminController::class, 'intents']);
         Route::put('/assistant/intents/{id}', [ChatbotAdminController::class, 'update']);
         Route::get('/assistant/unanswered', [ChatbotAdminController::class, 'unanswered']);
+        Route::get('/assistant/vehicles', [ChatbotAdminController::class, 'vehicles']);
+        Route::put('/assistant/vehicles/{id}', [ChatbotAdminController::class, 'updateVehicle']);
     });
 
     Route::middleware('permission:backup_database')->group(function () {
