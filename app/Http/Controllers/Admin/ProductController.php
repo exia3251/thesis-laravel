@@ -20,7 +20,9 @@ class ProductController extends Controller
             'product_name' => [
                 'required',
                 'string',
-                'max:255',
+                // products.product_name is varchar(200). A longer name passed
+                // this rule and then failed at the insert with a raw SQL error.
+                'max:200',
                 // Archived products keep their name in the table, so the rule
                 // has to look past them or a name could never be reused.
                 Rule::unique('products', 'product_name')
@@ -43,6 +45,7 @@ class ProductController extends Controller
         return [
             'product_name.required' => 'Product name is required.',
             'product_name.unique' => 'That product name already exists.',
+            'product_name.max' => 'Product name must not exceed 200 characters.',
             'brand.required' => 'Brand is required.',
             'oil_type.required' => 'Product type is required.',
             'price.required' => 'Price is required.',

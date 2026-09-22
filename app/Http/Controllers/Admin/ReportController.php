@@ -146,8 +146,22 @@ class ReportController extends Controller
         ]);
     }
 
+    /**
+     * The filters arrive from the query string and go straight into a where
+     * clause, so they are checked here rather than trusted. This is the only
+     * entry point for both the report and its CSV export.
+     */
     protected function buildSalesQuery(Request $request)
     {
+        $request->validate([
+            'from' => 'nullable|date',
+            'to' => 'nullable|date|after_or_equal:from',
+            'payment_status' => 'nullable|in:unpaid,processing,partial,paid',
+            'delivery_status' => 'nullable|in:to_deliver,to_receive,delivered',
+        ], [
+            'to.after_or_equal' => 'The end of the range cannot fall before its start.',
+        ]);
+
         $query = Sale::with(['items.product', 'user']);
 
         if ($request->filled('from') && $request->filled('to')) {

@@ -108,7 +108,7 @@ class OrderController extends Controller
     {
         $request->validate([
             'payment_plan' => 'required|in:cod,gcash_full,split',
-            'gcash_amount' => 'nullable|numeric|min:0',
+            'gcash_amount' => 'nullable|numeric|min:0|max:' . (float) config('payments.maximum_amount'),
         ], [
             'payment_plan.required' => 'Choose how you would like to pay.',
             'payment_plan.in' => 'Choose a valid payment option.',
@@ -170,6 +170,16 @@ class OrderController extends Controller
             $total = (float) $cartItems->sum(function ($item) {
                 return $item->product->price * $item->quantity;
             });
+
+            // The money columns are decimal(10,2). A basket large enough to
+            // pass that should be handled as a quoted order, not silently
+            // rejected by the database.
+            $ceiling = (float) config('payments.maximum_amount');
+
+            if ($total > $ceiling) {
+                throw new \Exception('This basket totals more than PHP ' . number_format($ceiling, 2)
+                    . '. Please contact us directly to place an order this size.');
+            }
 
             $gcashAmount = $this->resolveGcashAmount($plan, $total, $request);
 
@@ -417,7 +427,7 @@ class OrderController extends Controller
 
         $request->validate([
             'payment_method' => 'required|in:gcash',
-            'amount' => 'required|numeric|min:1',
+            'amount' => 'required|numeric|min:1|max:' . (float) config('payments.maximum_amount'),
             'reference_no' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9][A-Za-z0-9\-]{5,99}$/'],
             'proof_image' => [
                 'required',

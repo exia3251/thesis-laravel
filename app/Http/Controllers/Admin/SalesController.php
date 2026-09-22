@@ -41,7 +41,7 @@ class SalesController extends Controller
             'from' => 'nullable|date',
             'to' => 'nullable|date',
             'page' => 'nullable|integer|min:1',
-            'per_page' => 'nullable|integer',
+            'per_page' => 'nullable|integer|min:5|max:100',
         ]);
 
         $query = Sale::with(['items.product', 'user', 'paymentRequests.user', 'paymentRequests.reviewer']);
@@ -91,14 +91,19 @@ class SalesController extends Controller
     // Create sale
     public function store(Request $request)
     {
+        $ceiling = (float) config('payments.maximum_amount');
+
         $request->validate([
             'customer_name' => 'required|string|max:255',
             'payment_method' => 'required|in:cash_on_delivery,gcash,cash,other',
-            'paid_amount' => 'nullable|numeric|min:0',
-            'items' => 'required|array|min:1',
+            'paid_amount' => 'nullable|numeric|min:0|max:' . $ceiling,
+            'items' => 'required|array|min:1|max:100',
             'items.*.product_id' => 'required|exists:products,product_id',
             'items.*.quantity' => 'required|integer|min:1|max:999',
-            'items.*.price' => 'required|numeric|min:0'
+            'items.*.price' => 'required|numeric|min:0|max:999999',
+        ], [
+            'items.max' => 'A single sale can carry at most 100 lines.',
+            'items.*.price.max' => 'A unit price cannot exceed PHP 999,999.',
         ]);
 
         DB::beginTransaction();
@@ -116,6 +121,13 @@ class SalesController extends Controller
             $total = collect($request->items)->sum(function ($item) {
                 return $item['price'] * $item['quantity'];
             });
+
+            // Each line is bounded on its own, but a hundred of them together
+            // are not, and the total_amount column stops short of a hundred
+            // million. Caught here so it reads as a message, not a SQL error.
+            if ($total > $ceiling) {
+                throw new \Exception('That sale totals more than PHP ' . number_format($ceiling, 2) . '. Split it across separate sales.');
+            }
 
             $paidAmount = min((float) ($request->paid_amount ?? 0), (float) $total);
             $paymentStatus = $paidAmount <= 0 ? 'unpaid' : ($paidAmount < $total ? 'partial' : 'paid');

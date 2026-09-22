@@ -46,8 +46,9 @@ class InventoryController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,product_id',
-            'quantity' => 'required|integer|min:1',
-
+            'quantity' => 'required|integer|min:1|max:100000',
+        ], [
+            'quantity.max' => 'Stock is added in movements of at most 100,000 units.',
         ]);
 
         DB::beginTransaction();
@@ -92,8 +93,9 @@ class InventoryController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,product_id',
-            'quantity' => 'required|integer|min:1',
-
+            'quantity' => 'required|integer|min:1|max:100000',
+        ], [
+            'quantity.max' => 'Stock is removed in movements of at most 100,000 units.',
         ]);
 
         DB::beginTransaction();

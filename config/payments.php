@@ -25,6 +25,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Largest amount any one order or payment may carry
+    |--------------------------------------------------------------------------
+    | Every money column in the schema is decimal(10,2), which stops just under
+    | a hundred million. A figure above the column's range is rejected by the
+    | database with a raw SQL error rather than a message anyone can act on, so
+    | the validator holds the line well below it.
+    */
+    'maximum_amount' => 9999999.99,
+
+    /*
+    |--------------------------------------------------------------------------
     | Proof of payment
     |--------------------------------------------------------------------------
     | Screenshot rules for a GCash payment request. Kept here so the
