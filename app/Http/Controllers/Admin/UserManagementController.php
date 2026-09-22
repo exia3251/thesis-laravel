@@ -64,7 +64,7 @@ class UserManagementController extends Controller
             'city'         => 'nullable|string|max:100',
             'province'     => 'nullable|string|max:100',
             'postal_code'  => ['nullable', 'string', 'regex:/^\d{4}$/'],
-            'avatar'    => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:min_width=100,min_height=100'],
+            'avatar'    => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:min_width=200,min_height=200'],
         ];
     }
 
@@ -85,7 +85,7 @@ class UserManagementController extends Controller
             'avatar.image'      => 'The photo must be an image file.',
             'avatar.mimes'      => 'Accepted photo formats are JPG, JPEG, PNG and WEBP.',
             'avatar.max'        => 'The photo must be smaller than 2 MB.',
-            'avatar.dimensions' => 'That image is too small. Use one at least 100 by 100 pixels.',
+            'avatar.dimensions' => 'That image is too small. Use one at least 200 by 200 pixels.',
         ];
     }
 
@@ -335,7 +335,7 @@ class UserManagementController extends Controller
     {
         $type = $request->get('type', 'all');
 
-        $staffActions   = ['admin_login', 'logout', 'single_session_replaced', 'session_invalidated', 'user_created', 'user_updated', 'user_deleted', 'product_created', 'product_updated', 'product_deleted', 'product_catalog_imported', 'stock_in', 'stock_out', 'sale_created', 'sale_status_updated', 'payment_request_approved', 'payment_request_rejected', 'sales_report_exported', 'inventory_report_exported', 'database_backup_created', 'database_backup_downloaded', 'database_backup_deleted', 'user_archived', 'user_restored', 'product_archived', 'product_restored'];
+        $staffActions   = ['admin_login', 'logout', 'single_session_replaced', 'session_invalidated', 'user_created', 'user_updated', 'user_deleted', 'product_created', 'product_updated', 'product_deleted', 'product_catalog_imported', 'stock_in', 'stock_out', 'sale_created', 'sale_status_updated', 'payment_request_approved', 'payment_request_rejected', 'sales_report_exported', 'inventory_report_exported', 'database_backup_created', 'database_backup_downloaded', 'database_backup_deleted', 'user_archived', 'user_restored', 'product_archived', 'product_restored', 'own_account_updated', 'own_password_changed', 'own_password_set', 'chatbot_intent_updated', 'vehicle_spec_updated', 'vehicle_spec_verified'];
         $customerActions = ['customer_login', 'logout', 'single_session_replaced', 'session_invalidated', 'customer_registered', 'order_placed', 'payment_request_submitted', 'profile_updated', 'password_changed', 'password_set'];
 
         $query = ActivityLog::with('user')->orderByDesc('log_id');

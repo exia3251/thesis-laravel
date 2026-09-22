@@ -53,13 +53,23 @@
     </div>
 
     @if ($user)
-        <div class="mx-3 mt-4 flex shrink-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
+        {{-- The card is the way into your own account, which is where
+             people look for it. --}}
+        <a href="/admin/account"
+           @class([
+               'mx-3 mt-4 flex shrink-0 items-center gap-3 rounded-2xl border px-3 py-3 transition',
+               'border-white/20 bg-white/10' => request()->is('admin/account'),
+               'border-white/10 bg-white/5 hover:bg-white/10' => ! request()->is('admin/account'),
+           ])>
             @include('partials.avatar', ['user' => $user, 'size' => 'h-10 w-10', 'text' => 'text-sm'])
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
                 <div class="truncate text-sm font-semibold text-white">{{ $user->full_name }}</div>
                 <div class="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-[var(--accent)]">{{ $user->roleLabel() }}</div>
             </div>
-        </div>
+            <svg class="h-4 w-4 shrink-0 text-white/40" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+            </svg>
+        </a>
     @endif
 
     <nav class="mt-4 flex-1 overflow-y-auto px-3 pb-4">

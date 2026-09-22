@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\ChatbotAdminController;
@@ -73,6 +74,10 @@ Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function 
 
     Route::get('/assistant', [ChatbotAdminController::class, 'index'])
         ->middleware('permission:manage_chatbot')->name('admin.assistant');
+
+    // No permission gate: every staff role manages its own account, which is
+    // the whole point of it existing.
+    Route::get('/account', [AccountController::class, 'index'])->name('admin.account');
 });
 
 // Session-backed admin endpoints
@@ -133,6 +138,11 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
         Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
         Route::post('/users/{id}/restore', [UserManagementController::class, 'restore']);
     });
+
+    Route::get('/account', [AccountController::class, 'show']);
+    Route::post('/account', [AccountController::class, 'update']);
+    Route::delete('/account/avatar', [AccountController::class, 'removeAvatar']);
+    Route::post('/account/password', [AccountController::class, 'password']);
 
     Route::get('/logs', [UserManagementController::class, 'getLogs'])
         ->middleware('permission:view_logs');
