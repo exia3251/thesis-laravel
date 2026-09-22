@@ -33,8 +33,8 @@
                         <td style="background-color:#f6f8fb; padding:20px 28px; border-top:1px solid rgba(21,35,54,0.10);">
                             <p style="margin:0; font-size:12px; line-height:18px; color:#6f7d8c;">
                                 RANEY LUBRICANTS TRADING<br>
-                                123 Industrial Ave, Makati City, Metro Manila<br>
-                                Mon - Sat: 8AM - 6PM
+                                {{ config('business.address') }}<br>
+                                {{ config('business.hours') }}
                             </p>
                             <p style="margin:12px 0 0; font-size:11px; color:#96a1ad;">
                                 This message was sent automatically. Please do not reply to it.

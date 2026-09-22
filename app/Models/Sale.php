@@ -174,4 +174,149 @@ class Sale extends Model
 
         return $this->isDelivered() ? 'Delivered' : 'In progress';
     }
+
+    /**
+     * What a customer quotes back over the phone. Falls back to the row id
+     * only for orders placed before order numbers existed.
+     */
+    public function reference(): string
+    {
+        return $this->order_no ?: ('#' . $this->sale_id);
+    }
+
+    /**
+     * The tax lines a document has to show.
+     *
+     * Catalogue prices are tax inclusive, which is how retail prices are
+     * quoted here, so VAT is worked back out of the total rather than added
+     * to it. A seller below the threshold shows no VAT at all and says so
+     * instead, which is a statement the document is required to make either
+     * way.
+     *
+     * @return array{registered: bool, subtotal: float, vatable: float, vat: float, total: float, rate: float}
+     */
+    public function taxBreakdown(): array
+    {
+        $total = (float) $this->total_amount;
+        $registered = (bool) config('business.vat_registered');
+        $rate = (float) config('business.vat_rate', 12);
+
+        if (!$registered || $rate <= 0) {
+            return [
+                'registered' => false,
+                'subtotal' => $total,
+                'vatable' => 0.0,
+                'vat' => 0.0,
+                'total' => $total,
+                'rate' => $rate,
+            ];
+        }
+
+        $vatable = $total / (1 + ($rate / 100));
+
+        return [
+            'registered' => true,
+            'subtotal' => round($vatable, 2),
+            'vatable' => round($vatable, 2),
+            'vat' => round($total - $vatable, 2),
+            'total' => $total,
+            'rate' => $rate,
+        ];
+    }
+
+    /**
+     * Every movement of money on this order, in the order it happened.
+     *
+     * The receipt used to show a summary beside a list of payment requests
+     * and leave the customer to reconcile the two, which is hardest on
+     * exactly the split-payment orders this shop encourages. Staff can also
+     * record cash that never passed through a request, so anything paid but
+     * unaccounted for is shown rather than quietly folded into a total.
+     *
+     * @return array<int,array{label: string, detail: ?string, amount: float, state: string, date: ?\Illuminate\Support\Carbon}>
+     */
+    public function paymentTimeline(): array
+    {
+        $rows = [[
+            'label' => 'Order placed',
+            'detail' => $this->planLabel(),
+            'amount' => (float) $this->total_amount,
+            'state' => 'neutral',
+            'date' => $this->sale_date,
+        ]];
+
+        $accountedFor = 0.0;
+
+        foreach ($this->paymentRequests->sortBy('created_at') as $request) {
+            $approved = $request->status === 'approved';
+
+            if ($approved) {
+                $accountedFor += (float) $request->amount;
+            }
+
+            $rows[] = [
+                // ucwords would render the brand as "Gcash".
+                'label' => (strcasecmp($request->payment_method, 'gcash') === 0
+                    ? 'GCash'
+                    : ucwords(str_replace('_', ' ', $request->payment_method))) . ' payment',
+                'detail' => $request->reference_no ? 'Ref ' . $request->reference_no : null,
+                'amount' => (float) $request->amount,
+                'state' => match ($request->status) {
+                    'approved' => 'in',
+                    'rejected' => 'void',
+                    default => 'pending',
+                },
+                'date' => $request->created_at,
+            ];
+        }
+
+        // Cash taken on delivery, or an amount an administrator entered by
+        // hand, never has a request behind it.
+        $unexplained = round((float) $this->paid_amount - $accountedFor, 2);
+
+        if ($unexplained > 0.009) {
+            $rows[] = [
+                'label' => 'Payment recorded by staff',
+                'detail' => 'Cash or settled directly',
+                'amount' => $unexplained,
+                'state' => 'in',
+                'date' => $this->received_at ?? $this->updated_at,
+            ];
+        }
+
+        // Money going back is still a movement of money. Without this a
+        // cancelled order showed what the customer paid and never showed it
+        // returned.
+        if ($this->refund_status === self::REFUND_PENDING) {
+            $rows[] = [
+                'label' => 'Refund owed to you',
+                'detail' => null,
+                'amount' => (float) $this->refund_amount,
+                'state' => 'due',
+                'date' => $this->cancelled_at,
+            ];
+        } elseif ($this->refund_status === self::REFUND_DONE) {
+            $rows[] = [
+                'label' => 'Refunded',
+                'detail' => $this->refund_reference ? 'Ref ' . $this->refund_reference : null,
+                'amount' => (float) $this->refund_amount,
+                'state' => 'out',
+                'date' => $this->refunded_at,
+            ];
+        }
+
+        if ((float) $this->balance_due > 0 && !$this->isCancelled()) {
+            $rows[] = [
+                'label' => $this->payment_plan === self::PLAN_COD || $this->codAmount() > 0
+                    ? 'Balance due on delivery'
+                    : 'Balance outstanding',
+                'detail' => null,
+                'amount' => (float) $this->balance_due,
+                'state' => 'due',
+                'date' => null,
+            ];
+        }
+
+        return $rows;
+    }
 }

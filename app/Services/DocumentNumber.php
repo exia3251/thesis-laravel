@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
  */
 class DocumentNumber
 {
+    public const ORDER    = 'ORD';
     public const RECEIPT  = 'OR';
     public const DELIVERY = 'DR';
 

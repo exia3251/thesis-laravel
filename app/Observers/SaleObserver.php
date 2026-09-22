@@ -19,13 +19,25 @@ class SaleObserver
 {
     public function saved(Sale $sale): void
     {
-        // A cancelled order earns no new document. One issued before it was
-        // called off stays, because that receipt really was given out.
-        if ($sale->isCancelled()) {
-            return;
+        $updates = [];
+
+        // An order reference is earned by existing, not by being paid, so it
+        // is issued ahead of the cancelled guard below. A cancelled order
+        // still has to be referred to afterwards.
+        if (blank($sale->order_no)) {
+            $updates['order_no'] = DocumentNumber::next(DocumentNumber::ORDER);
         }
 
-        $updates = [];
+        // A cancelled order earns no further document. One issued before it
+        // was called off stays, because that receipt really was given out.
+        if ($sale->isCancelled()) {
+            if ($updates) {
+                Sale::query()->where('sale_id', $sale->sale_id)->update($updates);
+                $sale->forceFill($updates);
+            }
+
+            return;
+        }
 
         if (blank($sale->receipt_no) && $sale->payment_status === 'paid') {
             $updates['receipt_no'] = DocumentNumber::next(DocumentNumber::RECEIPT);

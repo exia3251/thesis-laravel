@@ -1,6 +1,6 @@
 @extends('layouts.bare')
 
-@section('title', 'Order Receipt - RANEY LUBRICANTS TRADING')
+@section('title', $sale->reference() . ' - ' . config('business.name'))
 
 @push('styles')
 <style>
@@ -77,6 +77,35 @@
     .print-only {
         display: none;
     }
+
+    /* Only ever drawn on paper. Fixed so it repeats on a multi-page order,
+       and behind the content so nothing becomes unreadable. */
+    .cancelled-watermark {
+        display: none;
+    }
+
+    @media print {
+        .cancelled-watermark {
+            display: block !important;
+            position: fixed;
+            top: 42%;
+            left: 0;
+            right: 0;
+            z-index: 0;
+            text-align: center;
+            font-size: 72pt;
+            font-weight: 900;
+            letter-spacing: 0.15em;
+            color: rgba(0, 0, 0, 0.08);
+            transform: rotate(-24deg);
+            pointer-events: none;
+        }
+
+        .receipt-surface {
+            position: relative;
+            z-index: 1;
+        }
+    }
 </style>
 @endpush
 
@@ -85,174 +114,240 @@
         <div class="max-w-5xl mx-auto px-4 py-8">
             <div id="message" class="no-print fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-[var(--line)] bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
-            <div class="no-print mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <a href="/shop" class="group block">
-                        <div class="text-3xl font-black tracking-tight">
-                            <span class="text-[var(--primary)]">RANEY</span>
-                            <span class="text-[var(--accent)]"> LUBRICANTS</span>
-                        </div>
-                        <div class="mt-1 text-[11px] uppercase tracking-[0.32em] text-[var(--muted)]">Trading</div>
-                    </a>
-                    <h1 class="mt-4 text-3xl font-black text-[var(--ink)]">Order Receipt</h1>
-                    <p class="mt-2 text-sm leading-7 text-[var(--muted)]">Review and print your purchase summary with saved delivery information and payment status.</p>
-                </div>
-                <div class="flex flex-wrap gap-3">
-                    <a href="/orders" class="rounded-xl border border-[var(--line)] bg-white/80 px-5 py-3 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">Back to Orders</a>
-                    <button onclick="window.print()" class="rounded-xl bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110">Print Receipt</button>
-                </div>
+            @php
+                $business = config('business');
+                $tax = $sale->taxBreakdown();
+                $timeline = $sale->paymentTimeline();
+                $money = fn ($amount) => 'PHP ' . number_format((float) $amount, 2);
+            @endphp
+
+            <div class="no-print mb-6 flex flex-wrap items-center justify-between gap-3">
+                <a href="/orders" class="inline-flex items-center gap-2 text-sm font-semibold text-[var(--muted)] transition hover:text-[var(--primary)]">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/></svg>
+                    Back to my orders
+                </a>
+                <button onclick="window.print()" class="inline-flex items-center gap-2 rounded-xl bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829v-3.45m0 3.45a3 3 0 0 0 3 3h4.56a3 3 0 0 0 3-3m-10.56 0a3 3 0 0 1-3-3v-2.16a3 3 0 0 1 3-3h10.56a3 3 0 0 1 3 3v2.16a3 3 0 0 1-3 3m-10.56 0V6.75a3 3 0 0 1 3-3h4.56a3 3 0 0 1 3 3v3.63m0 3.45v3.42a3 3 0 0 1-3 3h-4.56a3 3 0 0 1-3-3v-3.42"/></svg>
+                    Print
+                </button>
             </div>
 
-            <div class="receipt-surface rounded-[2rem] border border-[var(--line)] bg-[var(--card-solid)] p-8 shadow-xl">
-                <div class="mb-6 flex flex-col gap-4 border-b border-[var(--line)] pb-6 md:flex-row md:items-start md:justify-between">
-                    <div>
-                        <h2 class="text-2xl font-black text-[var(--ink)]">RANEY LUBRICANTS TRADING</h2>
-                        <p class="mt-1 text-sm text-[var(--muted)]">Official Sales Receipt</p>
+            {{-- Only drawn on paper, where a cancelled order could otherwise
+                 be mistaken for a live one once it leaves the screen. --}}
+            @if ($sale->isCancelled())
+                <div class="cancelled-watermark" aria-hidden="true">CANCELLED</div>
+            @endif
 
-                        {{-- A printed receipt has to stand on its own, so it
-                             carries the details the screen gets from the page
-                             around it. --}}
-                        <div class="print-only mt-2 text-xs leading-5 text-[var(--muted)]">
-                            123 Industrial Ave, Makati City, Metro Manila<br>
-                            +63 2 1234 5678 &middot; sales@raneylubricants.ph
+            <div class="receipt-surface rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm sm:p-8">
+
+                <header class="flex flex-col gap-5 border-b border-[var(--line)] pb-6 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h1 class="text-xl font-black tracking-tight text-[var(--ink)]">{{ $business['name'] }}</h1>
+                        {{-- Shown on screen as well as on paper. A customer
+                             reading this is often about to ring up about the
+                             very order in front of them. --}}
+                        <div class="mt-2 space-y-0.5 text-xs leading-5 text-[var(--muted)]">
+                            <div>{{ $business['address'] }}</div>
+                            <div>{{ $business['phone'] }} &middot; {{ $business['email'] }}</div>
+                            @if (filled($business['tin']))
+                                <div>TIN {{ $business['tin'] }}</div>
+                            @endif
+                            @if ($business['is_official'] && filled($business['atp_number']))
+                                <div>ATP {{ $business['atp_number'] }}</div>
+                            @endif
                         </div>
                     </div>
-                    <div class="text-left md:text-right">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Order No.</p>
-                        <p class="text-lg font-semibold text-[var(--ink)]">#{{ $sale->sale_id }}</p>
 
-                        {{-- A receipt number is only issued once the order is
-                             actually settled, so there is nothing to print
-                             before then. --}}
-                        <p class="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Receipt No.</p>
-                        @if ($sale->receipt_no)
-                            <p class="text-xl font-black tracking-tight text-[var(--primary)]">{{ $sale->receipt_no }}</p>
-                        @else
-                            <p class="text-sm text-[var(--muted)]">Issued once this order is fully paid</p>
-                        @endif
+                    <div class="shrink-0 sm:text-right">
+                        <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--primary)]">{{ $business['document_title'] }}</div>
 
-                        @if ($sale->delivery_no)
-                            <p class="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Delivery No.</p>
-                            <p class="text-base font-semibold text-[var(--ink)]">{{ $sale->delivery_no }}</p>
+                        <dl class="mt-3 space-y-2 text-sm">
+                            <div class="sm:flex sm:justify-end sm:gap-3">
+                                <dt class="text-xs text-[var(--muted)] sm:self-center">Order no.</dt>
+                                <dd class="font-mono font-bold text-[var(--ink)]">{{ $sale->reference() }}</dd>
+                            </div>
+                            <div class="sm:flex sm:justify-end sm:gap-3">
+                                <dt class="text-xs text-[var(--muted)] sm:self-center">Receipt no.</dt>
+                                <dd class="font-mono {{ $sale->receipt_no ? 'font-bold text-[var(--ink)]' : 'text-xs italic text-[var(--muted)]' }}">
+                                    {{ $sale->receipt_no ?: 'issued once paid in full' }}
+                                </dd>
+                            </div>
+                            @if ($sale->delivery_no)
+                                <div class="sm:flex sm:justify-end sm:gap-3">
+                                    <dt class="text-xs text-[var(--muted)] sm:self-center">Delivery no.</dt>
+                                    <dd class="font-mono font-bold text-[var(--ink)]">{{ $sale->delivery_no }}</dd>
+                                </div>
+                            @endif
+                        </dl>
+                    </div>
+                </header>
+
+                @if ($sale->isCancelled())
+                    <div class="mt-6 rounded-xl border-2 border-slate-400 bg-slate-100 px-5 py-3 text-center">
+                        <span class="text-sm font-black uppercase tracking-[0.3em] text-slate-700">Cancelled</span>
+                        @if ($sale->cancelled_at)
+                            <span class="ml-2 text-sm text-slate-600">on {{ $sale->cancelled_at->format('j F Y') }}</span>
                         @endif
+                    </div>
+                @endif
+
+                <div class="mt-6 grid gap-5 sm:grid-cols-2">
+                    <div class="receipt-panel rounded-[1.25rem] border border-[var(--line)] p-5">
+                        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--muted)]">Deliver to</p>
+                        <p class="mt-2 font-bold text-[var(--ink)]">{{ $sale->customer_name ?: $sale->user?->full_name }}</p>
+                        <p class="mt-1.5 text-sm leading-6 text-[var(--ink)]">{{ $sale->delivery_address ?: 'No address recorded.' }}</p>
+                        @if ($sale->contact_phone)
+                            <p class="mt-1 text-sm text-[var(--muted)]">{{ $sale->contact_phone }}</p>
+                        @endif
+                    </div>
+
+                    <div class="receipt-panel rounded-[1.25rem] border border-[var(--line)] p-5">
+                        <dl class="space-y-2.5 text-sm">
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-[var(--muted)]">Order date</dt>
+                                <dd class="text-right font-medium text-[var(--ink)]">{{ optional($sale->sale_date)->format('j F Y, g:i A') }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-[var(--muted)]">Payment</dt>
+                                <dd class="text-right font-medium text-[var(--ink)]">{{ $sale->planLabel() }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-[var(--muted)]">Delivery</dt>
+                                <dd class="text-right font-medium text-[var(--ink)]">{{ $sale->statusLabel() }}</dd>
+                            </div>
+                            @if ($sale->received_at)
+                                <div class="flex justify-between gap-4">
+                                    <dt class="text-[var(--muted)]">Received</dt>
+                                    <dd class="text-right font-medium text-emerald-700">{{ $sale->received_at->format('j F Y') }}</dd>
+                                </div>
+                            @endif
+                        </dl>
                     </div>
                 </div>
 
-                <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div class="receipt-panel rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5">
-                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Customer</p>
-                        <p class="mt-2 font-semibold text-[var(--ink)]">{{ $sale->customer_name ?? $sale->user?->full_name }}</p>
-                        <p class="mt-2 text-sm text-[var(--muted)]">Payment Method: {{ ucwords(str_replace('_', ' ', $sale->payment_method ?? 'N/A')) }}</p>
-                        <p class="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Delivery Address</p>
-                        <p class="mt-2 text-sm leading-7 text-[var(--ink)]">{{ $sale->delivery_address ?? 'No address saved.' }}</p>
-                        <p class="mt-1 text-sm text-[var(--muted)]">{{ $sale->contact_phone ?? 'No contact phone saved.' }}</p>
-                    </div>
-                    <div class="receipt-panel rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5 md:text-right">
-                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Order Date</p>
-                        <p class="mt-2 font-semibold text-[var(--ink)]">{{ optional($sale->sale_date)->format('F d, Y h:i A') }}</p>
-                        <p class="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Delivery Status</p>
-                        <p class="mt-2 font-semibold text-[var(--ink)]">
-                            {{ $sale->isCancelled() ? 'Cancelled' : ucwords(str_replace('_', ' ', $sale->delivery_status ?? 'to_receive')) }}
-                        </p>
-                        @if ($sale->received_at)
-                            <p class="mt-1 text-xs font-medium text-emerald-700">You confirmed receipt on {{ $sale->received_at->format('M d, Y') }}</p>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="mb-8 overflow-hidden rounded-[1.5rem] border border-[var(--line)]">
+                <div class="mt-6 overflow-hidden rounded-[1.25rem] border border-[var(--line)]">
                     <table class="min-w-full">
-                        <thead class="bg-[rgba(246,248,251,0.9)]">
+                        <thead class="bg-[var(--surface)]">
                             <tr>
-                                <th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Product</th>
-                                <th class="px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Qty</th>
-                                <th class="px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Unit Price</th>
-                                <th class="px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Subtotal</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Item</th>
+                                <th class="px-4 py-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Qty</th>
+                                <th class="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Unit price</th>
+                                <th class="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Amount</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[var(--line)]">
                             @foreach ($sale->items as $item)
                                 <tr>
-                                    <td class="px-4 py-4">
-                                        <div class="font-medium text-[var(--ink)]">{{ $item->product?->product_name }}</div>
-                                        <div class="text-sm text-[var(--muted)]">{{ $item->product?->brand }} | {{ $item->product?->unit }}</div>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium text-[var(--ink)]">{{ $item->product?->product_name ?? 'Item no longer listed' }}</div>
+                                        @if ($item->product)
+                                            <div class="text-xs text-[var(--muted)]">{{ $item->product->brand }} &middot; {{ $item->product->unit }}</div>
+                                        @endif
                                     </td>
-                                    <td class="px-4 py-4 text-center tabular-nums">{{ $item->quantity }}</td>
-                                    <td class="px-4 py-4 text-right tabular-nums">{{ number_format((float) $item->unit_price, 2) }}</td>
-                                    <td class="px-4 py-4 text-right font-medium tabular-nums text-[var(--ink)]">{{ number_format((float) $item->subtotal, 2) }}</td>
+                                    <td class="px-4 py-3 text-center tabular-nums">{{ $item->quantity }}</td>
+                                    <td class="px-4 py-3 text-right tabular-nums text-[var(--muted)]">{{ number_format((float) $item->unit_price, 2) }}</td>
+                                    <td class="px-4 py-3 text-right font-medium tabular-nums text-[var(--ink)]">{{ number_format((float) $item->subtotal, 2) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
 
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div class="receipt-panel rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5">
-                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Payment Summary</p>
-                        <div class="mt-4 space-y-3 text-sm">
-                            <div class="flex justify-between gap-4">
-                                <span class="text-[var(--muted)]">Total Amount</span>
-                                <span class="font-medium text-[var(--ink)]">PHP {{ number_format((float) $sale->total_amount, 2) }}</span>
-                            </div>
-                            <div class="flex justify-between gap-4">
-                                <span class="text-[var(--muted)]">Paid Amount</span>
-                                <span class="font-medium text-[var(--ink)]">PHP {{ number_format((float) $sale->paid_amount, 2) }}</span>
-                            </div>
-                            <div class="flex justify-between gap-4">
-                                <span class="text-[var(--muted)]">Balance Due</span>
-                                <span class="font-medium text-[var(--ink)]">PHP {{ number_format((float) $sale->balance_due, 2) }}</span>
-                            </div>
-                            <div class="flex items-center justify-between gap-4 border-t border-[var(--line)] pt-3">
-                                <span class="text-[var(--muted)]">Status</span>
-                                @php
-                                    $tone = match (true) {
-                                        $sale->isCancelled() => ['bg-slate-200 text-slate-700', 'M6 18 18 6M6 6l12 12', 'Cancelled'],
-                                        $sale->payment_status === 'paid' => ['bg-emerald-100 text-emerald-800', 'm4.5 12.75 6 6 9-13.5', 'Paid'],
-                                        $sale->payment_status === 'partial' => ['bg-amber-100 text-amber-800', 'M12 3v18m9-9a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z', 'Partly paid'],
-                                        $sale->payment_status === 'processing' => ['bg-sky-100 text-sky-800', 'M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z', 'Checking payment'],
-                                        default => ['bg-slate-100 text-slate-700', 'M6 20V4h5a4 4 0 0 1 0 8H6m-1 3h8M5 11h8', 'Not yet paid'],
-                                    };
-                                @endphp
-                                <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold {{ $tone[0] }}">
-                                    <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $tone[1] }}"/></svg>
-                                    {{ $tone[2] }}
-                                </span>
-                            </div>
+                {{-- A seller registered for VAT must show the tax separately;
+                     one below the threshold must say it is not registered.
+                     Showing neither is the one thing a document cannot do. --}}
+                <div class="mt-5 flex justify-end">
+                    <dl class="w-full max-w-xs space-y-2 text-sm">
+                        <div class="flex justify-between gap-6">
+                            <dt class="text-[var(--muted)]">{{ $tax['registered'] ? 'VATable sales' : 'Subtotal' }}</dt>
+                            <dd class="tabular-nums text-[var(--ink)]">{{ $money($tax['subtotal']) }}</dd>
                         </div>
-                    </div>
-                    <div class="receipt-panel rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5">
-                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Payment Requests</p>
-                        <div class="mt-4 space-y-3">
-                            @forelse ($sale->paymentRequests as $paymentRequest)
-                                <div class="rounded-xl border border-[var(--line)] bg-white/80 p-4 text-sm">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div>
-                                            <div class="font-semibold text-[var(--ink)]">PHP {{ number_format((float) $paymentRequest->amount, 2) }}</div>
-                                            <div class="mt-1 text-[var(--muted)]">{{ ucwords(str_replace('_', ' ', $paymentRequest->payment_method)) }}</div>
-                                        </div>
-                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $paymentRequest->status === 'approved' ? 'bg-emerald-100 text-emerald-700' : ($paymentRequest->status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700') }}">
-                                            {{ ucfirst($paymentRequest->status) }}
-                                        </span>
-                                    </div>
-                                    @if ($paymentRequest->reference_no)
-                                        <div class="mt-2 text-xs text-[var(--muted)]">Reference: {{ $paymentRequest->reference_no }}</div>
-                                    @endif
-                                    @if ($paymentRequest->proof_image_path)
-                                        <a href="{{ asset('storage/' . $paymentRequest->proof_image_path) }}" target="_blank" class="mt-2 inline-block text-xs font-semibold text-[var(--primary)] hover:underline">View uploaded proof</a>
-                                    @endif
-                                </div>
-                            @empty
-                                <div class="text-sm leading-7 text-[var(--muted)]">
-                                    <p>No payment requests submitted yet.</p>
-                                    <p>Please keep this receipt for your records.</p>
-                                </div>
-                            @endforelse
+                        @if ($tax['registered'])
+                            <div class="flex justify-between gap-6">
+                                <dt class="text-[var(--muted)]">VAT ({{ (int) $tax['rate'] }}%)</dt>
+                                <dd class="tabular-nums text-[var(--ink)]">{{ $money($tax['vat']) }}</dd>
+                            </div>
+                        @endif
+                        <div class="flex justify-between gap-6 border-t border-[var(--line)] pt-2.5">
+                            <dt class="font-bold text-[var(--ink)]">Total</dt>
+                            <dd class="text-lg font-black tabular-nums text-[var(--ink)]">{{ $money($tax['total']) }}</dd>
                         </div>
-                    </div>
+                        @unless ($tax['registered'])
+                            <p class="pt-1 text-right text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">Non-VAT registered</p>
+                        @endunless
+                    </dl>
                 </div>
 
-                @php
-                    $pendingRequest = $sale->paymentRequests->firstWhere('status', 'processing');
+                {{-- One sequence rather than a summary beside a list of
+                     requests, which left the customer reconciling the two on
+                     exactly the split payments this shop encourages. --}}
+                <div class="mt-7">
+                    <h2 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--muted)]">Payment</h2>
+
+                    <ol class="mt-3 divide-y divide-[var(--line)] rounded-[1.25rem] border border-[var(--line)]">
+                        @foreach ($timeline as $row)
+                            @php
+                                $tone = match ($row['state']) {
+                                    'in'      => ['text-emerald-700', 'Paid'],
+                                    'pending' => ['text-sky-700', 'Being checked'],
+                                    'void'    => ['text-slate-400 line-through', 'Not accepted'],
+                                    'due'     => ['text-amber-700', 'Due'],
+                                    'out'     => ['text-violet-700', 'Returned to you'],
+                                    default   => ['text-[var(--ink)]', null],
+                                };
+                            @endphp
+                            <li class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3">
+                                <div class="min-w-0">
+                                    <span class="text-sm font-medium text-[var(--ink)]">{{ $row['label'] }}</span>
+                                    @if ($row['detail'])
+                                        <span class="ml-2 font-mono text-xs text-[var(--muted)]">{{ $row['detail'] }}</span>
+                                    @endif
+                                    @if ($tone[1])
+                                        <span class="ml-2 text-xs font-semibold {{ $row['state'] === 'void' ? 'text-slate-500' : $tone[0] }}">{{ $tone[1] }}</span>
+                                    @endif
+                                </div>
+                                <div class="flex shrink-0 items-baseline gap-4">
+                                    @if ($row['date'])
+                                        <span class="text-xs text-[var(--muted)]">{{ $row['date']->format('j M Y') }}</span>
+                                    @endif
+                                    <span class="w-28 text-right text-sm font-semibold tabular-nums {{ $tone[0] }}">{{ $money($row['amount']) }}</span>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ol>
+                </div>
+
+                @if ($sale->delivery_proof_path)
+                    {{-- The customer never saw this. It is the evidence their
+                         order arrived, and showing it settles most of the
+                         arguments that would otherwise be had by phone. --}}
+                    <div class="mt-7">
+                        <h2 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--muted)]">Proof of delivery</h2>
+                        <div class="mt-3 flex flex-wrap items-center gap-4 rounded-[1.25rem] border border-[var(--line)] p-4">
+                            <img src="{{ asset('storage/' . $sale->delivery_proof_path) }}" alt="Photograph taken at handover"
+                                 class="h-24 w-24 rounded-xl border border-[var(--line)] object-cover">
+                            <div class="min-w-0 text-sm text-[var(--muted)]">
+                                <p>Photographed at handover{{ $sale->delivery_no ? ' against ' . $sale->delivery_no : '' }}.</p>
+                                <a href="{{ asset('storage/' . $sale->delivery_proof_path) }}" target="_blank"
+                                   class="no-print mt-1 inline-block font-semibold text-[var(--primary)] hover:underline">View full size</a>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <footer class="mt-7 border-t border-[var(--line)] pt-5 text-xs leading-6 text-[var(--muted)]">
+                    @unless ($business['is_official'])
+                        <p class="font-semibold text-[var(--ink)]">{{ $business['disclaimer'] }}</p>
+                    @endunless
+                    @unless ($tax['registered'])
+                        <p>This document is not valid for claim of input tax.</p>
+                    @endunless
+                    <p class="mt-2">Thank you for your business. Keep this for your records.</p>
+                </footer>
+            </div>
+
+            @php
+                $pendingRequest = $sale->paymentRequests->firstWhere('status', 'processing');
                     $canCancel = $sale->canBeCancelledByCustomer();
                     $canConfirm = !$sale->isCancelled() && !$sale->received_at && !$sale->isDelivered();
                 @endphp
@@ -263,23 +358,16 @@
                             <div class="shrink-0 rounded-2xl bg-slate-200 p-3">
                                 <svg class="h-6 w-6 text-slate-700" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
                             </div>
+                            {{-- The date and the refund are on the receipt
+                                 above now, so this carries only the reason,
+                                 which has nowhere else to go. --}}
                             <div class="flex-1">
-                                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">Order cancelled</p>
-                                <h3 class="mt-1 text-xl font-bold text-slate-900">
-                                    Cancelled on {{ optional($sale->cancelled_at)->format('F d, Y') }}
-                                </h3>
-                                @if ($sale->cancellation_reason)
-                                    <p class="mt-2 text-sm leading-6 text-slate-700">Reason given: {{ $sale->cancellation_reason }}</p>
-                                @endif
-
+                                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">Why this was cancelled</p>
+                                <p class="mt-2 text-sm leading-6 text-slate-800">
+                                    {{ $sale->cancellation_reason ?: 'No reason was recorded.' }}
+                                </p>
                                 @if ($sale->refund_status === 'pending')
-                                    <div class="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-                                        A refund of <strong>PHP {{ number_format((float) $sale->refund_amount, 2) }}</strong> is owed to you. Our staff will send it to your GCash.
-                                    </div>
-                                @elseif ($sale->refund_status === 'refunded')
-                                    <div class="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
-                                        <strong>PHP {{ number_format((float) $sale->refund_amount, 2) }}</strong> was refunded on {{ optional($sale->refunded_at)->format('F d, Y') }}@if ($sale->refund_reference), reference {{ $sale->refund_reference }}@endif.
-                                    </div>
+                                    <p class="mt-3 text-sm leading-6 text-amber-900">Our staff will send the refund to your GCash.</p>
                                 @endif
                             </div>
                         </div>
@@ -449,7 +537,6 @@
             </div>
         </div>
     </div>
-
 @endsection
 
 @push('scripts')
