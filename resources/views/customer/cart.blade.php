@@ -5,11 +5,11 @@
 @section('content')
 
     <main class="container mx-auto px-4 py-8 sm:px-6">
-        <section class="mb-8 rounded-[2rem] border border-[var(--line)] bg-[linear-gradient(135deg,_rgba(255,255,255,0.84),_rgba(255,255,255,0.7))] px-6 py-7 shadow-xl backdrop-blur-xl sm:px-8">
+        <section class="mb-6 rounded-[1.5rem] border border-[var(--line)] bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-7">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="max-w-3xl">
                     <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">Checkout Ready</div>
-                    <h1 class="mt-5 text-3xl font-black leading-tight text-[var(--ink)] sm:text-4xl">Shopping cart and delivery-ready checkout.</h1>
+                    <h1 class="mt-4 text-2xl font-black leading-tight text-[var(--ink)] sm:text-4xl">Shopping cart and delivery-ready checkout.</h1>
                     <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Check what is still in stock, confirm your delivery details, and choose how you want to pay.</p>
                 </div>
                 <div class="flex flex-wrap gap-3">
@@ -22,17 +22,17 @@
         <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-[var(--line)] bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
         <section class="mb-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-            <div class="rounded-[1.75rem] border border-[var(--line)] bg-[var(--card)] p-6 shadow-lg backdrop-blur">
+            <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-6">
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Delivery Address</div>
                 <p id="profileAddress" class="mt-3 text-sm leading-7 text-[var(--ink)]">Loading saved address...</p>
             </div>
-            <div class="rounded-[1.75rem] border border-[var(--accent-soft)] bg-[rgba(255,252,243,0.92)] p-6 shadow-lg">
+            <div class="rounded-[1.5rem] border border-[var(--accent-soft)] bg-[#fffcf3] p-5 shadow-sm sm:p-6">
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[#9d7b20]">Checkout Reminder</div>
                 <p class="mt-3 text-sm leading-7 text-[#715b1d]">Items marked unavailable cannot be checked out. Remove them, or lower the quantity to what is still in stock.</p>
             </div>
         </section>
 
-        <section class="mb-6 overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--card-solid)] shadow-lg">
+        <section class="mb-6 overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
             <div class="overflow-x-auto">
                 <table class="min-w-full">
                     <thead class="bg-[rgba(246,248,251,0.9)]">
@@ -52,7 +52,7 @@
             </div>
         </section>
 
-        <section class="rounded-[1.75rem] border border-[var(--line)] bg-[var(--card)] p-6 shadow-lg backdrop-blur">
+        <section class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-6">
             <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">How would you like to pay?</div>
 
             <div class="mt-4 grid gap-3 lg:grid-cols-3">

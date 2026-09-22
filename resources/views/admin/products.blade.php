@@ -3,9 +3,9 @@
 @section('title', 'RANEY LUBRICANTS TRADING — Admin')
 
 @section('content')
-    <div class="flex justify-between items-center mb-6">
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-3xl font-black text-[var(--ink)]">Products</h1>
+            <h1 class="text-2xl font-black text-[var(--ink)] sm:text-3xl">Products</h1>
             <p class="text-[var(--muted)]">Create, update, and remove products from the catalog.</p>
         </div>
         <div class="flex gap-3">
@@ -22,9 +22,9 @@
 
     <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
-    <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+    <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
         <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
-            <input type="text" id="productSearch" oninput="searchProducts()" placeholder="Search product, brand, or type..." class="rounded-xl border border-[var(--line)] px-3 py-2 text-sm w-72 focus:outline-none">
+            <input type="text" id="productSearch" oninput="searchProducts()" placeholder="Search product, brand, or type..." class="rounded-xl border border-[var(--line)] px-3 py-2 text-sm w-full sm:w-72 focus:outline-none">
 
             <div class="ml-auto inline-flex rounded-xl border border-[var(--line)] p-1">
                 <button type="button" id="tabActive" onclick="setArchivedView(false)"
@@ -33,28 +33,28 @@
                         class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Archived</button>
             </div>
         </div>
-        <table class="min-w-full">
-            <thead class="bg-[var(--surface)]">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Image</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Product Name</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Brand</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Type</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Unit</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Price</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Stock</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="productsBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
-                <tr>
-                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading products...</td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="admin-table-wrap">
+            <table class="min-w-full">
+                <thead class="bg-[var(--surface)]">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Image</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Product Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Brand</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Unit</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Price</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Stock</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productsBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
+                    <tr>
+                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading products...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         <div id="productsPagination"></div>
-    </div>
-</div>
     </div>
 
     <div id="productModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
@@ -129,9 +129,6 @@
 </div>
     </div>
 
-    {{-- Bulk Import Modal temporarily disabled
-    <div id="importModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-...
 @endsection
 
 @push('scripts')

@@ -6,7 +6,10 @@
 @push('styles')
 <style>
     :root {
-        --card:       rgba(255, 255, 255, 0.82);
+        /* Cards were translucent so a gradient could show through them. The
+           storefront is flat now, matching the back office, so anything still
+           reaching for --card gets a solid surface rather than a milky one. */
+        --card:       #ffffff;
         --card-solid: #ffffff;
     }
 </style>

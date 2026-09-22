@@ -4,12 +4,12 @@
 
 @section('content')
     <div>
-        <h1 class="text-3xl font-black text-[var(--ink)]">Reports</h1>
+        <h1 class="text-2xl font-black text-[var(--ink)] sm:text-3xl">Reports</h1>
         <p class="text-[var(--muted)]">Review operational summaries and export CSV reports for defense or backup purposes.</p>
     </div>
 
-    <div class="rounded-2xl bg-[var(--card)] shadow-lg p-6 border border-[var(--line)]">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-6">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">From</label>
                 <input type="date" id="fromDate" class="mt-1 block w-full rounded-md border px-3 py-2">
@@ -37,7 +37,7 @@
                 </select>
             </div>
         </div>
-        <div class="flex flex-wrap gap-3 mt-4">
+        <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
             <button onclick="loadSalesReport()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">Refresh Sales Report</button>
             <button onclick="downloadSalesCsv()" class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">Download Sales CSV</button>
             <button onclick="downloadInventoryCsv()" class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">Download Inventory CSV</button>
@@ -45,11 +45,11 @@
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+        <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
             <div class="px-6 py-4 border-b border-[var(--line)]">
                 <h2 class="text-xl font-bold text-[var(--ink)]">Sales Report</h2>
             </div>
-            <div class="overflow-x-auto">
+            <div class="admin-table-wrap">
                 <table class="min-w-full">
                     <thead class="bg-[var(--surface)]">
                         <tr>
@@ -67,11 +67,11 @@
             </div>
         </div>
 
-        <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+        <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
             <div class="px-6 py-4 border-b border-[var(--line)]">
                 <h2 class="text-xl font-bold text-[var(--ink)]">Inventory Report</h2>
             </div>
-            <div class="overflow-x-auto">
+            <div class="admin-table-wrap">
                 <table class="min-w-full">
                     <thead class="bg-[var(--surface)]">
                         <tr>

@@ -14,7 +14,7 @@
                     <div class="mt-1 text-[11px] uppercase tracking-[0.32em] text-[var(--muted)]">Trading</div>
                 </a>
             </div>
-            <section class="mx-auto w-full max-w-xl rounded-[2rem] border border-[var(--line)] bg-[var(--card)] p-8 shadow-2xl backdrop-blur">
+            <section class="mx-auto w-full max-w-xl rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm sm:p-8">
                 <div class="text-center">
                     <div class="text-[11px] font-semibold uppercase tracking-[0.32em] text-[var(--primary)]">Customer Portal</div>
                     <h2 class="mt-4 text-3xl font-extrabold text-[var(--ink)]">Create Account</h2>

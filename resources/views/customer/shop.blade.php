@@ -18,7 +18,7 @@
 @section('content')
 
     <main class="container mx-auto px-4 py-8 sm:px-6">
-        <section class="relative mb-8 overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,_#0d1f18_0%,_#163d2c_55%,_#1a3020_100%)] px-8 py-12 shadow-2xl text-white">
+        <section class="relative mb-6 overflow-hidden rounded-[1.5rem] bg-[linear-gradient(135deg,_#0d1f18_0%,_#163d2c_55%,_#1a3020_100%)] px-5 py-10 text-white shadow-lg sm:px-8 sm:py-12">
             {{-- Decorative blobs --}}
             <div class="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,_rgba(20,138,103,0.35)_0%,_rgba(20,138,103,0)_70%)]"></div>
             <div class="pointer-events-none absolute -bottom-16 left-1/4 h-56 w-56 rounded-full bg-[radial-gradient(circle,_rgba(217,177,74,0.22)_0%,_rgba(217,177,74,0)_70%)]"></div>
@@ -47,19 +47,19 @@
         </section>
 
         <section class="mb-8 grid gap-4 md:grid-cols-3">
-            <div class="rounded-[1.75rem] border border-[var(--line)] bg-[var(--card)] p-6 shadow-lg backdrop-blur">
+            <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-6">
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Featured Brands</div>
                 <div id="brandShowcase" class="mt-4 flex flex-wrap gap-2">
                     <span class="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">Loading brands...</span>
                 </div>
             </div>
-            <div class="rounded-[1.75rem] border border-[var(--accent-soft)] bg-[rgba(255,252,243,0.9)] p-6 shadow-lg">
+            <div class="rounded-[1.5rem] border border-[var(--accent-soft)] bg-[#fffcf3] p-5 shadow-sm sm:p-6">
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[#9d7b20]">Top Product Types</div>
                 <div id="typeShowcase" class="mt-4 flex flex-wrap gap-2">
                     <span class="rounded-full bg-white px-3 py-2 text-sm text-[#9d7b20]">Loading types...</span>
                 </div>
             </div>
-            <div class="rounded-[1.75rem] border border-[rgba(21,35,54,0.1)] bg-white/80 p-6 shadow-lg">
+            <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-6">
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--primary)]">Shopping Tips</div>
                 <div class="mt-4 space-y-2 text-sm leading-6 text-[var(--muted)]">
                     <p>Check viscosity grade and unit size before adding to cart.</p>
@@ -77,11 +77,11 @@
                 <a href="#catalog" class="text-sm font-semibold text-[var(--muted)] hover:text-[var(--primary)]">Jump to full catalog</a>
             </div>
             <div id="featuredGrid" class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <div class="rounded-[1.75rem] bg-white p-6 text-center text-[var(--muted)] shadow-lg">Loading featured products...</div>
+                <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 text-center text-[var(--muted)] shadow-sm">Loading featured products...</div>
             </div>
         </section>
 
-        <section id="catalog" class="mb-6 rounded-[2rem] border border-[var(--line)] bg-[var(--card)] p-5 shadow-lg backdrop-blur">
+        <section id="catalog" class="mb-6 rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm">
             <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
                     <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Full Catalog</div>
@@ -169,7 +169,7 @@
 
                 document.getElementById('featuredGrid').innerHTML = featured.length
                 ? featured.map((product, index) => `
-                    <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group flex flex-col cursor-pointer overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--card-solid)] shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group flex flex-col cursor-pointer overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
                         <div class="relative flex-shrink-0">
                             ${product.image_url
                                 ? `<img src="${product.image_url}" alt="${escapeHtml(product.product_name)}" class="h-64 w-full object-cover">`
@@ -201,10 +201,10 @@
                         </div>
                     </article>
                 `).join('')
-                : '<div class="rounded-[1.75rem] bg-white p-6 text-center text-[var(--muted)] shadow-lg">No featured products available yet.</div>';
+                : '<div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 text-center text-[var(--muted)] shadow-sm">No featured products available yet.</div>';
             } catch (error) {
                 document.getElementById('featuredGrid').innerHTML =
-                    '<div class="rounded-[1.75rem] bg-white p-6 text-center text-red-500 shadow-lg">Failed to load featured products.</div>';
+                    '<div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 text-center text-red-500 shadow-sm">Failed to load featured products.</div>';
             }
         }
 
@@ -248,7 +248,7 @@
                                 Unavailable Products
                             </div>
                         ` : ''}
-                        <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group flex flex-col cursor-pointer overflow-hidden rounded-[1.75rem] border border-[var(--line)] ${unavailable ? 'bg-slate-100/90 opacity-80' : 'bg-[var(--card-solid)]'} shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                        <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group flex flex-col cursor-pointer overflow-hidden rounded-[1.5rem] border border-[var(--line)] ${unavailable ? 'bg-slate-100 opacity-80' : 'bg-white'} shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
                             ${product.image_url
                                 ? `<div class="flex-shrink-0"><img src="${product.image_url}" alt="${escapeHtml(product.product_name)}" class="h-60 w-full object-cover ${unavailable ? 'grayscale' : ''}"></div>`
                                 : `<div class="flex-shrink-0 flex h-60 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))] ${unavailable ? 'grayscale' : ''}"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
@@ -312,7 +312,7 @@
                 document.getElementById('productsGrid').innerHTML =
                     '<div class="col-span-full rounded-[1.5rem] border border-[var(--line)] bg-white/80 py-10 text-center text-red-500 shadow-sm">Error loading products.</div>';
                 document.getElementById('featuredGrid').innerHTML =
-                    '<div class="rounded-[1.75rem] bg-white p-6 text-center text-red-500 shadow-lg">Failed to load featured products.</div>';
+                    '<div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 text-center text-red-500 shadow-sm">Failed to load featured products.</div>';
             }
         }
 

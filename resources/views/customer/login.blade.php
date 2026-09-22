@@ -14,7 +14,7 @@
                     <div class="mt-1 text-[11px] uppercase tracking-[0.32em] text-[var(--muted)]">Trading</div>
                 </a>
             </div>
-            <section class="rounded-[2rem] border border-[var(--line)] bg-[var(--card)] p-8 shadow-2xl backdrop-blur">
+            <section class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-8">
                 <div class="text-center">
                     <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">Customer Access</div>
                     <h2 class="mt-4 text-3xl font-extrabold text-[var(--ink)]">Customer Login</h2>

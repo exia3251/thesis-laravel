@@ -509,7 +509,6 @@
     <div class="no-print">
         @include('partials.customer-footer')
     </div>
-    </div>
 
 
     <div id="actionModal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto no-print">

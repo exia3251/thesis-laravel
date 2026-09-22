@@ -6,7 +6,7 @@
     <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
     <div class="mb-7">
-        <h1 class="text-3xl font-black tracking-tight text-[var(--ink)]">Assistant</h1>
+        <h1 class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">Assistant</h1>
         <p class="mt-1 text-sm text-[var(--muted)]">What the shop assistant says, and what it could not answer.</p>
     </div>
 
@@ -46,7 +46,7 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <input type="text" id="vehicleSearch" oninput="searchVehicles()" placeholder="Search make or model"
-                       class="w-56 rounded-xl border border-[var(--line)] px-3 py-2 text-sm outline-none focus:border-[var(--primary)]">
+                       class="w-full rounded-xl border border-[var(--line)] px-3 py-2 text-sm outline-none focus:border-[var(--primary)] sm:w-56">
                 <select id="vehicleFilter" onchange="loadVehicles()"
                         class="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]">
                     <option value="all">All</option>

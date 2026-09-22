@@ -4,45 +4,47 @@
 
 @section('content')
     <div class="mb-6">
-        <h1 class="text-3xl font-black text-[var(--ink)]">Inventory Management</h1>
+        <h1 class="text-2xl font-black text-[var(--ink)] sm:text-3xl">Inventory Management</h1>
         <p class="text-[var(--muted)]">Monitor stock levels and record stock-in or stock-out transactions.</p>
     </div>
 
     <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
-    <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
-        <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
-            <input type="text" id="inventorySearch" oninput="renderInventory()" placeholder="Search product or brand..." class="rounded border border-gray-300 px-3 py-2 text-sm w-64 focus:outline-none focus:border-blue-400">
-            <div class="flex gap-2 text-sm">
+    <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
+        <div class="flex flex-wrap items-center gap-3 border-b border-[var(--line)] px-4 py-4 sm:px-6">
+            <input type="text" id="inventorySearch" oninput="renderInventory()" placeholder="Search product or brand..." class="rounded border border-gray-300 px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:border-blue-400">
+            <div class="flex flex-wrap gap-2 text-sm">
                 <button onclick="setStockFilter('all')" id="stockFilter-all" class="stock-filter-btn px-3 py-1.5 rounded border font-medium bg-gray-900 text-white border-gray-900">All</button>
                 <button onclick="setStockFilter('in_stock')" id="stockFilter-in_stock" class="stock-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">In Stock</button>
                 <button onclick="setStockFilter('low_stock')" id="stockFilter-low_stock" class="stock-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Low Stock</button>
                 <button onclick="setStockFilter('out_of_stock')" id="stockFilter-out_of_stock" class="stock-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Out of Stock</button>
             </div>
         </div>
-        <table class="min-w-full">
-            <thead class="bg-[var(--surface)]">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Product Name</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Brand</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Current Stock</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Reorder Level</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="inventoryBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
-                <tr>
-                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading inventory...</td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="admin-table-wrap">
+            <table class="min-w-full">
+                <thead class="bg-[var(--surface)]">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Product Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Brand</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Current Stock</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Reorder Level</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading inventory...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
     </div>
 
     <div id="stockModal" class="hidden fixed inset-0 bg-gray-900/60 p-4">
-<div class="mx-auto mt-16 w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+<div class="mx-auto mt-8 max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl sm:mt-16 sm:p-6">
     <div class="flex items-center justify-between">
         <div>
             <h2 id="stockModalTitle" class="text-xl font-bold text-slate-900">Stock Adjustment</h2>

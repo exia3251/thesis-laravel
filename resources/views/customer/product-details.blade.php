@@ -7,11 +7,11 @@
     <main class="container mx-auto px-4 py-8 sm:px-6">
         <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-[var(--line)] bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
-        <section class="mb-8 rounded-[2rem] border border-[var(--line)] bg-[linear-gradient(135deg,_rgba(255,255,255,0.84),_rgba(255,255,255,0.7))] px-6 py-7 shadow-xl backdrop-blur-xl sm:px-8">
+        <section class="mb-6 rounded-[1.5rem] border border-[var(--line)] bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-7">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="max-w-3xl">
                     <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">Product Overview</div>
-                    <h1 class="mt-5 text-3xl font-black leading-tight text-[var(--ink)] sm:text-4xl">{{ $product->product_name }}</h1>
+                    <h1 class="mt-4 text-2xl font-black leading-tight text-[var(--ink)] sm:text-4xl">{{ $product->product_name }}</h1>
                     <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Review product type, viscosity, packaging, stock level, and description before adding this item to your cart.</p>
                 </div>
                 <a href="/shop" class="rounded-xl border border-[var(--line)] bg-white/70 px-5 py-3 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">Back to Catalog</a>
@@ -19,7 +19,7 @@
         </section>
 
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div class="overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--card-solid)] shadow-xl">
+            <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
                 @if ($product->image_path)
                     <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}" class="h-[420px] w-full object-cover">
                 @else
@@ -29,7 +29,7 @@
                 @endif
             </div>
 
-            <div class="rounded-[2rem] border border-[var(--line)] bg-[var(--card)] p-6 shadow-xl backdrop-blur sm:p-8">
+            <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-8">
                 <div class="flex flex-wrap items-center gap-3">
                     <span class="rounded-full bg-[var(--primary-soft)] px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[var(--primary)]">{{ $product->oil_type }}</span>
                     <span class="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#9d7b20]">{{ $product->brand }}</span>

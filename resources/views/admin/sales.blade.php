@@ -5,7 +5,7 @@
 @section('content')
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-3xl font-black text-[var(--ink)]">Sales</h1>
+            <h1 class="text-2xl font-black text-[var(--ink)] sm:text-3xl">Sales</h1>
             <p class="text-[var(--muted)]">Review sales history, confirm customer payment requests, and manage delivery progress.</p>
         </div>
         <button onclick="openSaleModal()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
@@ -15,9 +15,9 @@
 
     <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
-    <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+    <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
         <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
-            <input type="text" id="salesSearch" oninput="searchSales()" placeholder="Search customer or sale ID..." class="rounded border border-gray-300 px-3 py-2 text-sm w-64 focus:outline-none focus:border-blue-400">
+            <input type="text" id="salesSearch" oninput="searchSales()" placeholder="Search customer or sale ID..." class="rounded border border-gray-300 px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:border-blue-400">
             <div class="flex gap-2 text-sm">
                 <button onclick="setPaymentFilter('all')" id="payFilter-all" class="pay-filter-btn px-3 py-1.5 rounded border font-medium bg-gray-900 text-white border-gray-900">All</button>
                 <button onclick="setPaymentFilter('paid')" id="payFilter-paid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Paid</button>
@@ -26,25 +26,27 @@
                 <button onclick="setPaymentFilter('processing')" id="payFilter-processing" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Awaiting Confirmation</button>
             </div>
         </div>
-        <table class="min-w-full">
-            <thead class="bg-[var(--surface)]">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Sale ID</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Customer</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Payment</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Delivery</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Paid Amount</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Total Amount</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="salesBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
-                <tr>
-                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading sales...</td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="admin-table-wrap">
+            <table class="min-w-full">
+                <thead class="bg-[var(--surface)]">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Sale ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Customer</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Payment</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Delivery</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Paid Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Total Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="salesBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
+                    <tr>
+                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading sales...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
     </div>

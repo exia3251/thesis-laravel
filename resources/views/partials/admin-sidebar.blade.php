@@ -42,8 +42,14 @@
     ];
 @endphp
 
-<div class="fixed inset-y-0 left-0 flex w-64 flex-col bg-[var(--sidebar-bg)] shadow-2xl">
-    <div class="flex h-20 shrink-0 items-center justify-center border-b border-white/10 bg-[linear-gradient(135deg,_rgba(20,138,103,0.15),_transparent)]">
+{{-- Positioned by the layout, which slides it off the side on a narrow
+     screen. It only has to fill whatever it is put in. --}}
+<div class="flex h-full w-full flex-col bg-[var(--sidebar-bg)] shadow-2xl">
+    <div class="relative flex h-20 shrink-0 items-center justify-center border-b border-white/10 bg-[linear-gradient(135deg,_rgba(20,138,103,0.15),_transparent)]">
+        <button type="button" onclick="toggleAdminNav(false)" aria-label="Close the menu"
+                class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-white/50 transition hover:bg-white/10 hover:text-white lg:hidden">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+        </button>
         <div class="text-center">
             <div class="text-lg font-black tracking-tight leading-tight">
                 <span style="color:#148a67;">RANEY</span><span style="color:#d9b14a;"> LUBRICANTS</span>

@@ -5,7 +5,7 @@
 @section('content')
     <div class="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <h1 class="text-3xl font-black tracking-tight text-[var(--ink)]">Analytics</h1>
+            <h1 class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">Analytics</h1>
             <p class="mt-1 text-sm text-[var(--muted)]">Where the money came from, how much of it arrived, and what the stock is doing.</p>
         </div>
         <div class="flex items-center gap-2">
@@ -32,7 +32,7 @@
                     <div>
                         <h2 class="text-sm font-semibold text-[var(--ink)]">Sales overview</h2>
                         <div class="mt-2 flex flex-wrap items-center gap-3">
-                            <span id="ovCollected" class="text-3xl font-black tracking-tight text-[var(--ink)]">PHP 0.00</span>
+                            <span id="ovCollected" class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">PHP 0.00</span>
                             <span id="ovDelta" class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold"></span>
                         </div>
                         <p class="mt-1 text-xs text-[var(--muted)]">Collected <span id="ovRangeLabel"></span></p>
@@ -69,7 +69,7 @@
                 <h2 class="text-sm font-semibold text-[var(--ink)]">Orders placed</h2>
                 <p id="ordersRangeLabel" class="mt-1 text-xs text-[var(--muted)]"></p>
                 <div class="mt-4 flex flex-wrap items-center gap-3">
-                    <span id="ordersTotal" class="text-3xl font-black tracking-tight text-[var(--ink)]">0</span>
+                    <span id="ordersTotal" class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">0</span>
                     <span id="ordersDelta" class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold"></span>
                 </div>
                 <div class="mt-4"><div id="areaChart"></div></div>
@@ -117,7 +117,7 @@
             </div>
 
             <div class="mt-5 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-                <div class="overflow-x-auto"><div id="scatterChart" class="min-w-[460px]"></div></div>
+                <div class="admin-table-wrap"><div id="scatterChart" class="min-w-[460px]"></div></div>
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Needs attention</p>
                     <div id="stockAlerts" class="mt-3 space-y-2"></div>

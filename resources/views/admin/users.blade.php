@@ -3,9 +3,9 @@
 @section('title', 'RANEY LUBRICANTS TRADING — Admin')
 
 @section('content')
-    <div class="flex justify-between items-start">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-            <h1 class="text-3xl font-black text-[var(--ink)]">User Management</h1>
+            <h1 class="text-2xl font-black text-[var(--ink)] sm:text-3xl">User Management</h1>
             <p class="text-[var(--muted)]">Create and manage admin and customer accounts.</p>
         </div>
         <button id="addUserBtn" onclick="openUserModal()" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)] transition shadow-sm">+ Add User</button>
@@ -13,7 +13,7 @@
 
     <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
-    <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+    <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-6 py-4">
             <h2 class="text-xl font-bold text-[var(--ink)]">Accounts</h2>
             <div class="inline-flex rounded-xl border border-[var(--line)] p-1">
@@ -23,22 +23,24 @@
                         class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Archived</button>
             </div>
         </div>
-        <table class="min-w-full">
-            <thead class="bg-[var(--surface)]">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Staff</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Email</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)]                     <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="usersBody">
-                <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>
-            </tbody>
-        </table>
+        <div class="admin-table-wrap">
+            <table class="min-w-full">
+                <thead class="bg-[var(--surface)]">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Staff</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)]                     <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersBody">
+                    <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div class="rounded-2xl bg-[var(--card)] shadow-lg overflow-hidden border border-[var(--line)]">
+    <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
         <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap items-center justify-between gap-3">
             <h2 class="text-xl font-bold text-[var(--ink)]">Recent Activity Logs</h2>
             <div class="flex flex-wrap gap-2 text-sm items-center">

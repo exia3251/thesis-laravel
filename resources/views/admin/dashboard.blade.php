@@ -5,7 +5,7 @@
 @section('content')
     <div class="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <h1 class="text-3xl font-black tracking-tight text-[var(--ink)]">Dashboard</h1>
+            <h1 class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">Dashboard</h1>
             <p class="mt-1 text-sm text-[var(--muted)]">Recent trade, and anything that needs doing today.</p>
         </div>
         <div class="flex items-center gap-2">

@@ -11,7 +11,7 @@
     <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
     <div class="mb-7">
-        <h1 class="text-3xl font-black tracking-tight text-[var(--ink)]">My account</h1>
+        <h1 class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">My account</h1>
         <p class="mt-1 text-sm text-[var(--muted)]">Your name and photo appear in the sidebar and against everything you do in the activity log.</p>
     </div>
 
