@@ -51,6 +51,18 @@ class ChatbotMatchingTest extends TestCase
             'delivery areas'                    => ['do you deliver to cavite', false, 'delivery_info'],
             'delivery areas misspelt'           => ['delivary areas', false, 'delivery_info'],
             'shipping wording'                  => ['what areas do you ship to', false, 'delivery_info'],
+            'delivery charge'                   => ['is there a delivery fee', false, 'delivery_info'],
+
+            // How long delivery takes is its own intent, because this system
+            // records no expected date and the courier sets the pace. These
+            // must not fall to delivery_info, which the business fills in and
+            // could put a figure in, nor to order_status, which would answer
+            // a signed-out visitor with a sign-in prompt.
+            'how long, plainly'                 => ['how long does delivery take', false, 'delivery_timing'],
+            'how long, in days'                 => ['how many days is delivery', false, 'delivery_timing'],
+            'how long, no possessive'           => ['how soon will it be delivered', false, 'delivery_timing'],
+            'how long, in Filipino'             => ['gaano katagal ang delivery', false, 'delivery_timing'],
+            'asking if it is quick'             => ['is delivery fast', false, 'delivery_timing'],
 
             // Mentioning a car routes to the vehicle guide, which can give a
             // grade, rather than the generic finder, which asks the customer

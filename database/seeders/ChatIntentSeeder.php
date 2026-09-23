@@ -215,14 +215,35 @@ class ChatIntentSeeder extends Seeder
                 'intent_key' => 'delivery_info',
                 'category' => 'delivery',
                 'label' => 'Where do you deliver?',
-                'keywords' => 'deliver delivery area areas ship shipping location where region province fee charge how long days',
-                // Deliberately does not ask for a duration. Nothing in this
-                // system records an expected delivery date, so a figure typed
-                // here would be a promise no screen could hold it to.
-                'answer' => "[Replace this in Admin → Assistant.] Describe the areas you deliver to and any delivery charge. "
-                    . "Our staff confirm the delivery schedule with you after your order is placed.",
+                // Timing words are deliberately absent. They belong to
+                // delivery_timing below, which answers them without a figure.
+                'keywords' => 'deliver delivery area areas ship shipping location where region province fee charge cover serve',
+                'answer' => "[Replace this in Admin → Assistant.] Describe the areas you deliver to and any delivery charge.",
                 'is_suggested' => true,
                 'sort_order' => 160,
+            ],
+            [
+                // Not a placeholder, because this one is not the business's to
+                // fill in. No screen in this system records an expected date,
+                // and once an order is collected the schedule belongs to the
+                // courier, so any figure typed here would be invented.
+                'intent_key' => 'delivery_timing',
+                'category' => 'delivery',
+                'label' => 'How long does delivery take?',
+                // "delivered", "arrive" and friends are shared with
+                // order_status, which wins them back through the possessive
+                // bonus whenever someone says "my order". Without a
+                // possessive the question is general, and a general question
+                // belongs here rather than behind a sign-in prompt.
+                'keywords' => 'long days day duration eta takes take soon fast quick timeframe wait hours week weeks '
+                    . 'delivery deliver delivered shipping arrive arrives tagal katagal kailan',
+                'answer' => "We cannot give you a delivery time, and we would rather say so than invent one.\n\n"
+                    . "Once an order leaves us it is with the courier, and how soon it reaches you is theirs to "
+                    . "decide rather than ours. Nothing on this site quotes a delivery date for that reason.\n\n"
+                    . "Our staff will confirm the arrangements with you after your order is placed, and you can "
+                    . "follow its progress from your orders page.",
+                'is_suggested' => false,
+                'sort_order' => 165,
             ],
             [
                 'intent_key' => 'returns_policy',
