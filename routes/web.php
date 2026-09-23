@@ -208,6 +208,8 @@ Route::post('/email/verify/resend', [EmailVerificationController::class, 'resend
 */
 Route::view('/about', 'customer.about')->name('about');
 Route::view('/returns', 'customer.returns')->name('returns');
+Route::view('/privacy', 'customer.privacy')->name('privacy');
+Route::view('/terms', 'customer.terms')->name('terms');
 
 // Customer pages
 Route::get('/shop', [ShopController::class, 'index'])->name('shop');

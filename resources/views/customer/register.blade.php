@@ -82,6 +82,16 @@
                     </button>
 
                     @include('partials.google-button', ['label' => 'Sign up with Google'])
+
+                    {{-- Placed below both buttons so it covers signing up either
+                         way, and worded as notice rather than a tick box, since
+                         nothing here is optional to agree to. --}}
+                    <p class="mt-5 text-center text-xs leading-6 text-[var(--muted)]">
+                        By creating an account you agree to our
+                        <a href="/terms" class="font-semibold text-[var(--primary)] hover:underline">Terms of Service</a>
+                        and
+                        <a href="/privacy" class="font-semibold text-[var(--primary)] hover:underline">Privacy Policy</a>.
+                    </p>
                 </form>
 
                 <div class="mt-6 text-center text-sm text-[var(--muted)]">

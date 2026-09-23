@@ -66,8 +66,8 @@
                 <div class="mt-8 border-t border-[var(--line)] pt-6 flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
                     <p class="text-xs text-[var(--muted)]">&copy; {{ now()->year }} RANEY LUBRICANTS TRADING. All rights reserved.</p>
                     <div class="flex gap-4 text-xs text-[var(--muted)]">
-                        <span class="cursor-pointer hover:text-[var(--primary)]">Privacy Policy</span>
-                        <span class="cursor-pointer hover:text-[var(--primary)]">Terms of Service</span>
+                        <a href="/privacy" class="hover:text-[var(--primary)]">Privacy Policy</a>
+                        <a href="/terms" class="hover:text-[var(--primary)]">Terms of Service</a>
                     </div>
                 </div>
             </div>
