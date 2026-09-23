@@ -11,6 +11,7 @@ use App\Models\StockTransaction;
 use App\Models\ActivityLog;
 use App\Models\PaymentRequest;
 use App\Mail\OrderDelivered;
+use App\Mail\PaymentReviewed;
 use App\Services\Notifier;
 use App\Services\OrderCancellation;
 use Illuminate\Http\Request;
@@ -302,6 +303,14 @@ class SalesController extends Controller
         $paymentRequest->reviewed_at = now();
         $paymentRequest->save();
 
+        // The customer uploaded a receipt and has been waiting on a human to
+        // look at it. Telling them is the whole point of the wait ending.
+        Notifier::send(
+            $sale->user?->email,
+            new PaymentReviewed($paymentRequest->fresh('sale')),
+            ['payment_request_id' => $paymentRequest->id, 'outcome' => 'approved']
+        );
+
         ActivityLog::logAction(
             auth()->id(),
             'payment_request_approved',
@@ -342,6 +351,15 @@ class SalesController extends Controller
         $sale = $paymentRequest->sale;
         $sale->payment_status = (float) $sale->paid_amount > 0 ? 'partial' : 'unpaid';
         $sale->save();
+
+        // Worth more than the approval, if anything: a rejection leaves the
+        // balance unchanged, and somebody who is not told will assume it went
+        // through and be surprised on delivery.
+        Notifier::send(
+            $sale->user?->email,
+            new PaymentReviewed($paymentRequest->fresh('sale')),
+            ['payment_request_id' => $paymentRequest->id, 'outcome' => 'rejected']
+        );
 
         ActivityLog::logAction(
             auth()->id(),
