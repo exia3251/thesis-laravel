@@ -12,6 +12,15 @@
     <main class="container mx-auto px-4 py-8 sm:px-6">
         <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-[var(--line)] bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
+        @if (session('profile_prompt'))
+            <div class="mb-6 flex items-start gap-3 rounded-[1.5rem] border border-[var(--primary)] bg-[var(--primary-soft)] px-5 py-4">
+                <svg class="mt-0.5 h-5 w-5 shrink-0 text-[var(--primary)]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/>
+                </svg>
+                <p class="text-sm leading-6 text-[var(--ink)]">{{ session('profile_prompt') }}</p>
+            </div>
+        @endif
+
         <div class="mb-6">
             <h1 class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">My account</h1>
             <p class="mt-1 text-sm text-[var(--muted)]">Manage the details we use to reach you and deliver your orders.</p>

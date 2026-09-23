@@ -124,12 +124,28 @@
                 </div>
             </div>
 
+            @if (auth()->user()?->needsDeliveryDetails())
+                {{-- The server refuses this order anyway. Saying so here,
+                     next to the button, beats letting somebody choose a
+                     payment plan and then be turned away. --}}
+                <div class="mt-5 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-sm leading-6 text-amber-900">
+                        We need a phone number and a delivery address before this order can be placed.
+                    </p>
+                    <a href="/profile#address" class="shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white transition hover:brightness-110">
+                        Add delivery details
+                    </a>
+                </div>
+            @endif
+
             <div class="mt-5 flex flex-col items-start justify-between gap-4 border-t border-[var(--line)] pt-5 sm:flex-row sm:items-end">
                 <div>
                     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Order total</div>
                     <div class="mt-2 text-3xl font-black text-[var(--primary)]" id="cartTotal">PHP 0.00</div>
                 </div>
-                <button id="checkoutButton" onclick="placeOrder()" class="rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">Place Order</button>
+                <button id="checkoutButton" onclick="placeOrder()"
+                        @if (auth()->user()?->needsDeliveryDetails()) data-needs-details="1" @endif
+                        class="rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">Place Order</button>
             </div>
         </section>
     </main>
@@ -166,7 +182,8 @@
         function updateCheckoutState() {
             const hasUnavailableItems = cartItems.some((item) => item.is_unavailable);
             const checkoutButton = document.getElementById('checkoutButton');
-            checkoutButton.disabled = hasUnavailableItems || cartItems.length === 0 || splitAmountError() !== null;
+            checkoutButton.disabled = hasUnavailableItems || cartItems.length === 0 || splitAmountError() !== null
+                || checkoutButton.dataset.needsDetails === '1';
             checkoutButton.classList.toggle('opacity-60', checkoutButton.disabled);
             checkoutButton.classList.toggle('cursor-not-allowed', checkoutButton.disabled);
         }

@@ -119,6 +119,25 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === self::ROLE_CUSTOMER && $this->is_active;
     }
 
+    /**
+     * Whether this customer still has to say where an order should go.
+     *
+     * An account made through Google Sign-In arrives with a name and an
+     * address for email and nothing else: nobody asked it for a phone number
+     * or somewhere to deliver to. Checkout refuses without them, so it is
+     * worth saying so long before anyone reaches checkout.
+     */
+    public function needsDeliveryDetails(): bool
+    {
+        if (!$this->isCustomer()) {
+            return false;
+        }
+
+        $profile = $this->customerProfile;
+
+        return !$profile || !$profile->isComplete();
+    }
+
     public function avatarUrl(): ?string
     {
         return $this->avatar_path ? asset('storage/' . $this->avatar_path) : null;

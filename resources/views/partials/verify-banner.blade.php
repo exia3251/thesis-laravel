@@ -11,7 +11,29 @@
     </div>
 @endif
 
+{{-- Follows the customer around until there is somewhere to deliver to,
+     rather than letting them find out at checkout. Kept behind the email
+     prompt, because confirming the address comes first. --}}
 @auth
+    @if (auth()->user()->isCustomer() && auth()->user()->hasVerifiedEmail() && auth()->user()->needsDeliveryDetails() && !request()->is('profile'))
+        <div class="border-b border-amber-200 bg-amber-50 no-print">
+            <div class="container mx-auto flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div class="flex items-start gap-3">
+                    <svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-700" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/>
+                    </svg>
+                    <p class="text-sm leading-6 text-amber-900">
+                        Add your phone number and delivery address before placing an order.
+                    </p>
+                </div>
+                <a href="/profile#address" class="shrink-0 rounded-xl border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100">
+                    Add them now
+                </a>
+            </div>
+        </div>
+    @endif
+
     @if (auth()->user()->isCustomer() && !auth()->user()->hasVerifiedEmail())
         {{-- Ordering is blocked until this is done, so the prompt follows the
              customer around rather than hiding on one page. --}}

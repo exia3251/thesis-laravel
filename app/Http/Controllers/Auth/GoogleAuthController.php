@@ -75,6 +75,15 @@ class GoogleAuthController extends Controller
             "{$user->full_name} signed in with Google elsewhere, so the earlier session was ended."
         );
 
+        // Someone who has just been created through Google has nothing but
+        // a name and an email address. Sending them to the catalogue means
+        // discovering at checkout that they cannot order; sending them here
+        // means one short form and then they can.
+        if ($user->wasRecentlyCreated && $user->isCustomer()) {
+            return redirect('/profile')
+                ->with('profile_prompt', 'Welcome. Add your phone number and delivery address and you are ready to order.');
+        }
+
         return redirect($user->homePath());
     }
 
