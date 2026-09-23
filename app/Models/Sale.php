@@ -123,7 +123,7 @@ class Sale extends Model
     /** The smallest GCash down payment this order may be split with. */
     public static function minimumDownPayment(float $total): float
     {
-        $percent = (float) config('payments.minimum_down_payment_percent', 20);
+        $percent = (float) config('payments.minimum_down_payment_percent', 50);
 
         return round($total * $percent / 100, 2);
     }

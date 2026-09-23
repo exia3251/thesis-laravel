@@ -10,7 +10,22 @@ return [
     | the customer splits payment with cash on delivery. Expressed as a
     | percentage of the order total.
     */
-    'minimum_down_payment_percent' => env('MINIMUM_DOWN_PAYMENT_PERCENT', 20),
+    'minimum_down_payment_percent' => env('MINIMUM_DOWN_PAYMENT_PERCENT', 50),
+
+    /*
+    |--------------------------------------------------------------------------
+    | How long a customer has to settle the balance
+    |--------------------------------------------------------------------------
+    | The window the business allows for the remainder of an order to be paid
+    | off, quoted as a range because it is agreed per customer rather than
+    | enforced by a screen. Nothing in this system counts these days down or
+    | acts when they run out; the figures exist so the terms page and the
+    | assistant quote the same window.
+    */
+    'settlement_grace_days' => [
+        'minimum' => env('SETTLEMENT_GRACE_DAYS_MIN', 30),
+        'maximum' => env('SETTLEMENT_GRACE_DAYS_MAX', 60),
+    ],
 
     /*
     |--------------------------------------------------------------------------

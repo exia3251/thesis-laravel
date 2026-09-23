@@ -155,7 +155,9 @@ class ChatIntentSeeder extends Seeder
                 'keywords' => 'down payment downpayment minimum deposit split partial percent least initial',
                 'answer' => "If you split payment, the GCash down payment has to be at least :down_payment_percent% of the order total. "
                     . "The rest is paid in cash when the order arrives.\n\n"
-                    . "The checkout works out the exact figure for your basket, so you do not have to.",
+                    . "The checkout works out the exact figure for your basket, so you do not have to.\n\n"
+                    . "Where a balance is left to settle afterwards, the usual window is :grace_days_min to :grace_days_max days, "
+                    . "agreed with our staff when you order.",
                 'is_suggested' => false,
                 'sort_order' => 110,
             ],

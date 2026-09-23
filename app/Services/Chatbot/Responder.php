@@ -682,8 +682,10 @@ class Responder
     private function fillPlaceholders(string $answer): string
     {
         return strtr($answer, [
-            ':down_payment_percent' => (string) config('payments.minimum_down_payment_percent', 20),
+            ':down_payment_percent' => (string) config('payments.minimum_down_payment_percent', 50),
             ':minimum_extra_payment' => number_format((float) config('payments.minimum_extra_payment', 500), 0),
+            ':grace_days_min' => (string) config('payments.settlement_grace_days.minimum', 30),
+            ':grace_days_max' => (string) config('payments.settlement_grace_days.maximum', 60),
         ]);
     }
 

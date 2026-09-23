@@ -35,6 +35,8 @@
                 'body'  => [
                     'All prices are in Philippine pesos. Prices can change, but a change never affects an order we have already confirmed.',
                     'You can pay by GCash, by cash on delivery, or by part of each. A GCash payment is checked by our staff against the reference number and the screenshot you send, which is why it is approved or rejected rather than being confirmed instantly. We will email you either way.',
+                    'If you split the payment, the GCash down payment must be at least ' . (int) config('payments.minimum_down_payment_percent') . '% of the order total. Checkout works out the exact figure for your basket.',
+                    'The balance is normally settled within ' . (int) config('payments.settlement_grace_days.minimum') . ' to ' . (int) config('payments.settlement_grace_days.maximum') . ' days, and the window that applies to your order is agreed with our staff when you place it. If you need longer, speak to your Sales Executive rather than letting the balance run.',
                     'Until a payment is approved, the amount is still outstanding on your order.',
                 ],
             ],
