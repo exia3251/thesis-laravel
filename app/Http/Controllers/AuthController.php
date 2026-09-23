@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\StartsUserSessions;
 use App\Models\User;
 use App\Models\CustomerProfile;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ use App\Models\ActivityLog;
 
 class AuthController extends Controller
 {
+    use StartsUserSessions;
+
     protected function loginRules(): array
     {
         return [
@@ -69,35 +72,6 @@ class AuthController extends Controller
             'province.required'     => 'Province is required.',
             'postal_code.regex'     => 'A Philippine postal code is four digits, such as 1100.',
         ];
-    }
-
-    /**
-     * Opens a session for an account that has already been authenticated,
-     * replacing whatever session it previously held.
-     */
-    protected function startSession(Request $request, User $user, string $logAction, string $replacedNote): void
-    {
-        $previousSessionId = $user->current_session_id;
-
-        Auth::login($user);
-
-        if ($request->hasSession()) {
-            $request->session()->regenerate();
-        }
-
-        $user->forceFill([
-            'current_session_id' => $request->session()->getId(),
-        ])->save();
-
-        ActivityLog::logAction(
-            $user->user_id,
-            $logAction,
-            "{$user->full_name} ({$user->email}) logged in as {$user->roleLabel()}"
-        );
-
-        if ($previousSessionId && $previousSessionId !== $request->session()->getId()) {
-            ActivityLog::logAction($user->user_id, 'single_session_replaced', $replacedNote);
-        }
     }
 
     /**

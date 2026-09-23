@@ -36,7 +36,15 @@
                                    placeholder="Enter your password">
                         </div>
                     </div>
+                    @if (session('error'))
+                        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
                     <button type="submit" class="flex w-full justify-center rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110">Sign in</button>
+
+                    @include('partials.google-button')
                     {{-- Seeded login, for local development only. This block is
                          absent once APP_ENV is anything other than local. --}}
                     @if (app()->environment('local'))

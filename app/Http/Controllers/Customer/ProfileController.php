@@ -25,13 +25,15 @@ class ProfileController extends Controller
      */
     public function getProfile()
     {
-        $profile = CustomerProfile::with('user')
-            ->where('user_id', auth()->id())
-            ->first();
+        // An account created through Google Sign-In has no profile row yet:
+        // nobody asked it for a phone number or an address. One is made
+        // empty here so the page has something to fill in rather than
+        // nothing to edit.
+        $profile = CustomerProfile::firstOrCreate(['user_id' => auth()->id()]);
 
         return response()->json([
             'success' => true,
-            'data' => $profile
+            'data' => $profile->load('user'),
         ]);
     }
 
@@ -42,14 +44,7 @@ class ProfileController extends Controller
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
-        $profile = CustomerProfile::where('user_id', $user->user_id)->first();
-
-        if (!$profile) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Profile not found'
-            ], 404);
-        }
+        $profile = CustomerProfile::firstOrCreate(['user_id' => $user->user_id]);
 
         $request->validate([
             'phone'   => [

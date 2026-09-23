@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\ChatbotController;
@@ -176,6 +177,16 @@ Route::middleware('guest')->group(function () {
 Route::post('/shop/login', [AuthController::class, 'customerLogin'])->name('customer.login.submit');
 Route::post('/shop/register', [AuthController::class, 'customerRegister'])->name('customer.register.submit');
 Route::post('/shop/logout', [AuthController::class, 'logout'])->name('customer.logout');
+
+/*
+| Google Sign-In. Outside the guest middleware on purpose: someone already
+| signed in who presses the button should be handed back to their own pages
+| rather than shown a 302 they cannot explain.
+*/
+Route::middleware('throttle:20,1')->group(function () {
+    Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
+    Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+});
 
 /*
 | Email verification. The confirmation link carries a signature rather than

@@ -18,6 +18,19 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google Sign-In
+    |--------------------------------------------------------------------------
+    | The redirect must match a URI registered on the OAuth client exactly,
+    | character for character, or Google refuses the handover.
+    */
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL') . '/auth/google/callback'),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

@@ -80,6 +80,8 @@
                     <button type="submit" class="flex w-full justify-center rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110">
                         Create Account
                     </button>
+
+                    @include('partials.google-button', ['label' => 'Sign up with Google'])
                 </form>
 
                 <div class="mt-6 text-center text-sm text-[var(--muted)]">
