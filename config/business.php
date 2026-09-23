@@ -12,7 +12,7 @@ return [
     'name' => env('BUSINESS_NAME', 'RANEY LUBRICANTS TRADING'),
     'address' => env('BUSINESS_ADDRESS', '123 Industrial Ave, Makati City, Metro Manila'),
     'phone' => env('BUSINESS_PHONE', '+63 2 1234 5678'),
-    'email' => env('BUSINESS_EMAIL', 'sales@raneylubricants.ph'),
+    'email' => env('BUSINESS_EMAIL', 'sales.raneylubricants@gmail.com'),
     'hours' => env('BUSINESS_HOURS', 'Mon - Sat: 8AM - 6PM'),
 
     /*
