@@ -201,6 +201,14 @@ Route::post('/email/verify/resend', [EmailVerificationController::class, 'resend
     ->middleware(['customer', 'throttle:5,1'])
     ->name('verification.send');
 
+/*
+| Standing pages. Static enough to need no controller, but they are linked
+| from the footer of every storefront page, so they are real routes rather
+| than the dead spans that used to sit there.
+*/
+Route::view('/about', 'customer.about')->name('about');
+Route::view('/returns', 'customer.returns')->name('returns');
+
 // Customer pages
 Route::get('/shop', [ShopController::class, 'index'])->name('shop');
 Route::get('/shop/products/{id}', [ShopController::class, 'show'])->name('shop.products.show');

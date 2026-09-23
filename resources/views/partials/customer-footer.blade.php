@@ -24,16 +24,18 @@
                     <div>
                         <h4 class="mb-4 text-sm font-semibold text-[var(--ink)]">About Us</h4>
                         <ul class="space-y-2 text-sm">
-                            <li><span class="cursor-pointer text-[var(--muted)] transition hover:text-[var(--primary)]">Our Story</span></li>
-                            <li><span class="cursor-pointer text-[var(--muted)] transition hover:text-[var(--primary)]">Our Products</span></li>
+                            <li><a href="/about" class="text-[var(--muted)] transition hover:text-[var(--primary)]">Our Story</a></li>
+                            <li><a href="/shop" class="text-[var(--muted)] transition hover:text-[var(--primary)]">Our Products</a></li>
                         </ul>
                     </div>
 
                     <div>
                         <h4 class="mb-4 text-sm font-semibold text-[var(--ink)]">Customer Service</h4>
                         <ul class="space-y-2 text-sm">
-                            <li><span class="cursor-pointer text-[var(--muted)] transition hover:text-[var(--primary)]">My Account</span></li>
-                            <li><span class="cursor-pointer text-[var(--muted)] transition hover:text-[var(--primary)]">Returns &amp; Refunds</span></li>
+                            {{-- Signed out, /profile bounces to the login screen, so
+                                 the link goes there directly instead. --}}
+                            <li><a href="{{ auth()->check() && auth()->user()->isCustomer() ? '/profile' : '/shop/login' }}" class="text-[var(--muted)] transition hover:text-[var(--primary)]">My Account</a></li>
+                            <li><a href="/returns" class="text-[var(--muted)] transition hover:text-[var(--primary)]">Returns &amp; Refunds</a></li>
                         </ul>
                     </div>
 
