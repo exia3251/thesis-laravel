@@ -216,8 +216,11 @@ class ChatIntentSeeder extends Seeder
                 'category' => 'delivery',
                 'label' => 'Where do you deliver?',
                 'keywords' => 'deliver delivery area areas ship shipping location where region province fee charge how long days',
-                'answer' => "[Replace this in Admin → Assistant.] Describe the areas you deliver to, how long delivery usually takes, "
-                    . "and any delivery charge.",
+                // Deliberately does not ask for a duration. Nothing in this
+                // system records an expected delivery date, so a figure typed
+                // here would be a promise no screen could hold it to.
+                'answer' => "[Replace this in Admin → Assistant.] Describe the areas you deliver to and any delivery charge. "
+                    . "Our staff confirm the delivery schedule with you after your order is placed.",
                 'is_suggested' => true,
                 'sort_order' => 160,
             ],
