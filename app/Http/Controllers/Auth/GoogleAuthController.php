@@ -129,6 +129,13 @@ class GoogleAuthController extends Controller
                 return null;
             }
 
+            // Checked before anything is written. Linking and then refusing
+            // left a deactivated account carrying a Google link it had never
+            // successfully used, and a log entry saying it had.
+            if (!$this->usable($existing, $failure)) {
+                return null;
+            }
+
             $existing->forceFill([
                 'google_id' => $googleId,
                 // Google has just proved the address, so an account that had
@@ -142,7 +149,7 @@ class GoogleAuthController extends Controller
                 "{$existing->full_name} ({$existing->email}) linked Google Sign-In to their existing account."
             );
 
-            return $this->usable($existing, $failure);
+            return $existing;
         }
 
         // 3. Nobody we know. New customers only -- a staff account is
