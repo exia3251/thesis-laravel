@@ -52,7 +52,7 @@ return [
 
     'disclaimer' => env(
         'BUSINESS_DOCUMENT_DISCLAIMER',
-        'This is not a BIR Official Receipt. An official receipt is issued on delivery.'
+        'This is not a BIR Official Receipt. Please ask our staff if you need one.'
     ),
 
 ];

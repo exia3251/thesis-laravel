@@ -1,11 +1,11 @@
 @extends('emails.layout')
 
-@section('subject', 'Order #' . $sale->sale_id . ' confirmed')
+@section('subject', 'Order ' . $sale->reference() . ' confirmed')
 
 @section('content')
     <h1 style="margin:0 0 8px; font-size:22px; color:#16202a;">Thanks for your order, {{ $sale->customer_name }}.</h1>
     <p style="margin:0 0 20px; font-size:14px; line-height:22px; color:#6f7d8c;">
-        We have received order <strong style="color:#16202a;">#{{ $sale->sale_id }}</strong>, placed
+        We have received order <strong style="color:#16202a;">{{ $sale->reference() }}</strong>, placed
         {{ optional($sale->sale_date)->format('F d, Y \a\t g:i A') }}. Here is what you owe and how to settle it.
     </p>
 
@@ -32,6 +32,11 @@
                 <td colspan="2" style="padding:12px 0; font-size:14px; font-weight:bold;">Order total</td>
                 <td align="right" style="padding:12px 0; font-size:16px; font-weight:bold; color:#148a67;">PHP {{ number_format((float) $sale->total_amount, 2) }}</td>
             </tr>
+            @unless ($sale->taxBreakdown()['registered'])
+                <tr>
+                    <td colspan="3" align="right" style="padding:0 0 10px; font-size:11px; font-weight:bold; letter-spacing:0.08em; text-transform:uppercase; color:#6f7d8c;">Non-VAT registered</td>
+                </tr>
+            @endunless
         </tbody>
     </table>
 

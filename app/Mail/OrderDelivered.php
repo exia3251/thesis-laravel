@@ -20,7 +20,7 @@ class OrderDelivered extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Receipt for order #' . $this->sale->sale_id . ' - RANEY LUBRICANTS',
+            subject: config('business.document_title') . ' for order ' . $this->sale->reference() . ' - ' . config('business.name'),
         );
     }
 

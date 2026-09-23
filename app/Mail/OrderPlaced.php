@@ -20,7 +20,7 @@ class OrderPlaced extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Order #' . $this->sale->sale_id . ' confirmed - RANEY LUBRICANTS',
+            subject: 'Order ' . $this->sale->reference() . ' confirmed - ' . config('business.name'),
         );
     }
 
