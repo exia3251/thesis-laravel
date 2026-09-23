@@ -31,22 +31,33 @@ class EmailVerificationController extends Controller
             ]);
         }
 
-        if ($user->hasVerifiedEmail()) {
-            return view('auth.verify-result', [
-                'ok' => true,
-                'heading' => 'Already confirmed',
-                'message' => 'This email address was confirmed previously. You can sign in and start shopping.',
-            ]);
+        $alreadyConfirmed = $user->hasVerifiedEmail();
+
+        if (!$alreadyConfirmed) {
+            $user->markEmailAsVerified();
+
+            ActivityLog::logAction($user->user_id, 'email_verified', "{$user->full_name} ({$user->email}) confirmed their email address.");
         }
 
-        $user->markEmailAsVerified();
-
-        ActivityLog::logAction($user->user_id, 'email_verified', "{$user->full_name} ({$user->email}) confirmed their email address.");
+        // Someone already signed in as this account has nowhere useful to go
+        // from a confirmation page -- its main button offers them a sign-in
+        // they have already done. Put them back where they were instead, and
+        // say what happened on the way.
+        if ((int) ($request->user()?->user_id ?? 0) === (int) $user->user_id) {
+            return redirect($user->homePath())->with(
+                'verified',
+                $alreadyConfirmed
+                    ? 'That email address was already confirmed.'
+                    : 'Email confirmed. You can place orders now.'
+            );
+        }
 
         return view('auth.verify-result', [
             'ok' => true,
-            'heading' => 'Email confirmed',
-            'message' => 'Thank you. You can now sign in and place orders.',
+            'heading' => $alreadyConfirmed ? 'Already confirmed' : 'Email confirmed',
+            'message' => $alreadyConfirmed
+                ? 'This email address was confirmed previously. You can sign in and start shopping.'
+                : 'Thank you. You can now sign in and place orders.',
         ]);
     }
 

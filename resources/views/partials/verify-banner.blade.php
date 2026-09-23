@@ -1,3 +1,16 @@
+{{-- Shown once, where the nag used to be, so confirming has visible
+     consequence rather than silently dropping someone back on the shop. --}}
+@if (session('verified'))
+    <div class="border-b border-emerald-200 bg-emerald-50 no-print">
+        <div class="container mx-auto flex items-start gap-3 px-4 py-3 sm:px-6">
+            <svg class="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+            </svg>
+            <p class="text-sm leading-6 text-emerald-900">{{ session('verified') }}</p>
+        </div>
+    </div>
+@endif
+
 @auth
     @if (auth()->user()->isCustomer() && !auth()->user()->hasVerifiedEmail())
         {{-- Ordering is blocked until this is done, so the prompt follows the
