@@ -21,7 +21,6 @@
                     'Your orders, payments and delivery history.',
                     'Your GCash reference number and the screenshot you upload, so a payment can be matched to an order.',
                     'Messages you send to the assistant on this site.',
-                    'A profile photo, only if you upload one.',
                 ],
             ],
             [

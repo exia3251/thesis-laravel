@@ -41,7 +41,8 @@
             [
                 'title' => 'Delivery',
                 'body'  => [
-                    'We deliver to the address on your order. Delivery dates we give are estimates, not guarantees, and things outside our control such as weather and traffic can move them.',
+                    'We deliver to the address on your order. This site does not quote a delivery date when you order; our staff arrange the timing with you, and you can follow the progress of an order from your orders page.',
+                    'Where our staff do give you a date, treat it as an estimate rather than a guarantee, since weather, traffic and stock movements can change it.',
                     'Please check your items on arrival. Once you confirm receipt, the order is recorded as delivered and the goods are your responsibility.',
                 ],
             ],
