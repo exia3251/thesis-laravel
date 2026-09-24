@@ -50,7 +50,28 @@ class ProductCatalogSeeder extends Seeder
 
     public function run(): void
     {
+        // The manufacturers' own write-ups, scraped once and committed so
+        // that seeding never needs the network. See database/data.
+        $copy = require database_path('data/product-copy.php');
+
         foreach ($this->lines() as $line) {
+            $write = $copy[$line['key']] ?? null;
+
+            // The one-line description stays hand-written: it is what a card
+            // and an order email quote, and the manufacturer's opening
+            // paragraph is too long for either.
+            $specifications = $write ? array_filter([
+                'overview'     => $write['summary'] ?? null,
+                'grades'       => $write['grades'] ?? null,
+                'applications' => $write['applications'] ?? null,
+                'benefits'     => $write['benefits'] ?? null,
+                'standards'    => $write['standards'] ?? null,
+                // "Properties => 15W40" is the table's own header row, which
+                // reads as nonsense once it is out of the table.
+                'properties'   => array_diff_key($write['properties'] ?? [], ['Properties' => null]) ?: null,
+                'source'       => $write['source'] ?? null,
+            ]) : null;
+
             foreach ($line['packs'] as $packKey) {
                 $pack = self::PACKS[$packKey];
 
@@ -67,6 +88,7 @@ class ProductCatalogSeeder extends Seeder
                     'price'           => round($line['per_litre'] * $pack['multiplier'], 2),
                     'reorder_level'   => $packKey === 'DRUM' ? 2 : 10,
                     'description'     => $line['description'],
+                    'specifications'  => $specifications,
                 ]);
 
                 Inventory::create([

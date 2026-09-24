@@ -54,6 +54,97 @@
                 @endif
             </div>
 
+            {{-- Under the picture rather than beside the buy controls. The
+                 right column is for deciding a pack and a quantity; this is
+                 the reading, and it is far too long to sit between the price
+                 and the Add to Cart button. --}}
+            <div class="lg:col-start-1">
+                @php $spec = $product->specifications ?? []; @endphp
+
+                <section class="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-7">
+                    <h2 class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Description</h2>
+                    <p class="mt-3 text-sm leading-7 text-[var(--ink)]">{{ $product->description ?: 'No detailed product description is available yet for this item.' }}</p>
+
+                    @if (!empty($spec['overview']))
+                        <p class="mt-4 text-sm leading-7 text-[var(--muted)]">{{ $spec['overview'] }}</p>
+                    @endif
+
+                    @if (!empty($spec['grades']))
+                        <div class="mt-6 border-t border-[var(--line)] pt-5">
+                            <h3 class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Approved to</h3>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                @foreach ($spec['grades'] as $grade)
+                                    <span class="rounded-lg border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-3 py-1.5 text-xs font-bold text-[var(--primary)]">{{ $grade }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if (!empty($spec['applications']))
+                        <div class="mt-6 border-t border-[var(--line)] pt-5">
+                            <h3 class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Where it is used</h3>
+                            @foreach (preg_split('/\R+/', trim($spec['applications'])) as $paragraph)
+                                @continue(trim($paragraph) === '')
+                                <p class="mt-3 text-sm leading-7 text-[var(--muted)]">{{ trim($paragraph) }}</p>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if (!empty($spec['benefits']))
+                        <div class="mt-6 border-t border-[var(--line)] pt-5">
+                            <h3 class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Features and benefits</h3>
+                            <ul class="mt-3 space-y-2.5 text-sm">
+                                @foreach ($spec['benefits'] as $benefit)
+                                    <li class="flex items-start gap-3">
+                                        <span class="mt-[0.6rem] block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--primary)]"></span>
+                                        <span class="leading-7 text-[var(--muted)]">{{ $benefit }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    @if (!empty($spec['standards']))
+                        <div class="mt-6 border-t border-[var(--line)] pt-5">
+                            <h3 class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Meets or exceeds</h3>
+                            @foreach (preg_split('/\R+/', trim($spec['standards'])) as $paragraph)
+                                @continue(trim($paragraph) === '')
+                                <p class="mt-3 text-sm leading-7 text-[var(--muted)]">{{ trim($paragraph) }}</p>
+                            @endforeach
+                            <p class="mt-4 text-xs leading-6 text-[var(--muted)]">
+                                Approvals are the manufacturer's own. Check your handbook for the grade and standard your engine requires.
+                            </p>
+                        </div>
+                    @endif
+
+                    @if (!empty($spec['properties']))
+                        <div class="mt-6 border-t border-[var(--line)] pt-5">
+                            <h3 class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Typical properties</h3>
+                            <div class="mt-3 overflow-hidden rounded-xl border border-[var(--line)]">
+                                <table class="min-w-full text-sm">
+                                    <tbody>
+                                        @foreach ($spec['properties'] as $property => $value)
+                                            <tr class="border-b border-[var(--line)] last:border-0 {{ $loop->even ? 'bg-[rgba(246,248,251,0.7)]' : '' }}">
+                                                <td class="px-4 py-2.5 text-[var(--muted)]">{{ $property }}</td>
+                                                <td class="px-4 py-2.5 text-right font-semibold text-[var(--ink)]">{{ $value }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="mt-3 text-xs leading-6 text-[var(--muted)]">Typical values, not a specification. They vary within normal manufacturing tolerance.</p>
+                        </div>
+                    @endif
+
+                    @if (!empty($spec['source']))
+                        <p class="mt-6 border-t border-[var(--line)] pt-4 text-xs leading-6 text-[var(--muted)]">
+                            Product information published by the manufacturer.
+                            <a href="{{ $spec['source'] }}" target="_blank" rel="noopener noreferrer" class="font-semibold text-[var(--primary)] hover:underline">See their page</a>
+                        </p>
+                    @endif
+                </section>
+            </div>
+
             <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-8">
                 <div class="flex flex-wrap items-center gap-3">
                     <span class="rounded-full bg-[var(--primary-soft)] px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[var(--primary)]">{{ $product->oil_type }}</span>
@@ -117,11 +208,6 @@
                         <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Availability</div>
                         <div id="packAvailability" class="mt-2 text-lg font-bold text-[var(--ink)]">{{ (optional($product->inventory)->quantity ?? 0) > 0 ? 'Available for order' : 'Currently unavailable' }}</div>
                     </div>
-                </div>
-
-                <div class="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white/75 p-5">
-                    <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Description</div>
-                    <p class="mt-3 text-sm leading-7 text-[var(--muted)]">{{ $product->description ?: 'No detailed product description is available yet for this item.' }}</p>
                 </div>
 
                 {{-- Singly or by the box. A box is not another product: it is

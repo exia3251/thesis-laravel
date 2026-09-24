@@ -29,12 +29,14 @@ class Product extends Model
         'price',
         'reorder_level',
         'description',
+        'specifications',
         'image_path',
         'image_path_2',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'specifications' => 'array',
     ];
 
     // Relationships
