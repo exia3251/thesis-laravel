@@ -15,6 +15,11 @@ return [
     'email' => env('BUSINESS_EMAIL', 'sales.raneylubricants@gmail.com'),
     'hours' => env('BUSINESS_HOURS', 'Mon - Sat: 8AM - 6PM'),
 
+    // The only social account the business actually has. Kept here rather
+    // than in the footer markup so it is beside the rest of the contact
+    // details, which is where anyone would look for it.
+    'facebook' => env('BUSINESS_FACEBOOK', 'https://www.facebook.com/rainee.rubin'),
+
     /*
     |--------------------------------------------------------------------------
     | Tax registration
