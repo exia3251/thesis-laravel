@@ -4,53 +4,20 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
-use App\Models\Sale;
 use App\Models\Product;
+use App\Models\Sale;
 use Illuminate\Http\Request;
 
+/**
+ * The two spreadsheets, and nothing else.
+ *
+ * There was a reports screen that asked for a date range and drew a table
+ * of sales. Analytics answers the same questions over the same spans and
+ * answers them better, so the screen has gone. What it could do that
+ * analytics could not was hand somebody a file, and that is what is left.
+ */
 class ReportController extends Controller
 {
-    public function index()
-    {
-        return view('admin.reports');
-    }
-
-    public function salesReport(Request $request)
-    {
-        $sales = $this->buildSalesQuery($request)
-            ->orderBy('sale_date', 'desc')
-            ->get()
-            ->map(function ($sale) {
-                return [
-                    'sale_id' => $sale->sale_id,
-                    'sale_date' => $sale->sale_date,
-                    'customer_name' => $sale->customer_name ?: $sale->user?->full_name,
-                    'payment_method' => $sale->payment_method,
-                    'payment_status' => $sale->payment_status,
-                    'delivery_status' => $sale->delivery_status,
-                    'paid_amount' => $sale->paid_amount,
-                    'balance_due' => $sale->balance_due,
-                    'total_amount' => $sale->total_amount,
-                    'item_count' => $sale->items->count(),
-                ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'data' => $sales
-        ]);
-    }
-
-    public function inventoryReport()
-    {
-        $inventory = $this->inventoryRows();
-
-        return response()->json([
-            'success' => true,
-            'data' => $inventory
-        ]);
-    }
-
     public function exportSalesCsv(Request $request)
     {
         $sales = $this->buildSalesQuery($request)
@@ -148,8 +115,9 @@ class ReportController extends Controller
 
     /**
      * The filters arrive from the query string and go straight into a where
-     * clause, so they are checked here rather than trusted. This is the only
-     * entry point for both the report and its CSV export.
+     * clause, so they are checked here rather than trusted. Analytics sends
+     * the period on screen; the other two filters are left for anyone
+     * calling the export directly.
      */
     protected function buildSalesQuery(Request $request)
     {

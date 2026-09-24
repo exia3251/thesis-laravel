@@ -71,9 +71,6 @@ Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function 
     Route::get('/analytics', [AnalyticsController::class, 'index'])
         ->middleware('permission:full_dashboard')->name('admin.analytics');
 
-    Route::get('/reports', [ReportController::class, 'index'])
-        ->middleware('permission:view_reports')->name('admin.reports');
-
     Route::get('/users', [UserManagementController::class, 'index'])
         ->middleware('permission:manage_users')->name('admin.users');
 
@@ -134,9 +131,10 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
         Route::put('/payment-requests/{id}/reject', [SalesController::class, 'rejectPaymentRequest']);
     });
 
+    // The reports screen is gone -- analytics answers the same questions and
+    // answers them better -- but the spreadsheets it produced are still
+    // wanted, so the two exports live on without a page of their own.
     Route::middleware('permission:view_reports')->group(function () {
-        Route::get('/reports/sales', [ReportController::class, 'salesReport']);
-        Route::get('/reports/inventory', [ReportController::class, 'inventoryReport']);
         Route::get('/reports/sales/export', [ReportController::class, 'exportSalesCsv']);
         Route::get('/reports/inventory/export', [ReportController::class, 'exportInventoryCsv']);
     });

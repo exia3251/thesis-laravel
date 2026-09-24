@@ -31,7 +31,14 @@
                         class="rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110">Apply</button>
             </div>
 
-            <a href="/admin/reports" class="rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">Export Report</a>
+            {{-- The old reports screen asked for a date range and printed a
+                 table. This screen already has the range, so the export is
+                 simply the same period as a spreadsheet. --}}
+            <button type="button" onclick="exportSales()"
+                    class="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                Export CSV
+            </button>
         </div>
     </div>
 
@@ -457,6 +464,14 @@
         const to = document.getElementById('rangeTo').value;
 
         return `range=custom&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    }
+
+    /** Every order in the period on screen, as a spreadsheet. */
+    function exportSales() {
+        if (!analytics) return;
+
+        const params = new URLSearchParams({ from: analytics.range.from, to: analytics.range.to });
+        window.location.href = `/admin-api/reports/sales/export?${params}`;
     }
 
     async function loadAnalytics() {
