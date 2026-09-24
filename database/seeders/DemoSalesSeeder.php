@@ -171,7 +171,11 @@ class DemoSalesSeeder extends Seeder
         };
 
         $sale = Sale::create([
-            'customer_name' => self::TAG . $buyer->full_name,
+            // The buyer's name already carries the tag from where the
+            // account was made, so tagging it again wrote "[demo] [demo]
+            // Bert Navarro" onto every order. The marker still has to be
+            // there, because that is how these rows are found and removed.
+            'customer_name' => $buyer->full_name,
             'user_id' => $buyerId,
             'delivery_address' => 'Demo address, Metro Manila',
             'contact_phone' => '09' . random_int(100000000, 999999999),

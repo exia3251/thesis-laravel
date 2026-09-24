@@ -5,8 +5,8 @@
 @section('content')
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-black text-[var(--ink)] sm:text-3xl">Products</h1>
-            <p class="text-[var(--muted)]">Create, update, and remove products from the catalog.</p>
+            <h1 class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">Products</h1>
+            <p class="mt-1 text-sm text-[var(--muted)]">Everything on sale, and the sizes each one comes in.</p>
         </div>
         <div class="flex gap-3">
             {{-- Bulk Import temporarily disabled
@@ -14,8 +14,8 @@
                 Bulk Import
             </button>
             --}}
-            <button id="addProductBtn" onclick="openForm()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
-                Add Product
+            <button id="addProductBtn" onclick="openForm()" class="rounded-xl bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110">
+                Add product
             </button>
         </div>
     </div>
@@ -37,20 +37,15 @@
             <table class="min-w-full">
                 <thead class="bg-[var(--surface)]">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Image</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Product Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Brand</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Unit</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Price</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Stock</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">Product</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Type</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Price</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Stock</th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="productsBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
-                    <tr>
-                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading products...</td>
-                    </tr>
+                <tbody id="productsBody" class="divide-y divide-[var(--line)] bg-[var(--card)]">
+                    <tr><td colspan="5" class="px-6 py-10 text-center text-sm text-[var(--muted)]">Loading products...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -753,28 +748,43 @@
             // The server has already searched the whole catalogue. Filtering
             // again here only hid rows it had matched on viscosity grade.
             tbody.innerHTML = products.length
-                ? products.map((product) => `
-                    <tr>
-                        <td class="px-6 py-4">
-                            ${product.image_url
-                                ? `<img src="${product.image_url}" alt="${escapeHtml(product.product_name)}" class="h-14 w-14 rounded border object-cover">`
-                                : '<div class="h-14 w-14 rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-400">No image</div>'}
+                ? products.map((product) => {
+                    const stock = product.inventory ? product.inventory.quantity : 0;
+                    const low = stock > 0 && stock <= product.reorder_level;
+
+                    return `
+                    <tr class="transition hover:bg-[var(--surface)]">
+                        <td class="px-5 py-3 sm:px-6">
+                            <div class="flex items-center gap-3">
+                                ${product.image_url
+                                    ? `<img src="${product.image_url}" alt="" class="h-12 w-12 shrink-0 rounded-lg border border-[var(--line)] bg-white object-contain p-1">`
+                                    : '<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)]">No<br>image</div>'}
+                                <div class="min-w-0">
+                                    <div class="truncate text-sm font-semibold text-[var(--ink)]" title="${escapeHtml(product.product_name)}">${escapeHtml(product.product_name)}</div>
+                                    <div class="text-xs text-[var(--muted)]">${escapeHtml(product.brand)}${product.unit ? ' &middot; ' + escapeHtml(product.unit) : ''}</div>
+                                </div>
+                            </div>
                         </td>
-                        <td class="px-6 py-4">${escapeHtml(product.product_name)}</td>
-                        <td class="px-6 py-4">${escapeHtml(product.brand)}</td>
-                        <td class="px-6 py-4">${escapeHtml(product.oil_type)}</td>
-                        <td class="px-6 py-4">${escapeHtml(product.unit || '1 Liter')}</td>
-                        <td class="px-6 py-4">PHP ${Number(product.price).toFixed(2)}</td>
-                        <td class="px-6 py-4">${product.inventory ? product.inventory.quantity : 0}</td>
-                        <td class="px-6 py-4 space-x-3 whitespace-nowrap">
-                            ${showArchived
-                                ? `<button type="button" onclick="restoreProduct(${product.product_id})" class="font-semibold text-[var(--primary)] hover:text-[var(--primary-dark)]">Restore</button>`
-                                : `<button type="button" onclick="editProduct(${product.product_id})" class="text-[var(--primary)] hover:text-[var(--primary-dark)]">Edit</button>
-                                   <button type="button" onclick="archiveProduct(${product.product_id})" class="text-red-600 hover:text-red-900">Archive</button>`}
+                        <td class="px-5 py-3">
+                            <span class="rounded-full bg-[var(--primary-soft)] px-2.5 py-1 text-xs font-bold text-[var(--primary)]">${escapeHtml(product.oil_type)}</span>
+                            ${product.viscosity_grade ? `<div class="mt-1 text-xs text-[var(--muted)]">${escapeHtml(product.viscosity_grade)}</div>` : ''}
                         </td>
-                    </tr>
-                `).join('')
-                : `<tr><td colspan="8" class="px-6 py-4 text-center text-[var(--muted)]">${showArchived ? 'Nothing archived.' : 'No matching products found.'}</td></tr>`;
+                        <td class="px-5 py-3 text-sm font-semibold text-[var(--ink)]">PHP ${Number(product.price).toLocaleString()}</td>
+                        <td class="px-5 py-3">
+                            <span class="text-sm font-bold ${stock <= 0 ? 'text-red-700' : (low ? 'text-amber-700' : 'text-[var(--ink)]')}">${stock}</span>
+                            <div class="text-xs text-[var(--muted)]">reorder at ${product.reorder_level}</div>
+                        </td>
+                        <td class="px-5 py-3 text-right sm:px-6">
+                            <div class="inline-flex gap-2">
+                                ${showArchived
+                                    ? `<button type="button" onclick="restoreProduct(${product.product_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Restore</button>`
+                                    : `<button type="button" onclick="editProduct(${product.product_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Edit</button>
+                                       <button type="button" onclick="archiveProduct(${product.product_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:border-red-300">Archive</button>`}
+                            </div>
+                        </td>
+                    </tr>`;
+                }).join('')
+                : `<tr><td colspan="5" class="px-6 py-10 text-center text-sm text-[var(--muted)]">${showArchived ? 'Nothing archived.' : 'Nothing matches that.'}</td></tr>`;
         }
 
         async function loadProducts(page = 1) {
