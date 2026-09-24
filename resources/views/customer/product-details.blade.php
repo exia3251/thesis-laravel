@@ -237,7 +237,8 @@
                 <div class="mt-6 flex flex-wrap gap-3">
                     <div class="rounded-2xl border border-[var(--line)] bg-white/80 px-4 py-3">
                         <label for="quantity" id="quantityLabel" class="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Quantity</label>
-                        <input id="quantity" type="number" min="1" max="{{ max(optional($product->inventory)->quantity ?? 1, 1) }}" step="1" value="1" class="mt-2 w-24 rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)] {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'bg-slate-100 text-slate-400' : 'bg-white' }}" {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'disabled' : '' }}>
+                        <input id="quantity" type="number" inputmode="numeric" min="1" max="{{ max(optional($product->inventory)->quantity ?? 1, 1) }}" step="1" value="1"
+                               oninput="sanitiseQuantity()" onblur="normaliseQuantity()" class="mt-2 w-24 rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)] {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'bg-slate-100 text-slate-400' : 'bg-white' }}" {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'disabled' : '' }}>
                     </div>
 
                     @auth
@@ -407,13 +408,57 @@
             refreshBuyMode();
         }
 
+        // A number input still lets "e", "-" and "+" be typed, and can be
+        // left empty. Strip anything that is not a digit as it is entered.
+        function sanitiseQuantity() {
+            const input = document.getElementById('quantity');
+            const cleaned = input.value.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+
+            if (cleaned !== input.value) {
+                input.value = cleaned;
+            }
+        }
+
+        // Leaving the box empty or on zero settles back to one, rather than
+        // being carried to the server as a value it has to reject.
+        function normaliseQuantity() {
+            const input = document.getElementById('quantity');
+            const ceiling = Number(input.max) || 1;
+            let value = parseInt(input.value, 10);
+
+            if (!Number.isFinite(value) || value < 1) {
+                value = 1;
+            }
+
+            input.value = Math.min(value, ceiling);
+        }
+
         async function addToCart(productId) {
             const quantityInput = document.getElementById('quantity');
+
+            const entered = parseInt(quantityInput.value, 10);
+            const ceiling = Number(quantityInput.max) || 1;
+
+            // Checked rather than coerced. Math.max(Number("abc"), 1) is NaN,
+            // which JSON turns into null, which the server used to read as a
+            // quantity of one -- so typing letters silently ordered a bottle.
+            if (!Number.isInteger(entered) || entered < 1) {
+                normaliseQuantity();
+                showMessage('Enter how many you want, as a whole number.', 'error');
+                return;
+            }
+
+            if (entered > ceiling) {
+                quantityInput.value = ceiling;
+                showMessage(buyMode === 'box'
+                    ? `We only have enough for ${ceiling} box${ceiling === 1 ? '' : 'es'} right now.`
+                    : `Only ${ceiling} left in stock.`, 'error');
+                return;
+            }
 
             // The cart counts bottles, always. A box is turned into the
             // bottles it holds here, so the stock check, the order and the
             // receipt never need to know a box was involved.
-            const entered = Math.max(Number(quantityInput.value || 1), 1);
             const units = buyMode === 'box' ? entered * BOX_QUANTITY : entered;
 
             const response = await fetch('/shop-api/cart/add', {

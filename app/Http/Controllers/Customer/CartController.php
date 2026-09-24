@@ -61,10 +61,20 @@ class CartController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,product_id',
-            'quantity' => 'nullable|integer|min:1|max:999'
+            // Required, not nullable. A browser that sent NaN -- which is
+            // what an empty or non-numeric quantity box produces -- had it
+            // serialised to null, accepted here, and quietly turned into 1,
+            // so typing letters into the quantity box ordered one bottle and
+            // said "Cart updated".
+            'quantity' => 'required|integer|min:1|max:999',
+        ], [
+            'quantity.required' => 'Enter how many you want.',
+            'quantity.integer' => 'Quantity has to be a whole number.',
+            'quantity.min' => 'Quantity has to be at least 1.',
+            'quantity.max' => 'That is more than we sell in one go. Call us for a quotation.',
         ]);
 
-        $quantity = $request->quantity ?? 1;
+        $quantity = (int) $request->quantity;
 
         // Check stock
         $inventory = Inventory::where('product_id', $request->product_id)->first();
