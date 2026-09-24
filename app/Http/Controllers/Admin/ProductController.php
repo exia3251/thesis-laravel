@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
-    protected function productRules(?int $productId = null): array
+    protected function productRules(?int $productId = null, ?string $unit = null): array
     {
         return [
             'product_name' => [
@@ -23,10 +23,19 @@ class ProductController extends Controller
                 // products.product_name is varchar(200). A longer name passed
                 // this rule and then failed at the insert with a raw SQL error.
                 'max:200',
-                // Archived products keep their name in the table, so the rule
-                // has to look past them or a name could never be reused.
+                /*
+                 * Unique per pack size, not outright. The shop sells one oil
+                 * in several bottles and they all carry the same name -- the
+                 * three Patrol 5W30 rows are one product on one page -- so a
+                 * plain unique rule made it impossible to add a size to a
+                 * product that already existed, which is the ordinary case.
+                 *
+                 * Archived products keep their name in the table, so the rule
+                 * has to look past them or a name could never be reused.
+                 */
                 Rule::unique('products', 'product_name')
                     ->ignore($productId, 'product_id')
+                    ->where('unit', $unit ?: '1 Liter')
                     ->whereNull('deleted_at'),
             ],
             'brand' => 'required|string|max:100',
@@ -37,6 +46,20 @@ class ProductController extends Controller
             'viscosity_grade' => 'nullable|string|max:20',
             'description' => 'nullable|string|max:1000',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image_2' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            /*
+             * The shop shows one card per product_line and lets the shopper
+             * pick a pack on the product page, so this is what makes a new
+             * 4 litre bottle appear beside the 1 litre one instead of as a
+             * second product. Only an existing line can be joined; a product
+             * sold on its own is given a line of its own below.
+             */
+            'product_line' => [
+                'nullable', 'string', 'max:100',
+                Rule::exists('products', 'product_line')->whereNull('deleted_at'),
+            ],
+            // Shown on the product page as "published by the manufacturer".
+            'source_url' => 'nullable|url|max:255',
         ];
     }
 
@@ -44,7 +67,7 @@ class ProductController extends Controller
     {
         return [
             'product_name.required' => 'Product name is required.',
-            'product_name.unique' => 'That product name already exists.',
+            'product_name.unique' => 'That product already exists in this pack size. Change the size, or edit the existing one.',
             'product_name.max' => 'Product name must not exceed 200 characters.',
             'brand.required' => 'Brand is required.',
             'oil_type.required' => 'Product type is required.',
@@ -56,6 +79,9 @@ class ProductController extends Controller
             'image.image' => 'The uploaded file must be an image.',
             'image.mimes' => 'Accepted image types are JPG, JPEG, PNG, and WEBP.',
             'image.max' => 'Image size must not exceed 2 MB.',
+            'image_2.max' => 'The second image must not exceed 2 MB.',
+            'product_line.exists' => 'That product line no longer exists. Pick another, or sell this on its own.',
+            'source_url.url' => 'The manufacturer link must be a full address, starting with https://',
         ];
     }
 
@@ -63,6 +89,82 @@ class ProductController extends Controller
     public function index()
     {
         return view('admin.products');
+    }
+
+    /**
+     * The product lines already on sale, and the packs each one holds.
+     *
+     * A line is what the shop shows as a single card: the 1, 4 and 5 litre
+     * bottles of one oil are three rows here and one page there. Adding a
+     * pack to an existing line is how a new size joins that page rather than
+     * appearing as a separate product.
+     */
+    public function getLines()
+    {
+        $lines = Product::whereNotNull('product_line')
+            ->orderBy('product_name')
+            ->get()
+            ->groupBy('product_line')
+            ->map(function ($packs, string $line) {
+                $first = $packs->first();
+
+                return [
+                    'product_line' => $line,
+                    'name' => $first->product_name,
+                    'brand' => $first->brand,
+                    'oil_type' => $first->oil_type,
+                    'viscosity_grade' => $first->viscosity_grade,
+                    'description' => $first->description,
+                    'source_url' => $first->specifications['source'] ?? null,
+                    'image_url' => $first->image_path ? asset('storage/' . $first->image_path) : null,
+                    'packs' => $packs->sortBy('price')->map(fn (Product $pack) => [
+                        'product_id' => $pack->product_id,
+                        'unit' => $pack->unit,
+                        'price' => (float) $pack->price,
+                    ])->values()->all(),
+                ];
+            })
+            ->values();
+
+        return response()->json(['success' => true, 'data' => $lines]);
+    }
+
+    /**
+     * A line of its own, for a product not sold in several sizes.
+     *
+     * Without one the row still shows in the shop -- it falls back to its own
+     * id -- but nothing could ever be added to it, so a second pack size
+     * would have to become a second product. Giving every product a line from
+     * the start means any of them can gain a pack later.
+     */
+    protected function generateProductLine(string $name): string
+    {
+        $base = Str::limit(Str::slug($name), 94, '');
+        $line = $base;
+        $suffix = 2;
+
+        while (Product::withTrashed()->where('product_line', $line)->exists()) {
+            $line = $base . '-' . $suffix++;
+        }
+
+        return $line;
+    }
+
+    /**
+     * The manufacturer's link lives inside the specifications, beside the
+     * copy scraped from their site, so writing it must not wipe the rest.
+     */
+    protected function mergeSource(?array $specifications, ?string $url): ?array
+    {
+        $specifications ??= [];
+
+        if (filled($url)) {
+            $specifications['source'] = $url;
+        } else {
+            unset($specifications['source']);
+        }
+
+        return $specifications ?: null;
     }
 
     // Get all products (API)
@@ -118,6 +220,8 @@ class ProductController extends Controller
             'success' => true,
             'data' => array_merge($product->toArray(), [
                 'image_url' => $product->image_path ? asset('storage/' . $product->image_path) : null,
+                'image_2_url' => $product->image_path_2 ? asset('storage/' . $product->image_path_2) : null,
+                'source_url' => $product->specifications['source'] ?? null,
             ])
         ]);
     }
@@ -125,22 +229,29 @@ class ProductController extends Controller
     // Create product
     public function store(Request $request)
     {
-        $request->validate($this->productRules(), $this->productMessages());
+        $request->validate($this->productRules(null, $request->input('unit')), $this->productMessages());
 
         $imagePath = $request->hasFile('image')
             ? $request->file('image')->store('products', 'public')
             : null;
 
+        $secondPath = $request->hasFile('image_2')
+            ? $request->file('image_2')->store('products', 'public')
+            : null;
+
         $product = Product::create([
             'product_name' => $request->product_name,
             'brand' => $request->brand,
+            'product_line' => $request->product_line ?: $this->generateProductLine($request->product_name),
             'oil_type' => $request->oil_type,
             'viscosity_grade' => $request->viscosity_grade,
             'unit' => $request->unit ?: '1 Liter',
             'price' => $request->price,
             'reorder_level' => $request->reorder_level ?? 10,
             'description' => $request->description,
+            'specifications' => $this->mergeSource(null, $request->source_url),
             'image_path' => $imagePath,
+            'image_path_2' => $secondPath,
         ]);
 
         // Create inventory record
@@ -174,9 +285,10 @@ class ProductController extends Controller
             ], 404);
         }
 
-        $request->validate($this->productRules((int) $id), $this->productMessages());
+        $request->validate($this->productRules((int) $id, $request->input('unit') ?: $product->unit), $this->productMessages());
 
         $imagePath = $product->image_path;
+        $secondPath = $product->image_path_2;
 
         if ($request->hasFile('image')) {
             if ($product->image_path) {
@@ -186,16 +298,29 @@ class ProductController extends Controller
             $imagePath = $request->file('image')->store('products', 'public');
         }
 
+        if ($request->hasFile('image_2')) {
+            if ($product->image_path_2) {
+                Storage::disk('public')->delete($product->image_path_2);
+            }
+
+            $secondPath = $request->file('image_2')->store('products', 'public');
+        }
+
         $product->update([
             'product_name' => $request->product_name,
             'brand' => $request->brand,
+            // An existing line is kept when the form does not send one, so
+            // editing a pack cannot quietly split it off its own page.
+            'product_line' => $request->product_line ?: $product->product_line ?: $this->generateProductLine($request->product_name),
             'oil_type' => $request->oil_type,
             'viscosity_grade' => $request->viscosity_grade,
             'unit' => $request->unit ?: $product->unit,
             'price' => $request->price,
             'reorder_level' => $request->reorder_level ?? $product->reorder_level,
             'description' => $request->description,
+            'specifications' => $this->mergeSource($product->specifications, $request->source_url),
             'image_path' => $imagePath,
+            'image_path_2' => $secondPath,
         ]);
 
         ActivityLog::logAction(

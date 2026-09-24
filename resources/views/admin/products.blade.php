@@ -57,76 +57,235 @@
         <div id="productsPagination"></div>
     </div>
 
-    <div id="productModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-<div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-    <div class="flex items-center justify-between mb-4">
-        <h3 id="modalTitle" class="text-lg font-bold">Add Product</h3>
-        <button type="button" onclick="closeForm()" class="text-gray-500 hover:text-gray-700">Close</button>
-    </div>
-    <div id="formErrors" class="hidden mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
-    <form id="productForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="hidden" id="productId">
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Product Name</label>
-            <input type="text" id="product_name" required class="mt-1 block w-full rounded-md border px-3 py-2">
-            <p id="error_product_name" class="mt-1 hidden text-sm text-red-600"></p>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Brand</label>
-            <input type="text" id="brand" required class="mt-1 block w-full rounded-md border px-3 py-2">
-            <p id="error_brand" class="mt-1 hidden text-sm text-red-600"></p>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Product Type</label>
-            <select id="oil_type" required class="mt-1 block w-full rounded-md border px-3 py-2">
-                <option value="Synthetic">Synthetic</option>
-                <option value="Semi-Synthetic">Semi-Synthetic</option>
-                <option value="Mineral">Mineral</option>
-                <option value="Coolant">Coolant</option>
-                <option value="Other">Other</option>
-            </select>
-            <p id="error_oil_type" class="mt-1 hidden text-sm text-red-600"></p>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Viscosity Grade</label>
-            <input type="text" id="viscosity_grade" class="mt-1 block w-full rounded-md border px-3 py-2" placeholder="5W-40">
-            <p id="error_viscosity_grade" class="mt-1 hidden text-sm text-red-600"></p>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Unit</label>
-            <input type="text" id="unit" class="mt-1 block w-full rounded-md border px-3 py-2" value="1 Liter">
-            <p id="error_unit" class="mt-1 hidden text-sm text-red-600"></p>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Price</label>
-            <input type="number" id="price" min="0" step="1" required class="mt-1 block w-full rounded-md border px-3 py-2">
-            <p id="error_price" class="mt-1 hidden text-sm text-red-600"></p>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Reorder Level</label>
-            <input type="number" id="reorder_level" min="0" class="mt-1 block w-full rounded-md border px-3 py-2" value="10">
-            <p id="error_reorder_level" class="mt-1 hidden text-sm text-red-600"></p>
-        </div>
-        <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700">Description</label>
-            <textarea id="description" rows="4" class="mt-1 block w-full resize-none rounded-md border px-3 py-2"></textarea>
-            <p id="error_description" class="mt-1 hidden text-sm text-red-600"></p>
-        </div>
-        <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700">Product Image</label>
-            <input type="file" id="image" accept="image/*" class="mt-1 block w-full rounded-md border px-3 py-2">
-            <p class="mt-1 text-xs text-gray-500">Accepted: JPG, JPEG, PNG, WEBP. Max file size: 2 MB.</p>
-            <p id="error_image" class="mt-1 hidden text-sm text-red-600"></p>
-            <div id="imagePreviewWrapper" class="mt-3 hidden">
-                <img id="imagePreview" src="" alt="Product preview" class="h-28 w-28 rounded border object-cover">
+    {{-- Add and edit, in two steps: fill it in, then look at what the shop
+         will show before it goes live. --}}
+    <div id="productModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+        <div class="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-2xl">
+
+            <div class="flex items-start justify-between gap-3 border-b border-[var(--line)] px-6 py-5">
+                <div>
+                    <h3 id="modalTitle" class="text-lg font-bold text-[var(--ink)]">Add product</h3>
+                    <p id="modalStep" class="mt-0.5 text-xs text-[var(--muted)]">Step 1 of 2 &middot; the details</p>
+                </div>
+                <button type="button" onclick="closeForm()" aria-label="Close"
+                        class="rounded-lg p-1.5 text-[var(--muted)] transition hover:bg-[var(--surface)]">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <form id="productForm" class="flex-1 space-y-7 overflow-y-auto px-6 py-6">
+                <input type="hidden" id="productId">
+                <div id="formErrors" class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
+
+                <section>
+                    <h4 class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">What it is</h4>
+                    <div class="mt-3 grid gap-4 sm:grid-cols-2">
+                        <div class="sm:col-span-2">
+                            <label for="product_name" class="block text-sm font-medium text-[var(--ink)]">Product name</label>
+                            <input type="text" id="product_name" required maxlength="200"
+                                   class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                            <p id="error_product_name" class="mt-1 hidden text-xs text-red-600"></p>
+                        </div>
+                        <div>
+                            <label for="brand" class="block text-sm font-medium text-[var(--ink)]">Brand</label>
+                            <input type="text" id="brand" required maxlength="100" list="brandOptions"
+                                   class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                            <datalist id="brandOptions"></datalist>
+                            <p id="error_brand" class="mt-1 hidden text-xs text-red-600"></p>
+                        </div>
+                        <div>
+                            <label for="oil_type" class="block text-sm font-medium text-[var(--ink)]">Product type</label>
+                            <select id="oil_type" required
+                                    class="mt-1.5 block w-full rounded-xl border border-[var(--line)] bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                                <option value="Synthetic">Synthetic</option>
+                                <option value="Semi-Synthetic">Semi-Synthetic</option>
+                                <option value="Mineral">Mineral</option>
+                                <option value="Coolant">Coolant</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <p id="error_oil_type" class="mt-1 hidden text-xs text-red-600"></p>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label for="viscosity_grade" class="block text-sm font-medium text-[var(--ink)]">
+                                Viscosity grade <span class="font-normal text-[var(--muted)]">(optional)</span>
+                            </label>
+                            <input type="text" id="viscosity_grade" maxlength="20" placeholder="5W-30"
+                                   class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                            <p class="mt-1 text-xs text-[var(--muted)]">Leave empty for coolants and fluids that do not carry one.</p>
+                            <p id="error_viscosity_grade" class="mt-1 hidden text-xs text-red-600"></p>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- The shop shows one card per product line and asks for the
+                     pack on the product page, so this is what decides whether
+                     a new bottle joins an existing page or opens its own. --}}
+                <section class="border-t border-[var(--line)] pt-6">
+                    <h4 class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">How it is sold</h4>
+
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--line)] px-4 py-3 transition hover:border-[var(--primary)]">
+                            <input type="radio" name="sold_as" value="own" checked onchange="soldAsChanged()" class="mt-1 accent-[var(--primary)]">
+                            <span>
+                                <span class="block text-sm font-semibold text-[var(--ink)]">On its own</span>
+                                <span class="block text-xs leading-5 text-[var(--muted)]">Its own card in the shop, its own page.</span>
+                            </span>
+                        </label>
+                        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--line)] px-4 py-3 transition hover:border-[var(--primary)]">
+                            <input type="radio" name="sold_as" value="pack" onchange="soldAsChanged()" class="mt-1 accent-[var(--primary)]">
+                            <span>
+                                <span class="block text-sm font-semibold text-[var(--ink)]">Another size of an existing product</span>
+                                <span class="block text-xs leading-5 text-[var(--muted)]">Shares one page; the shopper picks the size there.</span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div id="lineChooser" class="mt-4 hidden">
+                        <label for="product_line" class="block text-sm font-medium text-[var(--ink)]">Which product is this a size of?</label>
+                        <select id="product_line" onchange="lineChosen()"
+                                class="mt-1.5 block w-full rounded-xl border border-[var(--line)] bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]"></select>
+                        <p id="lineNote" class="mt-1.5 hidden text-xs leading-5 text-[var(--primary)]"></p>
+                        <p id="error_product_line" class="mt-1 hidden text-xs text-red-600"></p>
+                    </div>
+
+                    <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                        <div>
+                            <label for="unit" class="block text-sm font-medium text-[var(--ink)]">Pack size</label>
+                            <input type="text" id="unit" maxlength="50" value="1 Liter" list="unitOptions"
+                                   class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                            <datalist id="unitOptions">
+                                <option value="1 Liter"></option>
+                                <option value="4 Liters"></option>
+                                <option value="5 Liters"></option>
+                                <option value="20 Liters"></option>
+                                <option value="200 Liters"></option>
+                            </datalist>
+                            <p id="error_unit" class="mt-1 hidden text-xs text-red-600"></p>
+                        </div>
+                        <div>
+                            <label for="price" class="block text-sm font-medium text-[var(--ink)]">Price (PHP)</label>
+                            <input type="number" id="price" min="0" step="1" required
+                                   class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                            <p id="error_price" class="mt-1 hidden text-xs text-red-600"></p>
+                        </div>
+                        <div>
+                            <label for="reorder_level" class="block text-sm font-medium text-[var(--ink)]">Reorder level</label>
+                            <input type="number" id="reorder_level" min="0" value="10"
+                                   class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                            <p id="error_reorder_level" class="mt-1 hidden text-xs text-red-600"></p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="border-t border-[var(--line)] pt-6">
+                    <h4 class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">What it says on the page</h4>
+
+                    <div class="mt-3">
+                        <label for="description" class="block text-sm font-medium text-[var(--ink)]">Description</label>
+                        <textarea id="description" rows="5" maxlength="1000"
+                                  class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]"></textarea>
+                        <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-xs leading-5 text-[var(--muted)]">Use the manufacturer's own words where you can. <span id="descriptionCount"></span></p>
+                        </div>
+                        <p id="error_description" class="mt-1 hidden text-xs text-red-600"></p>
+                    </div>
+
+                    <div class="mt-4">
+                        <label for="source_url" class="block text-sm font-medium text-[var(--ink)]">
+                            Manufacturer's page <span class="font-normal text-[var(--muted)]">(optional)</span>
+                        </label>
+                        <input type="url" id="source_url" maxlength="255" placeholder="https://canroyallubricant.com/product/..."
+                               class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                        <p class="mt-1 text-xs leading-5 text-[var(--muted)]">
+                            Shown at the foot of the product page as "published by the manufacturer", with a link. It is what lets a
+                            customer check the claims against the source.
+                        </p>
+                        <p id="error_source_url" class="mt-1 hidden text-xs text-red-600"></p>
+                    </div>
+                </section>
+
+                {{-- The shop never crops or stretches a product shot: it fits
+                     the whole picture into the box on white. So this shows the
+                     real box rather than offering a crop that would not be
+                     used, and says when a picture is too small to hold up. --}}
+                <section class="border-t border-[var(--line)] pt-6">
+                    <h4 class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Pictures</h4>
+
+                    <div class="mt-3 grid gap-5 sm:grid-cols-[1fr_17rem]">
+                        <div>
+                            <label class="inline-flex cursor-pointer items-center rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">
+                                Choose main picture
+                                <input type="file" id="image" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="pickImage(event, 1)">
+                            </label>
+                            <p class="mt-2 text-xs leading-5 text-[var(--muted)]">
+                                JPG, PNG or WEBP. Large photographs are shrunk here before they are sent, so a phone picture is fine.
+                            </p>
+                            <p id="imageNote" class="mt-1.5 hidden text-xs font-semibold text-[var(--primary)]"></p>
+                            <p id="imageWarning" class="mt-1.5 hidden text-xs font-semibold text-amber-700"></p>
+                            <p id="error_image" class="mt-1 hidden text-xs text-red-600"></p>
+
+                            <div class="mt-5">
+                                <label class="inline-flex cursor-pointer items-center rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">
+                                    Choose second picture
+                                    <input type="file" id="image_2" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="pickImage(event, 2)">
+                                </label>
+                                <p class="mt-2 text-xs leading-5 text-[var(--muted)]">
+                                    Optional. Shown as a thumbnail on the product page &mdash; usually the box or a group shot.
+                                </p>
+                                <div id="image2Wrap" class="mt-3 hidden">
+                                    <img id="image2Preview" src="" alt="" class="h-16 w-20 rounded-lg border border-[var(--line)] bg-white object-contain">
+                                </div>
+                                <p id="error_image_2" class="mt-1 hidden text-xs text-red-600"></p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">In the shop</p>
+                            <div class="mt-2 overflow-hidden rounded-[1.25rem] border border-[var(--line)] shadow-sm">
+                                <div id="imageFitBox" class="flex h-64 items-center justify-center bg-white p-3">
+                                    <span class="rounded-full bg-[var(--surface)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No image</span>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-xs leading-5 text-[var(--muted)]">
+                                The whole picture is fitted into this box on white. Nothing is cropped or stretched, so the shape of
+                                the photograph decides how much white sits around it.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            </form>
+
+            {{-- Step two: the shop's own card, built from what was typed. --}}
+            <div id="productReview" class="hidden flex-1 space-y-5 overflow-y-auto px-6 py-6">
+                <div class="rounded-xl border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-3 text-sm text-[var(--primary)]">
+                    <span id="reviewLead" class="font-semibold"></span>
+                </div>
+
+                <div class="grid gap-6 sm:grid-cols-[19rem_1fr]">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">The card shoppers see</p>
+                        <div id="reviewCard" class="mt-2"></div>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Everything being saved</p>
+                        <dl id="reviewFields" class="mt-2 divide-y divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] text-sm"></dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] px-6 py-4">
+                <span id="reviewQuestion" class="mr-auto hidden text-sm font-semibold text-[var(--ink)]">Add this product?</span>
+                <button type="button" id="btnCancel" onclick="closeForm()"
+                        class="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--surface)]">Cancel</button>
+                <button type="button" id="btnBack" onclick="backToForm()"
+                        class="hidden rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--surface)]">No, keep editing</button>
+                <button type="button" id="btnReview" onclick="reviewProduct()"
+                        class="rounded-xl bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110">Preview</button>
+                <button type="button" id="btnConfirm" onclick="submitProduct()"
+                        class="hidden rounded-xl bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50">Yes, add it</button>
             </div>
         </div>
-        <div class="md:col-span-2 flex gap-2 justify-end">
-            <button type="button" onclick="closeForm()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
-            <button type="submit" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">Save Product</button>
-        </div>
-    </form>
-</div>
     </div>
 
 @endsection
@@ -135,6 +294,20 @@
 <script>
         let products = [];
         let messageTimeout;
+
+        /* Pictures are shrunk in the browser before they are sent. A phone
+           photograph is several megabytes and the server refuses anything
+           over two, so without this an ordinary photo simply bounced. */
+        const IMAGE_MAX_EDGE = 1200;
+        const IMAGE_SOFT_EDGE = 500;
+
+        const FIELDS = ['product_name', 'brand', 'oil_type', 'viscosity_grade', 'unit', 'price',
+                        'reorder_level', 'description', 'source_url', 'product_line', 'image', 'image_2'];
+
+        let productLines = [];
+        let pendingImage = null;
+        let pendingImage2 = null;
+        let existingImageUrl = null;
 
         function showMessage(text, type = 'success') {
             const box = document.getElementById('message');
@@ -163,8 +336,19 @@
             document.getElementById('productId').value = '';
             document.getElementById('unit').value = '1 Liter';
             document.getElementById('reorder_level').value = '10';
-            document.getElementById('imagePreview').src = '';
-            document.getElementById('imagePreviewWrapper').classList.add('hidden');
+
+            pendingImage = null;
+            pendingImage2 = null;
+            existingImageUrl = null;
+
+            document.querySelector('input[name="sold_as"][value="own"]').checked = true;
+            soldAsChanged();
+
+            ['imageNote', 'imageWarning', 'image2Wrap', 'lineNote'].forEach(id =>
+                document.getElementById(id).classList.add('hidden'));
+
+            drawFitBox(null);
+            backToForm();
             clearFormErrors();
         }
 
@@ -173,7 +357,7 @@
             errorBox.classList.add('hidden');
             errorBox.innerHTML = '';
 
-            ['product_name', 'brand', 'oil_type', 'viscosity_grade', 'unit', 'price', 'reorder_level', 'description', 'image'].forEach((field) => {
+            FIELDS.forEach((field) => {
                 const errorText = document.getElementById(`error_${field}`);
                 const input = document.getElementById(field);
 
@@ -216,7 +400,9 @@
         }
 
         function closeForm() {
-            document.getElementById('productModal').classList.add('hidden');
+            const modal = document.getElementById('productModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             resetForm();
         }
 
@@ -234,13 +420,17 @@
         */
 
         function openForm(product = null) {
-            document.getElementById('productModal').classList.remove('hidden');
-            document.getElementById('modalTitle').textContent = product ? 'Edit Product' : 'Add Product';
+            const modal = document.getElementById('productModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
 
-            if (!product) {
-                resetForm();
-                return;
-            }
+            resetForm();
+            loadLines();
+
+            document.getElementById('modalTitle').textContent = product ? 'Edit product' : 'Add product';
+            document.getElementById('btnConfirm').textContent = product ? 'Yes, save it' : 'Yes, add it';
+
+            if (!product) return;
 
             document.getElementById('productId').value = product.product_id;
             document.getElementById('product_name').value = product.product_name;
@@ -251,10 +441,308 @@
             document.getElementById('price').value = parseInt(product.price);
             document.getElementById('reorder_level').value = product.reorder_level;
             document.getElementById('description').value = product.description || '';
-            if (product.image_url) {
-                document.getElementById('imagePreview').src = product.image_url;
-                document.getElementById('imagePreviewWrapper').classList.remove('hidden');
+            document.getElementById('source_url').value = product.source_url
+                || (product.specifications && product.specifications.source) || '';
+
+            existingImageUrl = product.image_url || null;
+            drawFitBox(existingImageUrl);
+
+            if (product.image_2_url) {
+                document.getElementById('image2Preview').src = product.image_2_url;
+                document.getElementById('image2Wrap').classList.remove('hidden');
             }
+        }
+
+        /* ------------------------------------------------ product lines --- */
+
+        async function loadLines() {
+            try {
+                const response = await fetch('/admin-api/products/lines', { headers: { Accept: 'application/json' } });
+                const data = await response.json();
+                productLines = data.data || [];
+            } catch (error) {
+                productLines = [];
+            }
+
+            document.getElementById('product_line').innerHTML =
+                '<option value="">Choose a product...</option>'
+                + productLines.map(line => `<option value="${escapeHtml(line.product_line)}">`
+                    + `${escapeHtml(line.name)} (${line.packs.map(p => escapeHtml(p.unit)).join(', ')})</option>`).join('');
+
+            const brands = [...new Set(productLines.map(line => line.brand))];
+            document.getElementById('brandOptions').innerHTML =
+                brands.map(b => `<option value="${escapeHtml(b)}"></option>`).join('');
+        }
+
+        function soldAs() {
+            return document.querySelector('input[name="sold_as"]:checked').value;
+        }
+
+        function soldAsChanged() {
+            const joining = soldAs() === 'pack';
+            document.getElementById('lineChooser').classList.toggle('hidden', !joining);
+
+            if (!joining) {
+                document.getElementById('product_line').value = '';
+                document.getElementById('lineNote').classList.add('hidden');
+            }
+        }
+
+        /**
+         * Joining a line copies everything the sizes share.
+         *
+         * The three Patrol 5W30 bottles carry one name, one description and
+         * one picture between them -- only the pack size and the price
+         * differ. Typing those again by hand is how they drift apart.
+         */
+        function lineChosen() {
+            const line = productLines.find(l => l.product_line === document.getElementById('product_line').value);
+            const note = document.getElementById('lineNote');
+
+            if (!line) {
+                note.classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('product_name').value = line.name;
+            document.getElementById('brand').value = line.brand;
+            document.getElementById('oil_type').value = line.oil_type;
+            document.getElementById('viscosity_grade').value = line.viscosity_grade || '';
+            document.getElementById('description').value = line.description || '';
+            document.getElementById('source_url').value = line.source_url || '';
+
+            if (line.image_url && !pendingImage) {
+                existingImageUrl = line.image_url;
+                drawFitBox(line.image_url);
+            }
+
+            note.textContent = `Copied from the ${line.packs.length} size${line.packs.length === 1 ? '' : 's'} already on sale `
+                + `(${line.packs.map(p => p.unit).join(', ')}). Set the new size and its price below.`;
+            note.classList.remove('hidden');
+        }
+
+        /* ------------------------------------------------------ pictures --- */
+
+        /**
+         * Fitted, never cropped, on white.
+         *
+         * The shop draws product shots with object-contain, so the whole
+         * picture is always shown and the shape of it decides how much white
+         * sits around it. Flattening onto white here as well means a
+         * transparent PNG does not arrive with a black background.
+         */
+        function fitImage(file) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const image = new Image();
+
+                image.onload = () => {
+                    URL.revokeObjectURL(url);
+
+                    const longest = Math.max(image.naturalWidth, image.naturalHeight);
+
+                    if (!longest) {
+                        reject(new Error('That file is not an image we can read.'));
+                        return;
+                    }
+
+                    const scale = Math.min(1, IMAGE_MAX_EDGE / longest);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.round(image.naturalWidth * scale);
+                    canvas.height = Math.round(image.naturalHeight * scale);
+
+                    const context = canvas.getContext('2d');
+                    context.fillStyle = '#ffffff';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                    canvas.toBlob(
+                        (blob) => blob
+                            ? resolve({ blob, width: canvas.width, height: canvas.height,
+                                        shortest: Math.min(image.naturalWidth, image.naturalHeight) })
+                            : reject(new Error('That image could not be read.')),
+                        'image/jpeg',
+                        0.88
+                    );
+                };
+
+                image.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('That file is not an image we can read.'));
+                };
+
+                image.src = url;
+            });
+        }
+
+        async function pickImage(event, slot) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            clearFormErrors();
+
+            if (!file) return;
+
+            try {
+                const fitted = await fitImage(file);
+                const prepared = new File([fitted.blob], `product-${slot}.jpg`, { type: 'image/jpeg' });
+
+                if (slot === 2) {
+                    pendingImage2 = prepared;
+                    document.getElementById('image2Preview').src = URL.createObjectURL(fitted.blob);
+                    document.getElementById('image2Wrap').classList.remove('hidden');
+                    return;
+                }
+
+                pendingImage = prepared;
+                drawFitBox(URL.createObjectURL(fitted.blob));
+
+                const note = document.getElementById('imageNote');
+                note.textContent = `Ready to save: ${fitted.width} x ${fitted.height}, `
+                    + `${Math.round(prepared.size / 1024)} KB (from ${Math.round(file.size / 1024)} KB).`;
+                note.classList.remove('hidden');
+
+                // Small pictures are not refused -- they are stretched to fill
+                // a 420 pixel box on the product page, and that is what looks
+                // wrong, so it is said here rather than discovered later.
+                const warning = document.getElementById('imageWarning');
+                warning.classList.toggle('hidden', fitted.shortest >= IMAGE_SOFT_EDGE);
+                warning.textContent = `This picture is ${fitted.shortest}px on its short side. `
+                    + `Under ${IMAGE_SOFT_EDGE}px it will look soft on the product page.`;
+            } catch (error) {
+                const field = document.getElementById(slot === 2 ? 'error_image_2' : 'error_image');
+                field.textContent = error.message;
+                field.classList.remove('hidden');
+            }
+        }
+
+        function drawFitBox(url) {
+            document.getElementById('imageFitBox').innerHTML = url
+                ? `<img src="${url}" alt="" class="h-full w-full object-contain">`
+                : '<span class="rounded-full bg-[var(--surface)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No image</span>';
+        }
+
+        /* -------------------------------------------------- the review --- */
+
+        function formValues() {
+            const value = (id) => document.getElementById(id).value.trim();
+
+            return {
+                product_name: value('product_name'),
+                brand: value('brand'),
+                oil_type: value('oil_type'),
+                viscosity_grade: value('viscosity_grade'),
+                unit: value('unit') || '1 Liter',
+                price: value('price'),
+                reorder_level: value('reorder_level'),
+                description: value('description'),
+                source_url: value('source_url'),
+                product_line: soldAs() === 'pack' ? value('product_line') : '',
+            };
+        }
+
+        /** The shop's own card, drawn from what was typed into the form. */
+        function reviewProduct() {
+            clearFormErrors();
+
+            const form = document.getElementById('productForm');
+            if (!form.reportValidity()) return;
+
+            const v = formValues();
+
+            if (soldAs() === 'pack' && !v.product_line) {
+                showFormErrors({ product_line: ['Choose the product this is a size of.'] });
+                return;
+            }
+
+            const line = productLines.find(l => l.product_line === v.product_line);
+            const packs = line
+                ? [...line.packs.map(p => ({ unit: p.unit, price: p.price })), { unit: v.unit, price: Number(v.price), isNew: true }]
+                    .sort((a, b) => a.price - b.price)
+                : [{ unit: v.unit, price: Number(v.price), isNew: true }];
+
+            const from = Math.min(...packs.map(p => p.price));
+            const imageUrl = pendingImage ? URL.createObjectURL(pendingImage) : existingImageUrl;
+
+            document.getElementById('reviewLead').textContent = line
+                ? `This joins "${line.name}" as a ${v.unit} pack. The page will offer ${packs.length} sizes.`
+                : 'This becomes a product of its own, with its own card and page.';
+
+            document.getElementById('reviewCard').innerHTML = `
+                <article class="flex flex-col overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
+                    ${imageUrl
+                        ? `<img src="${imageUrl}" alt="" class="h-64 w-full bg-white object-contain p-3">`
+                        : `<div class="flex h-64 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))]"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
+                    <div class="flex flex-1 flex-col p-5">
+                        <div class="mb-2 flex items-start justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <h3 class="mb-1 line-clamp-2 text-lg font-black leading-snug text-[var(--ink)]">${escapeHtml(v.product_name)}</h3>
+                                <p class="truncate text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">${escapeHtml(v.brand)}</p>
+                            </div>
+                            <span class="flex-shrink-0 rounded-full bg-[var(--primary-soft)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--primary)]">${escapeHtml(v.oil_type)}</span>
+                        </div>
+                        <p class="mb-3 truncate text-sm text-[var(--muted)]">${escapeHtml(v.viscosity_grade || 'Standard')}</p>
+                        <div class="mb-3 flex flex-wrap gap-1.5">
+                            ${packs.map(p => `<span class="rounded-md border px-2 py-0.5 text-[11px] font-semibold ${p.isNew
+                                ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
+                                : 'border-[var(--primary-soft)] bg-[var(--primary-soft)] text-[var(--primary)]'}">${escapeHtml(p.unit)}</span>`).join('')}
+                        </div>
+                        <div class="mt-auto">
+                            <div class="mb-3 flex items-center justify-between">
+                                <span class="text-2xl font-black text-[var(--primary)]">
+                                    ${packs.length > 1 ? '<span class="text-xs font-bold uppercase tracking-[0.2em] text-[var(--muted)]">from</span> ' : ''}PHP ${Number(from).toLocaleString()}
+                                </span>
+                                <span class="rounded-full bg-[#f3f6f8] px-3 py-1 text-xs font-semibold text-[var(--muted)]">Stock: 0</span>
+                            </div>
+                            <div class="h-px bg-[var(--line)]"></div>
+                            <div class="mt-3 flex items-center justify-between gap-3">
+                                <span class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted)]">View Details</span>
+                                <span class="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-bold text-white">${packs.length > 1 ? 'Choose Size' : 'Add to Cart'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                <p class="mt-2 text-xs leading-5 text-[var(--muted)]">Stock reads zero because a new product starts empty. Add stock from Inventory.</p>`;
+
+            const rows = [
+                ['Name', v.product_name],
+                ['Brand', v.brand],
+                ['Type', v.oil_type],
+                ['Viscosity grade', v.viscosity_grade || 'none'],
+                ['Pack size', v.unit],
+                ['Price', 'PHP ' + Number(v.price).toLocaleString()],
+                ['Reorder level', v.reorder_level || '10'],
+                ['Sold as', line ? `a size of ${line.name}` : 'a product of its own'],
+                ['Description', v.description ? v.description.slice(0, 120) + (v.description.length > 120 ? '...' : '') : 'none'],
+                ['Manufacturer link', v.source_url || 'none'],
+                ['Main picture', pendingImage ? 'new upload' : (existingImageUrl ? 'unchanged' : 'none')],
+                ['Second picture', pendingImage2 ? 'new upload' : 'unchanged or none'],
+            ];
+
+            document.getElementById('reviewFields').innerHTML = rows.map(([label, val]) => `
+                <div class="flex items-start justify-between gap-4 px-4 py-2.5">
+                    <dt class="text-[var(--muted)]">${escapeHtml(label)}</dt>
+                    <dd class="text-right font-medium text-[var(--ink)]">${escapeHtml(String(val))}</dd>
+                </div>`).join('');
+
+            document.getElementById('productForm').classList.add('hidden');
+            document.getElementById('productReview').classList.remove('hidden');
+            document.getElementById('modalStep').textContent = 'Step 2 of 2 - how it will look';
+            document.getElementById('btnReview').classList.add('hidden');
+            document.getElementById('btnCancel').classList.add('hidden');
+            document.getElementById('btnBack').classList.remove('hidden');
+            document.getElementById('btnConfirm').classList.remove('hidden');
+            document.getElementById('reviewQuestion').classList.remove('hidden');
+        }
+
+        function backToForm() {
+            document.getElementById('productForm').classList.remove('hidden');
+            document.getElementById('productReview').classList.add('hidden');
+            document.getElementById('modalStep').textContent = 'Step 1 of 2 - the details';
+            document.getElementById('btnReview').classList.remove('hidden');
+            document.getElementById('btnCancel').classList.remove('hidden');
+            document.getElementById('btnBack').classList.add('hidden');
+            document.getElementById('btnConfirm').classList.add('hidden');
+            document.getElementById('reviewQuestion').classList.add('hidden');
         }
 
         let showArchived = false;
@@ -370,67 +858,46 @@
             loadProducts(1);
         }
 
-        document.getElementById('productForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        async function submitProduct() {
+            const confirmButton = document.getElementById('btnConfirm');
+            confirmButton.disabled = true;
 
             const productId = document.getElementById('productId').value;
-            const formData = new FormData();
-            formData.append('product_name', document.getElementById('product_name').value);
-            formData.append('brand', document.getElementById('brand').value);
-            formData.append('oil_type', document.getElementById('oil_type').value);
-            formData.append('viscosity_grade', document.getElementById('viscosity_grade').value);
-            formData.append('unit', document.getElementById('unit').value);
-            formData.append('price', document.getElementById('price').value);
-            formData.append('reorder_level', document.getElementById('reorder_level').value);
-            formData.append('description', document.getElementById('description').value);
+            const values = formValues();
+            const body = new FormData();
 
-            const imageFile = document.getElementById('image').files[0];
-            if (imageFile) {
-                formData.append('image', imageFile);
-            }
+            Object.entries(values).forEach(([field, value]) => body.append(field, value));
 
-            if (productId) {
-                formData.append('_method', 'PUT');
-            }
+            if (pendingImage) body.append('image', pendingImage);
+            if (pendingImage2) body.append('image_2', pendingImage2);
+            if (productId) body.append('_method', 'PUT');
 
-            const response = await fetch(productId ? `/admin-api/products/${productId}` : '/admin-api/products', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: formData
-            });
+            try {
+                const response = await fetch(productId ? `/admin-api/products/${productId}` : '/admin-api/products', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+                    body,
+                });
 
-            const data = await response.json();
-            if (!response.ok && data.errors) {
-                showFormErrors(data.errors);
-            } else {
-                clearFormErrors();
-            }
+                const data = await response.json();
 
-            showMessage(data.message || 'Product saved.', response.ok ? 'success' : 'error');
+                if (!response.ok) {
+                    // Back to the form, because that is where the fields are.
+                    backToForm();
+                    showFormErrors(data.errors || { form: [data.message || 'Could not save.'] });
+                    return;
+                }
 
-            if (response.ok) {
+                showMessage(data.message || 'Saved.');
                 closeForm();
                 loadProducts();
+            } catch (error) {
+                backToForm();
+                showFormErrors({ form: ['Could not save just now. Try again.'] });
+            } finally {
+                confirmButton.disabled = false;
             }
-        });
-
-        document.getElementById('image').addEventListener('change', (event) => {
-            const file = event.target.files[0];
-
-            if (!file) {
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                document.getElementById('imagePreview').src = e.target.result;
-                document.getElementById('imagePreviewWrapper').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        });
+        }
 
         /* submitCatalogImport temporarily disabled
         async function submitCatalogImport() {

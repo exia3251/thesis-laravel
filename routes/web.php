@@ -98,6 +98,8 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
 
     Route::middleware('permission:manage_products')->group(function () {
         Route::get('/products', [ProductController::class, 'getProducts']);
+        // Before the {id} route, or "lines" is read as a product id.
+        Route::get('/products/lines', [ProductController::class, 'getLines']);
         Route::get('/products/{id}', [ProductController::class, 'getProduct']);
         Route::post('/products', [ProductController::class, 'store']);
         Route::post('/products/import', [ProductController::class, 'importCatalog']);
