@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ResolvesReportRange;
 use App\Http\Controllers\Controller;
 use App\Models\Sale;
 use Carbon\Carbon;
@@ -12,16 +13,21 @@ use Illuminate\Support\Facades\DB;
  * Figures behind the analytics screen.
  *
  * Two different numbers get called "sales" in this trade and they are not the
- * same: what was booked (the value of orders taken) and what was collected
- * (money actually received). An order on a down payment counts fully towards
- * the first and partly towards the second, so both are reported rather than
- * picking one and calling it revenue.
+ * same: the value of the orders taken, and the money actually received. An
+ * order on a down payment counts fully towards the first and partly towards
+ * the second, so both are reported rather than picking one and calling it
+ * revenue. What separates them is the money still owed.
  *
  * Cancelled orders are excluded everywhere. They were called off, so counting
  * them would overstate trade.
+ *
+ * Every figure on this screen is measured over the selected period, including
+ * the money owed, which is the balance left on the orders placed in it.
  */
 class AnalyticsController extends Controller
 {
+    use ResolvesReportRange;
+
     public function index()
     {
         return view('admin.analytics');
@@ -29,27 +35,18 @@ class AnalyticsController extends Controller
 
     public function data(Request $request)
     {
-        $request->validate(['months' => 'nullable|integer|min:3|max:24']);
+        $request->validate($this->rangeRules(), $this->rangeMessages());
 
-        $months = (int) $request->get('months', 12);
-        $to = now()->endOfDay();
-        $from = now()->copy()->subMonths($months - 1)->startOfMonth();
-
-        // The same span again, immediately before, for comparison.
-        $previousTo = $from->copy()->subSecond();
-        $previousFrom = $previousTo->copy()->subMonths($months - 1)->startOfMonth();
+        $range = $this->resolveRange($request, '12m');
+        $from = $range['from'];
+        $to = $range['to'];
 
         return response()->json([
             'success' => true,
             'data' => [
-                'range' => [
-                    'from' => $from->toDateString(),
-                    'to' => $to->toDateString(),
-                    'label' => $from->format('M Y') . ' - ' . $to->format('M Y'),
-                    'months' => $months,
-                ],
-                'headline' => $this->headline($from, $to, $previousFrom, $previousTo),
-                'monthly' => $this->monthly($from, $to),
+                'range' => $this->rangePayload($range),
+                'headline' => $this->headline($range),
+                'series' => $this->series($range),
                 'top_products' => $this->topProducts($from, $to),
                 'by_brand' => $this->byBrand($from, $to),
                 'breakdown' => [
@@ -57,11 +54,10 @@ class AnalyticsController extends Controller
                     'type' => $this->breakdownBy('products.oil_type', $from, $to),
                     'brand' => $this->breakdownBy('products.brand', $from, $to),
                 ],
-                'inventory_health' => $this->inventoryHealth($from, $to),
-                'concentration' => $this->concentration($from, $to),
+                'customers' => $this->customers($from, $to),
                 'payment_mix' => $this->paymentMix($from, $to),
                 'order_status' => $this->orderStatus($from, $to),
-                'receivables' => $this->receivables(),
+                'receivables' => $this->receivables($from, $to),
             ],
         ]);
     }
@@ -72,33 +68,35 @@ class AnalyticsController extends Controller
             ->whereBetween('sale_date', [$from, $to]);
     }
 
-    private function headline(Carbon $from, Carbon $to, Carbon $previousFrom, Carbon $previousTo): array
+    private function headline(array $range): array
     {
-        $now = $this->activeBetween($from, $to)
+        $now = $this->activeBetween($range['from'], $range['to'])
             ->selectRaw('COUNT(*) orders, COALESCE(SUM(total_amount),0) booked, COALESCE(SUM(paid_amount),0) collected')
             ->first();
 
-        $was = $this->activeBetween($previousFrom, $previousTo)
-            ->selectRaw('COUNT(*) orders, COALESCE(SUM(total_amount),0) booked, COALESCE(SUM(paid_amount),0) collected')
-            ->first();
+        $was = $range['previous_from']
+            ? $this->activeBetween($range['previous_from'], $range['previous_to'])
+                ->selectRaw('COUNT(*) orders, COALESCE(SUM(total_amount),0) booked, COALESCE(SUM(paid_amount),0) collected')
+                ->first()
+            : null;
 
         $cancelled = Sale::where('order_status', Sale::STATUS_CANCELLED)
-            ->whereBetween('sale_date', [$from, $to])
+            ->whereBetween('sale_date', [$range['from'], $range['to']])
             ->count();
 
         $averageNow = $now->orders ? (float) $now->booked / $now->orders : 0.0;
-        $averageWas = $was->orders ? (float) $was->booked / $was->orders : 0.0;
+        $averageWas = $was && $was->orders ? (float) $was->booked / $was->orders : null;
 
         return [
-            'collected' => $this->withDelta((float) $now->collected, (float) $was->collected),
-            'booked' => $this->withDelta((float) $now->booked, (float) $was->booked),
-            'orders' => $this->withDelta((int) $now->orders, (int) $was->orders),
+            'collected' => $this->withDelta((float) $now->collected, $was ? (float) $was->collected : null),
+            'booked' => $this->withDelta((float) $now->booked, $was ? (float) $was->booked : null),
+            'orders' => $this->withDelta((int) $now->orders, $was ? (int) $was->orders : null),
             'average_order' => $this->withDelta($averageNow, $averageWas),
             'cancelled_orders' => $cancelled,
             'cancellation_rate' => $now->orders + $cancelled > 0
                 ? round($cancelled / ($now->orders + $cancelled) * 100, 1)
                 : 0,
-            // What share of everything booked has actually been collected.
+            // What share of everything ordered has actually been paid for.
             'collection_rate' => (float) $now->booked > 0
                 ? round((float) $now->collected / (float) $now->booked * 100, 1)
                 : 0,
@@ -106,8 +104,17 @@ class AnalyticsController extends Controller
     }
 
     /** A value beside the same value last period, and the move between them. */
-    private function withDelta(float|int $current, float|int $previous): array
+    private function withDelta(float|int $current, float|int|null $previous): array
     {
+        if ($previous === null) {
+            return [
+                'value' => $current,
+                'previous' => null,
+                'delta_percent' => null,
+                'direction' => 'flat',
+            ];
+        }
+
         $change = $previous > 0
             ? round((($current - $previous) / $previous) * 100, 1)
             : ($current > 0 ? 100.0 : 0.0);
@@ -120,34 +127,32 @@ class AnalyticsController extends Controller
         ];
     }
 
-    private function monthly(Carbon $from, Carbon $to): array
+    /** Orders taken against money received, cut to the window's own bucket. */
+    private function series(array $range): array
     {
-        $rows = $this->activeBetween($from, $to)
-            ->selectRaw("DATE_FORMAT(sale_date, '%Y-%m') period, COUNT(*) orders, COALESCE(SUM(total_amount),0) booked, COALESCE(SUM(paid_amount),0) collected")
+        $format = $this->bucketSqlFormat($range['bucket']);
+
+        $rows = $this->activeBetween($range['from'], $range['to'])
+            ->selectRaw("DATE_FORMAT(sale_date, '{$format}') period, COUNT(*) orders, COALESCE(SUM(total_amount),0) booked, COALESCE(SUM(paid_amount),0) collected")
             ->groupBy('period')
             ->orderBy('period')
             ->get()
             ->keyBy('period');
 
-        // Walk every month in range so a quiet one is a gap in the chart
-        // rather than a missing bar that shifts everything along.
-        $series = [];
+        return collect($this->bucketPeriods($range))
+            ->map(function (array $period) use ($rows) {
+                $row = $rows->get($period['key']);
 
-        for ($month = $from->copy()->startOfMonth(); $month->lte($to); $month->addMonth()) {
-            $key = $month->format('Y-m');
-            $row = $rows->get($key);
-
-            $series[] = [
-                'period' => $key,
-                'label' => $month->format('M'),
-                'full_label' => $month->format('F Y'),
-                'orders' => (int) ($row->orders ?? 0),
-                'booked' => round((float) ($row->booked ?? 0), 2),
-                'collected' => round((float) ($row->collected ?? 0), 2),
-            ];
-        }
-
-        return $series;
+                return [
+                    'period' => $period['key'],
+                    'label' => $period['label'],
+                    'full_label' => $period['full_label'],
+                    'orders' => (int) ($row->orders ?? 0),
+                    'booked' => round((float) ($row->booked ?? 0), 2),
+                    'collected' => round((float) ($row->collected ?? 0), 2),
+                ];
+            })
+            ->all();
     }
 
     private function topProducts(Carbon $from, Carbon $to): array
@@ -255,6 +260,9 @@ class AnalyticsController extends Controller
      * Sales split along one dimension - the product itself, the kind of oil,
      * or the brand - so the same trade can be read at three depths without
      * three different queries.
+     *
+     * Products are capped, because there is no reading a list of every line
+     * ever sold. The cap is reported so the panel can say what it is showing.
      */
     private function breakdownBy(string $column, Carbon $from, Carbon $to, ?int $limit = null): array
     {
@@ -267,170 +275,92 @@ class AnalyticsController extends Controller
             ->selectRaw("{$column} AS label, SUM(sale_items.subtotal) revenue, SUM(sale_items.quantity) units")
             ->orderByDesc('revenue');
 
+        // How many distinct values exist, counted without fetching them, so
+        // the panel can say "10 of 42" rather than implying it shows them all.
+        $available = DB::table('sale_items')
+            ->join('sales', 'sales.sale_id', '=', 'sale_items.sale_id')
+            ->join('products', 'products.product_id', '=', 'sale_items.product_id')
+            ->where('sales.order_status', Sale::STATUS_ACTIVE)
+            ->whereBetween('sales.sale_date', [$from, $to])
+            ->distinct()
+            ->count(DB::raw($column));
+
         if ($limit) {
             $query->limit($limit);
         }
 
         $rows = $query->get();
-        $total = (float) $rows->sum('revenue');
 
-        return $rows->map(fn ($row) => [
-            'label' => $row->label,
-            'revenue' => round((float) $row->revenue, 2),
-            'units' => (int) $row->units,
-            'share' => $total > 0 ? round((float) $row->revenue / $total * 100, 1) : 0,
-        ])->all();
-    }
-
-    /**
-     * Stock measured against the rate it actually leaves the shelf.
-     *
-     * Days of cover is what current stock would last at the pace of this
-     * period. Read with units sold it separates two problems that look alike
-     * on a stock report: a fast line about to run out, and a slow line that is
-     * simply money sitting in the warehouse.
-     */
-    private function inventoryHealth(Carbon $from, Carbon $to): array
-    {
-        $days = max($from->diffInDays($to) + 1, 1);
-
-        $sold = DB::table('sale_items')
+        // Shares are of everything sold, not of the rows that fit on screen,
+        // so a capped list still adds up to less than 100% and says why.
+        $total = (float) DB::table('sale_items')
             ->join('sales', 'sales.sale_id', '=', 'sale_items.sale_id')
             ->where('sales.order_status', Sale::STATUS_ACTIVE)
             ->whereBetween('sales.sale_date', [$from, $to])
-            ->groupBy('sale_items.product_id')
-            ->selectRaw('sale_items.product_id, SUM(sale_items.quantity) units, SUM(sale_items.subtotal) revenue')
-            ->pluck('units', 'sale_items.product_id');
-
-        $revenue = DB::table('sale_items')
-            ->join('sales', 'sales.sale_id', '=', 'sale_items.sale_id')
-            ->where('sales.order_status', Sale::STATUS_ACTIVE)
-            ->whereBetween('sales.sale_date', [$from, $to])
-            ->groupBy('sale_items.product_id')
-            ->selectRaw('sale_items.product_id, SUM(sale_items.subtotal) revenue')
-            ->pluck('revenue', 'sale_items.product_id');
-
-        // Everything above this point deliberately counts archived products:
-        // a sale made last month happened whether or not the line is still
-        // stocked, and dropping it would quietly restate the history. Stock
-        // health is the opposite -- it describes the shelf as it is today, so
-        // archived lines are excluded from here down.
-        $items = DB::table('products')
-            ->whereNull('products.deleted_at')
-            ->leftJoin('inventory', 'inventory.product_id', '=', 'products.product_id')
-            ->select('products.product_id', 'products.product_name', 'products.brand', 'products.price',
-                     'products.reorder_level', DB::raw('COALESCE(inventory.quantity, 0) AS stock'))
-            ->get()
-            ->map(function ($row) use ($sold, $revenue, $days) {
-                $units = (int) ($sold[$row->product_id] ?? 0);
-                $velocity = $units / $days;
-                $stock = (int) $row->stock;
-
-                // With no movement at all there is no meaningful cover figure,
-                // so it is reported as null rather than as infinity.
-                $cover = $velocity > 0 ? round($stock / $velocity, 1) : null;
-
-                return [
-                    'product_id' => $row->product_id,
-                    'name' => $row->product_name,
-                    'brand' => $row->brand,
-                    'stock' => $stock,
-                    'reorder_level' => (int) $row->reorder_level,
-                    'units_sold' => $units,
-                    'revenue' => round((float) ($revenue[$row->product_id] ?? 0), 2),
-                    'stock_value' => round($stock * (float) $row->price, 2),
-                    'daily_velocity' => round($velocity, 3),
-                    'days_of_cover' => $cover,
-                    'status' => $this->stockStatus($stock, $units, $cover),
-                ];
-            })
-            ->sortByDesc('units_sold')
-            ->values();
+            ->sum('sale_items.subtotal');
 
         return [
-            'days_in_period' => $days,
-            'items' => $items->all(),
-            'summary' => [
-                'reorder_now' => $items->where('status', 'reorder')->count(),
-                'out_of_stock' => $items->where('status', 'out')->count(),
-                'dead_capital' => $items->where('status', 'dead')->count(),
-                'dead_capital_value' => round((float) $items->where('status', 'dead')->sum('stock_value'), 2),
-                'healthy' => $items->where('status', 'healthy')->count(),
-            ],
+            'rows' => $rows->map(fn ($row) => [
+                'label' => $row->label,
+                'revenue' => round((float) $row->revenue, 2),
+                'units' => (int) $row->units,
+                'share' => $total > 0 ? round((float) $row->revenue / $total * 100, 1) : 0,
+            ])->all(),
+            'shown' => $rows->count(),
+            'available' => $available,
         ];
     }
 
-    private function stockStatus(int $stock, int $unitsSold, ?float $cover): string
-    {
-        if ($stock <= 0) {
-            return 'out';
-        }
-
-        // Holding stock that nothing has drawn on all period is the clearest
-        // case of capital doing no work.
-        if ($unitsSold === 0) {
-            return 'dead';
-        }
-
-        return match (true) {
-            $cover !== null && $cover <= 14  => 'reorder',
-            $cover !== null && $cover >= 120 => 'dead',
-            default => 'healthy',
-        };
-    }
-
     /**
-     * How much of the trade rests on how few customers. A business where a
-     * handful of accounts carry most of the revenue is exposed if one leaves,
-     * which a total alone never shows.
+     * Who bought in this period, and whether they had bought before.
+     *
+     * A customer is new the first time they order and returning every time
+     * after, so the two add up to everyone who bought in the window. Counted
+     * against the period rather than the whole history, because "how many
+     * customers" only means something inside a span of time.
      */
-    private function concentration(Carbon $from, Carbon $to): array
+    private function customers(Carbon $from, Carbon $to): array
     {
         $rows = $this->activeBetween($from, $to)
-            ->join('users', 'users.user_id', '=', 'sales.user_id')
-            ->groupBy('users.user_id', 'users.full_name')
-            ->selectRaw('users.user_id, users.full_name, COUNT(*) orders, SUM(sales.total_amount) revenue')
-            ->orderByDesc('revenue')
+            ->whereNotNull('user_id')
+            ->selectRaw('user_id, COUNT(*) orders')
+            ->groupBy('user_id')
             ->get();
 
-        $total = (float) $rows->sum('revenue');
         $count = $rows->count();
-        $running = 0.0;
+        $orders = (int) $rows->sum('orders');
 
-        $customers = $rows->map(function ($row) use (&$running, $total) {
-            $running += (float) $row->revenue;
-
-            return [
-                'name' => preg_replace('/^\[demo\] /', '', $row->full_name),
-                'orders' => (int) $row->orders,
-                'revenue' => round((float) $row->revenue, 2),
-                'share' => $total > 0 ? round((float) $row->revenue / $total * 100, 1) : 0,
-                'cumulative_share' => $total > 0 ? round($running / $total * 100, 1) : 0,
-            ];
-        })->all();
-
-        $topFifth = (int) ceil($count * 0.2);
+        $returning = $count > 0
+            ? Sale::where('order_status', Sale::STATUS_ACTIVE)
+                ->whereIn('user_id', $rows->pluck('user_id'))
+                ->where('sale_date', '<', $from)
+                ->distinct()
+                ->count('user_id')
+            : 0;
 
         return [
-            'customers' => $customers,
-            'total_customers' => $count,
-            'top_fifth_count' => $topFifth,
-            'top_fifth_share' => $topFifth > 0 && isset($customers[$topFifth - 1])
-                ? $customers[$topFifth - 1]['cumulative_share']
-                : 0,
-            'largest_share' => $customers[0]['share'] ?? 0,
+            'customers' => $count,
+            'new' => $count - $returning,
+            'returning' => $returning,
+            'returning_rate' => $count > 0 ? round($returning / $count * 100, 1) : 0,
+            'orders' => $orders,
+            'orders_per_customer' => $count > 0 ? round($orders / $count, 1) : 0,
         ];
     }
 
-    /** What is still owed across every live order, whenever it was placed. */
-    private function receivables(): array
+    /** What is still owed on the orders placed in this period. */
+    private function receivables(Carbon $from, Carbon $to): array
     {
-        $row = Sale::where('order_status', Sale::STATUS_ACTIVE)
+        $row = $this->activeBetween($from, $to)
             ->where('balance_due', '>', 0)
             ->selectRaw('COUNT(*) orders, COALESCE(SUM(balance_due),0) outstanding')
             ->first();
 
-        $awaitingReview = DB::table('payment_requests')->where('status', 'processing')->count();
+        $awaitingReview = DB::table('payment_requests')
+            ->join('sales', 'sales.sale_id', '=', 'payment_requests.sale_id')
+            ->where('payment_requests.status', 'processing')
+            ->whereBetween('sales.sale_date', [$from, $to])
+            ->count();
 
         return [
             'outstanding' => round((float) $row->outstanding, 2),
