@@ -86,7 +86,7 @@ class AdminFilterTest extends TestCase
             'owing' => 2,
             'processing' => 1,
             'paid' => 2,
-            'to_deliver' => 1,
+            'undelivered' => 1,
             'delivered' => 1,
             'refunds' => 1,
             'cancelled' => 1,

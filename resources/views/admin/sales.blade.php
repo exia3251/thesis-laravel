@@ -327,7 +327,7 @@
             ['owing', 'Awaiting payment', 'amber'],
             ['processing', 'Payment to verify', 'sky'],
             ['paid', 'Paid', 'emerald'],
-            ['to_deliver', 'To hand over', 'violet'],
+            ['undelivered', 'Not yet delivered', 'violet'],
             ['delivered', 'Delivered', 'emerald'],
             ['refunds', 'Refunds to process', 'red'],
             ['cancelled', 'Cancelled', 'slate'],
@@ -364,10 +364,14 @@
             loadSales(1);
         }
 
+        /* These say where the order stands, not where the goods are.
+           A shop order is written as to_receive the moment it is placed --
+           before anyone has been near the shelf -- so wording like "with the
+           courier" claimed a fact the system does not hold. */
         function deliveryBadge(sale) {
             const tones = {
-                to_deliver: ['bg-slate-100 text-slate-700', 'To hand over'],
-                to_receive: ['bg-violet-100 text-violet-800', 'With the courier'],
+                to_deliver: ['bg-slate-100 text-slate-700', 'Not dispatched'],
+                to_receive: ['bg-violet-100 text-violet-800', 'Awaiting receipt'],
                 delivered: ['bg-emerald-100 text-emerald-800', 'Delivered'],
             };
             const [cls, label] = tones[sale.delivery_status] || ['bg-slate-100 text-slate-700', sale.delivery_status];
@@ -419,8 +423,8 @@
                             ${cancelled ? deliveryBadge(sale) : `
                                 <select id="delivery_status_${sale.sale_id}"
                                         class="rounded-lg border border-[var(--line)] bg-white px-2 py-1.5 text-xs font-semibold outline-none focus:border-[var(--primary)]">
-                                    <option value="to_deliver" ${sale.delivery_status === 'to_deliver' ? 'selected' : ''}>To hand over</option>
-                                    <option value="to_receive" ${sale.delivery_status === 'to_receive' ? 'selected' : ''}>With the courier</option>
+                                    <option value="to_deliver" ${sale.delivery_status === 'to_deliver' ? 'selected' : ''}>Not dispatched</option>
+                                    <option value="to_receive" ${sale.delivery_status === 'to_receive' ? 'selected' : ''}>Awaiting receipt</option>
                                     <option value="delivered" ${sale.delivery_status === 'delivered' ? 'selected' : ''} ${sale.payment_status === 'unpaid' ? 'disabled' : ''}>Delivered</option>
                                 </select>`}
                         </td>

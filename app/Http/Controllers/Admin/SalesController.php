@@ -85,7 +85,7 @@ class SalesController extends Controller
         'owing' => 'Awaiting payment',
         'processing' => 'Payment to verify',
         'paid' => 'Paid',
-        'to_deliver' => 'To hand over',
+        'undelivered' => 'Not yet delivered',
         'delivered' => 'Delivered',
         'refunds' => 'Refunds to process',
         'cancelled' => 'Cancelled',
@@ -99,7 +99,14 @@ class SalesController extends Controller
             'owing' => $active($query)->whereIn('payment_status', ['unpaid', 'partial']),
             'processing' => $active($query)->where('payment_status', 'processing'),
             'paid' => $active($query)->where('payment_status', 'paid'),
-            'to_deliver' => $active($query)->where('payment_status', 'paid')
+            /*
+             * Paid for and not yet marked delivered. Deliberately not named
+             * after the delivery_status of the same spelling, which means
+             * something narrower -- this set includes orders already with the
+             * courier, and calling it "to hand over" said they were all still
+             * on the shelf when in fact none of them were.
+             */
+            'undelivered' => $active($query)->where('payment_status', 'paid')
                 ->where('delivery_status', '!=', 'delivered'),
             'delivered' => $active($query)->where('delivery_status', 'delivered'),
             'refunds' => $query->where('refund_status', Sale::REFUND_PENDING),

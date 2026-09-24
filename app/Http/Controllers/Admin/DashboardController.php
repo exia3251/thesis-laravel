@@ -211,7 +211,7 @@ class DashboardController extends Controller
                 'to_deliver',
                 $active()->where('payment_status', 'paid')->where('delivery_status', '!=', 'delivered')->count(),
                 'paid order not yet delivered', 'paid orders not yet delivered',
-                'violet', '/admin/sales?focus=to_deliver'
+                'violet', '/admin/sales?focus=undelivered'
             ),
             $this->action(
                 // Money owed back on a cancelled order. There is no separate

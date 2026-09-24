@@ -305,7 +305,7 @@ class DashboardRangeTest extends TestCase
 
         $actions = collect($this->stats($admin)->assertOk()->json('data.actions'))->keyBy('key');
 
-        foreach (['awaiting_payment' => 'owing', 'to_verify' => 'processing', 'to_deliver' => 'to_deliver', 'refunds' => 'refunds'] as $key => $focus) {
+        foreach (['awaiting_payment' => 'owing', 'to_verify' => 'processing', 'to_deliver' => 'undelivered', 'refunds' => 'refunds'] as $key => $focus) {
             $this->assertStringContainsString("focus={$focus}", $actions[$key]['href']);
 
             $landed = $this->actingAs($admin, 'staff')
