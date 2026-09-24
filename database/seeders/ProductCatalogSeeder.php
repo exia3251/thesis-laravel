@@ -38,8 +38,13 @@ class ProductCatalogSeeder extends Seeder
     /**
      * Pack sizes, and what one unit of each costs relative to a litre.
      *
-     * A drum is stocked only on 5W30 and 15W40, which is where the volume
-     * trade is; the rest are sold in bottles.
+     * A drum is stocked on 15W40 only, which is where the volume trade is.
+     *
+     * The 5W30 drums were dropped: at these prices they came to PHP 104,000
+     * and PHP 102,400, and a fully verified GCash wallet stops at PHP
+     * 100,000 -- so the site would have been listing something no customer
+     * could pay for through the only online method it offers. Selling that
+     * size needs a bank transfer, which this system does not handle.
      */
     private const PACKS = [
         '1L'   => ['unit' => '1 Liter',    'litres' => 1,   'multiplier' => 1.0],
@@ -115,7 +120,7 @@ class ProductCatalogSeeder extends Seeder
                 'key' => 'canroyal-5w30',
                 'name' => 'Canroyal Full Synthetic Gasoline Engine Oil SAE 5W30 API SN',
                 'brand' => 'CANROYAL', 'oil_type' => 'Synthetic', 'viscosity' => '5W30',
-                'per_litre' => 650, 'packs' => ['1L', '4L', '5L', 'DRUM'],
+                'per_litre' => 650, 'packs' => ['1L', '4L', '5L'],
                 'description' => 'Full synthetic gasoline engine oil meeting API SN. Suits modern petrol engines where the handbook calls for a 5W30.',
             ],
             [
@@ -152,7 +157,7 @@ class ProductCatalogSeeder extends Seeder
                 'key' => 'solar-5w30',
                 'name' => 'Solar Premium Series Motor Engine Oil 5W30 API SN/CF',
                 'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => '5W30',
-                'per_litre' => 640, 'packs' => ['1L', '4L', '5L', 'DRUM'],
+                'per_litre' => 640, 'packs' => ['1L', '4L', '5L'],
                 'description' => 'Premium series 5W30 meeting API SN/CF, for petrol engines and light diesels.',
             ],
             [
