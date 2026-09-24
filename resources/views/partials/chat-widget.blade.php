@@ -139,7 +139,7 @@
                        </span>`}
                 <span class="min-w-0 flex-1">
                     <span class="block truncate text-xs font-semibold text-[var(--ink)]">${escapeHtml(product.name)}</span>
-                    <span class="block text-[11px] text-[var(--muted)]">${escapeHtml(product.price)} · ${product.stock} in stock</span>
+                    <span class="block text-[11px] text-[var(--muted)]">${escapeHtml(product.unit || '')} · ${escapeHtml(product.price)} · ${product.stock} in stock</span>
                 </span>
             </a>`).join('');
 
@@ -161,7 +161,10 @@
 
         const extras = [products, link, chips].filter(Boolean).length
             ? `<div class="mt-2 flex flex-col gap-2 pl-1">
-                   ${products ? `<div class="flex flex-col gap-1.5">${products}</div>` : ''}
+                   ${products ? `<div class="flex flex-col gap-1.5">
+                       ${payload.products_note ? `<span class="text-[11px] font-semibold text-[var(--muted)]">${escapeHtml(payload.products_note)}</span>` : ''}
+                       ${products}
+                   </div>` : ''}
                    ${link}
                    ${chips ? `<div class="flex flex-wrap gap-1.5">${chips}</div>` : ''}
                </div>`

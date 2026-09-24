@@ -559,7 +559,7 @@ If your handbook names a grade, tell me which one and I will check whether we st
         $payload = [];
 
         if ($stocked->isNotEmpty()) {
-            $payload['products'] = $this->productCards($stocked->sortBy('price')->take(3));
+            $payload['products'] = $this->productCards($stocked);
         } else {
             // Saying so is the point. Selling somebody the wrong grade
             // because it is what happens to be on the shelf is worse than
@@ -571,7 +571,13 @@ If your handbook names a grade, tell me which one and I will check whether we st
             if ($alternative->isNotEmpty()) {
                 $body .= ' Some handbooks also permit ' . $this->grade($spec->viscosity_alt)
                     . ', which we do carry. Check yours before using it.';
-                $payload['products'] = $this->productCards($alternative->sortBy('price')->take(3));
+
+                // Labelled, because on a narrow panel the sentence above
+                // scrolls out of sight and three cards under "we do not
+                // stock that" read as though they were the answer.
+                $payload['products_note'] = 'Only if your handbook permits '
+                    . $this->grade($spec->viscosity_alt) . ':';
+                $payload['products'] = $this->productCards($alternative);
             }
         }
 
@@ -591,6 +597,13 @@ If your handbook names a grade, tell me which one and I will check whether we st
     }
 
     /** In stock, in this grade. */
+    /**
+     * Every pack of every oil we hold in a grade.
+     *
+     * Deliberately not reduced to one row per oil: how many litres a customer
+     * needs is answered from the pack sizes, so that has to see all of them.
+     * The reducing happens in productCards, where it belongs.
+     */
     private function productsWithGrade(?string $viscosity): Collection
     {
         if (blank($viscosity)) {
@@ -601,6 +614,7 @@ If your handbook names a grade, tell me which one and I will check whether we st
             ->where('viscosity_grade', $viscosity)
             ->get()
             ->filter(fn (Product $product) => ($product->inventory->quantity ?? 0) > 0)
+            ->sortBy('price')
             ->values();
     }
 
@@ -621,15 +635,56 @@ If your handbook names a grade, tell me which one and I will check whether we st
             return '';
         }
 
-        $single = $sizes->first(fn (float $size) => $size >= $litres);
+        /*
+         * A pack that covers it without being absurd. The drum covers a
+         * 6.7 litre sump too, and "a 200 litre pack covers it" is not advice
+         * anybody asked for, so a single pack has to be within reach of what
+         * is actually needed.
+         */
+        $single = $sizes->first(fn (float $size) => $size >= $litres && $size <= $litres * 2);
 
         if ($single) {
             return ', so a ' . $this->litreLabel($single) . ' pack covers it';
         }
 
-        $largest = $sizes->last();
+        /*
+         * Otherwise make it up out of the packs on the shelf, biggest first.
+         * Counting only in the largest usable pack sold 2 x 5 litre for a
+         * 5.5 litre sump, when a 5 and a 1 is six litres and less money.
+         */
+        $usable = $sizes->filter(fn (float $size) => $size <= $litres)->sortDesc()->values();
 
-        return ', so you would need ' . (int) ceil($litres / $largest) . ' x ' . $this->litreLabel($largest);
+        if ($usable->isEmpty()) {
+            return ', so a ' . $this->litreLabel($sizes->first()) . ' pack covers it';
+        }
+
+        $remaining = $litres;
+        $take = [];
+
+        foreach ($usable as $size) {
+            $count = (int) floor($remaining / $size);
+
+            if ($count > 0) {
+                $take[] = [$count, $size];
+                $remaining -= $count * $size;
+            }
+        }
+
+        // Whatever is left over still has to be bought, so round it up into
+        // the smallest pack that covers the remainder.
+        if ($remaining > 0.01) {
+            $topUp = $sizes->first(fn (float $size) => $size >= $remaining) ?? $usable->last();
+            $take[] = [1, $topUp];
+        }
+
+        $parts = collect($take)
+            ->groupBy(fn (array $row) => (string) $row[1])
+            ->map(fn (Collection $rows) => [array_sum($rows->map(fn ($r) => $r[0])->all()), $rows->first()[1]])
+            ->sortByDesc(fn (array $row) => $row[1])
+            ->map(fn (array $row) => $row[0] . ' x ' . $this->litreLabel($row[1]))
+            ->values();
+
+        return ', so you would need ' . $parts->join(' and ');
     }
 
     /** "20 Liters" -> 20.0 */
@@ -681,9 +736,20 @@ If your handbook names a grade, tell me which one and I will check whether we st
         return $extras;
     }
 
+    /**
+     * One card per oil, cheapest pack standing for the line.
+     *
+     * Products are a row per pack size, so three cards could be the same
+     * Solar 5W30 twice over -- its 1L and its 4L -- under a name that does
+     * not carry the size. Sizes are chosen on the product page anyway.
+     */
     private function productCards(Collection $products): array
     {
-        return $products->map(fn (Product $product) => [
+        return $products
+            ->sortBy('price')
+            ->unique(fn (Product $product) => $product->product_line ?: 'product-' . $product->product_id)
+            ->take(3)
+            ->map(fn (Product $product) => [
             'product_id' => $product->product_id,
             'name' => $product->product_name,
             'brand' => $product->brand,
