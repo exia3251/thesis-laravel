@@ -200,22 +200,18 @@
                     </div>
                 @endif
 
+                {{-- Two facts, not four. "Unit" repeated whichever pack the
+                     buttons above already show as selected, and "Availability"
+                     was Stock said again in words -- a number and then a
+                     sentence about that number. --}}
                 <div class="mt-6 grid grid-cols-2 gap-4">
                     <div class="rounded-2xl border border-[var(--line)] bg-white/80 p-4">
                         <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Viscosity</div>
                         <div class="mt-2 text-lg font-bold text-[var(--ink)]">{{ $product->viscosity_grade ?: 'Standard' }}</div>
                     </div>
                     <div class="rounded-2xl border border-[var(--line)] bg-white/80 p-4">
-                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Unit</div>
-                        <div id="packUnit" class="mt-2 text-lg font-bold text-[var(--ink)]">{{ $product->unit ?: '1 Liter' }}</div>
-                    </div>
-                    <div class="rounded-2xl border border-[var(--line)] bg-white/80 p-4">
                         <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Stock</div>
-                        <div class="mt-2 text-lg font-bold {{ (optional($product->inventory)->quantity ?? 0) > 0 ? 'text-emerald-700' : 'text-red-700' }}"><span id="packStock">{{ optional($product->inventory)->quantity ?? 0 }} available</span></div>
-                    </div>
-                    <div class="rounded-2xl border border-[var(--line)] bg-white/80 p-4">
-                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Availability</div>
-                        <div id="packAvailability" class="mt-2 text-lg font-bold text-[var(--ink)]">{{ (optional($product->inventory)->quantity ?? 0) > 0 ? 'Available for order' : 'Currently unavailable' }}</div>
+                        <div id="packStock" class="mt-2 text-lg font-bold {{ (optional($product->inventory)->quantity ?? 0) > 0 ? 'text-emerald-700' : 'text-red-700' }}">{{ (optional($product->inventory)->quantity ?? 0) > 0 ? (optional($product->inventory)->quantity ?? 0) . ' available' : 'Out of stock' }}</div>
                     </div>
                 </div>
 
@@ -379,10 +375,9 @@
 
             document.getElementById('packPrice').textContent =
                 'PHP ' + pack.price.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            document.getElementById('packUnit').textContent = pack.unit;
-            document.getElementById('packStock').textContent = pack.quantity + ' available';
-            document.getElementById('packAvailability').textContent =
-                pack.quantity > 0 ? 'Available for order' : 'Currently unavailable';
+            const stock = document.getElementById('packStock');
+            stock.textContent = pack.quantity > 0 ? pack.quantity + ' available' : 'Out of stock';
+            stock.className = 'mt-2 text-lg font-bold ' + (pack.quantity > 0 ? 'text-emerald-700' : 'text-red-700');
 
             // The quantity box is bounded by the pack now selected, not the
             // one the page happened to open on.
