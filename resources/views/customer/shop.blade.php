@@ -147,6 +147,13 @@
             return Number.isNaN(stock) ? 0 : stock;
         }
 
+        // "1 Liter" -> "1L", "200 Liters" -> "200L". A chip has room for the
+        // short form and nothing else; anything unrecognised is left alone.
+        function packLabel(unit) {
+            const match = String(unit || '').match(/^(\d+)\s*Liters?$/i);
+            return match ? `${match[1]}L` : (unit || '');
+        }
+
         function renderShowcase() {
             const brands = [...new Set(products.map((product) => product.brand))].slice(0, 8);
             const types = [...new Set(products.map((product) => product.oil_type))];
@@ -184,17 +191,30 @@
                                 </div>
                                 <span class="flex-shrink-0 rounded-full bg-[var(--primary-soft)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--primary)]">${escapeHtml(product.oil_type)}</span>
                             </div>
-                            <p class="mb-3 truncate text-sm text-[var(--muted)]">${escapeHtml(product.viscosity_grade || 'Standard')} | ${escapeHtml(product.unit)}</p>
+                            <p class="mb-3 truncate text-sm text-[var(--muted)]">${escapeHtml(product.viscosity_grade || 'Standard')}</p>
+
+                            <div class="mb-3 flex flex-wrap gap-1.5">
+                                ${(product.packs || []).map((pack) => `
+                                    <span class="rounded-md border px-2 py-0.5 text-[11px] font-semibold ${pack.quantity > 0
+                                        ? 'border-[var(--primary-soft)] bg-[var(--primary-soft)] text-[var(--primary)]'
+                                        : 'border-[var(--line)] bg-transparent text-slate-400 line-through'}">${escapeHtml(packLabel(pack.unit))}</span>
+                                `).join('')}
+                            </div>
+
                             <div class="mt-auto">
                                 <div class="mb-3 flex items-center justify-between">
-                                    <span class="text-2xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</span>
+                                    <span class="text-2xl font-black text-[var(--primary)]">
+                                        ${(product.pack_count ?? 1) > 1 ? `<span class="text-xs font-bold uppercase tracking-[0.2em] text-[var(--muted)]">from</span> ` : ''}${formatCurrency(product.from_price ?? product.price)}
+                                    </span>
                                     <span class="rounded-full bg-[#f3f6f8] px-3 py-1 text-xs font-semibold text-[var(--muted)]">Stock: ${product.quantity}</span>
                                 </div>
                                 <div class="h-px bg-[var(--line)]"></div>
                                 <div class="mt-3 flex items-center justify-between gap-3">
                                     <span class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted)] group-hover:text-[var(--primary)]">View Details</span>
-                                    <button onclick="event.stopPropagation(); addToCart(${product.product_id})" class="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-bold text-white transition hover:brightness-110">
-                                        Add to Cart
+                                    <button onclick="event.stopPropagation(); ${(product.pack_count ?? 1) > 1
+                                        ? `window.location.href='/shop/products/${product.product_id}'`
+                                        : `addToCart(${product.product_id})`}" class="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-bold text-white transition hover:brightness-110">
+                                        ${(product.pack_count ?? 1) > 1 ? 'Choose Size' : 'Add to Cart'}
                                     </button>
                                 </div>
                             </div>
@@ -240,6 +260,7 @@
                 ? orderedProducts.map((product, index) => {
                     const stock = getProductStock(product);
                     const unavailable = stock === 0;
+                    const multiPack = (product.pack_count ?? 1) > 1;
                     const showUnavailableDivider = unavailable && index === availableProducts.length;
 
                     return `
@@ -260,17 +281,38 @@
                                     </div>
                                     <span class="flex-shrink-0 rounded-full bg-[var(--primary-soft)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--primary)]">${escapeHtml(product.oil_type)}</span>
                                 </div>
-                                <p class="mb-3 truncate text-sm text-[var(--muted)]">${escapeHtml(product.viscosity_grade || 'Standard')} | ${escapeHtml(product.unit)}</p>
+                                <p class="mb-3 truncate text-sm text-[var(--muted)]">${escapeHtml(product.viscosity_grade || 'Standard')}</p>
+
+                                {{-- The pack sizes this oil comes in. Shown on
+                                     the card so a customer can see at a glance
+                                     that the 4L exists, and which sizes are
+                                     currently out. --}}
+                                <div class="mb-3 flex flex-wrap gap-1.5">
+                                    ${(product.packs || []).map((pack) => `
+                                        <span class="rounded-md border px-2 py-0.5 text-[11px] font-semibold ${pack.quantity > 0
+                                            ? 'border-[var(--primary-soft)] bg-[var(--primary-soft)] text-[var(--primary)]'
+                                            : 'border-[var(--line)] bg-transparent text-slate-400 line-through'}">${escapeHtml(packLabel(pack.unit))}</span>
+                                    `).join('')}
+                                </div>
+
                                 <div class="mt-auto">
                                     <div class="mb-3 flex items-center justify-between">
-                                        <span class="text-xl font-black text-[var(--primary)]">${formatCurrency(product.price)}</span>
+                                        <span class="text-xl font-black text-[var(--primary)]">
+                                            ${multiPack ? `<span class="text-xs font-bold uppercase tracking-[0.2em] text-[var(--muted)]">from</span> ` : ''}${formatCurrency(product.from_price ?? product.price)}
+                                        </span>
                                         <span class="rounded-full ${unavailable ? 'bg-slate-200 text-slate-600' : 'bg-[#f3f6f8] text-[var(--muted)]'} px-3 py-1 text-xs font-semibold">Stock: ${stock}</span>
                                     </div>
                                     <div class="h-px bg-[var(--line)]"></div>
                                     <div class="mt-3 flex items-center justify-between gap-3">
                                         <span class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted)] group-hover:text-[var(--primary)]">View Details</span>
-                                        <button onclick="event.stopPropagation(); addToCart(${product.product_id})" class="rounded-xl ${unavailable ? 'cursor-not-allowed bg-slate-400' : 'bg-[var(--primary)]'} px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 ${!isCustomer ? 'opacity-60 cursor-not-allowed' : ''}" ${unavailable ? 'disabled' : ''}>
-                                            Add to Cart
+                                        {{-- With more than one size there is no
+                                             right basket to drop it in, so the
+                                             card sends the customer to choose
+                                             rather than guessing for them. --}}
+                                        <button onclick="event.stopPropagation(); ${multiPack
+                                            ? `window.location.href='/shop/products/${product.product_id}'`
+                                            : `addToCart(${product.product_id})`}" class="rounded-xl ${unavailable ? 'cursor-not-allowed bg-slate-400' : 'bg-[var(--primary)]'} px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 ${!isCustomer && !multiPack ? 'opacity-60 cursor-not-allowed' : ''}" ${unavailable ? 'disabled' : ''}>
+                                            ${multiPack ? 'Choose Size' : 'Add to Cart'}
                                         </button>
                                     </div>
                                 </div>

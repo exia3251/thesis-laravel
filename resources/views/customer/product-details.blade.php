@@ -37,8 +37,43 @@
 
                 <div class="mt-6">
                     <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Price</div>
-                    <div class="mt-2 text-4xl font-black text-[var(--primary)]">PHP {{ number_format((float) $product->price, 2) }}</div>
+                    <div id="packPrice" class="mt-2 text-4xl font-black text-[var(--primary)]">PHP {{ number_format((float) $product->price, 2) }}</div>
                 </div>
+
+                {{-- The pack sizes this oil is sold in. One row per size in the
+                     database, because price and stock genuinely differ, but a
+                     single choice here rather than three separate listings. --}}
+                @if ($packs->count() > 1)
+                    <div class="mt-6">
+                        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Available packs</div>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            @foreach ($packs as $pack)
+                                @php
+                                    $packStock = optional($pack->inventory)->quantity ?? 0;
+                                    $isCurrent = $pack->product_id === $product->product_id;
+                                @endphp
+                                <button type="button"
+                                        onclick="selectPack({{ $pack->product_id }})"
+                                        data-pack="{{ $pack->product_id }}"
+                                        @disabled($packStock < 1)
+                                        {{-- Out of stock is tested before
+                                             current, or the pack the page
+                                             happened to open on would render
+                                             green and look available even
+                                             with nothing behind it. --}}
+                                        class="pack-option rounded-xl border px-4 py-2.5 text-sm font-bold transition
+                                            @if ($packStock < 1) cursor-not-allowed border-[var(--line)] bg-slate-100 text-slate-400 line-through
+                                            @elseif ($isCurrent) border-[var(--primary)] bg-[var(--primary)] text-white
+                                            @else border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--primary)] hover:text-[var(--primary)] @endif">
+                                    {{ $pack->unit }}
+                                </button>
+                            @endforeach
+                        </div>
+                        @if ($packs->contains(fn ($p) => (optional($p->inventory)->quantity ?? 0) < 1))
+                            <p class="mt-2 text-xs text-[var(--muted)]">A crossed-out size is one we are out of right now.</p>
+                        @endif
+                    </div>
+                @endif
 
                 <div class="mt-6 grid grid-cols-2 gap-4">
                     <div class="rounded-2xl border border-[var(--line)] bg-white/80 p-4">
@@ -47,15 +82,15 @@
                     </div>
                     <div class="rounded-2xl border border-[var(--line)] bg-white/80 p-4">
                         <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Unit</div>
-                        <div class="mt-2 text-lg font-bold text-[var(--ink)]">{{ $product->unit ?: '1 Liter' }}</div>
+                        <div id="packUnit" class="mt-2 text-lg font-bold text-[var(--ink)]">{{ $product->unit ?: '1 Liter' }}</div>
                     </div>
                     <div class="rounded-2xl border border-[var(--line)] bg-white/80 p-4">
                         <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Stock</div>
-                        <div class="mt-2 text-lg font-bold {{ (optional($product->inventory)->quantity ?? 0) > 0 ? 'text-emerald-700' : 'text-red-700' }}">{{ optional($product->inventory)->quantity ?? 0 }} available</div>
+                        <div class="mt-2 text-lg font-bold {{ (optional($product->inventory)->quantity ?? 0) > 0 ? 'text-emerald-700' : 'text-red-700' }}"><span id="packStock">{{ optional($product->inventory)->quantity ?? 0 }} available</span></div>
                     </div>
                     <div class="rounded-2xl border border-[var(--line)] bg-white/80 p-4">
                         <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Availability</div>
-                        <div class="mt-2 text-lg font-bold text-[var(--ink)]">{{ (optional($product->inventory)->quantity ?? 0) > 0 ? 'Available for order' : 'Currently unavailable' }}</div>
+                        <div id="packAvailability" class="mt-2 text-lg font-bold text-[var(--ink)]">{{ (optional($product->inventory)->quantity ?? 0) > 0 ? 'Available for order' : 'Currently unavailable' }}</div>
                     </div>
                 </div>
 
@@ -72,7 +107,7 @@
 
                     @auth
                         @if (auth()->user()->isCustomer())
-                            <button onclick="addToCart({{ $product->product_id }})" class="self-end rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110 {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'cursor-not-allowed opacity-60' : '' }}" {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'disabled' : '' }}>Add to Cart</button>
+                            <button onclick="addToCart(selectedPackId)" class="self-end rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110 {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'cursor-not-allowed opacity-60' : '' }}" {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'disabled' : '' }}>Add to Cart</button>
                         @else
                             <a href="/shop/login" class="self-end rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">Login to Order</a>
                         @endif
@@ -110,6 +145,59 @@
             box.classList.remove('hidden');
             clearTimeout(messageTimeout);
             messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
+        }
+
+        @php
+            // Built here rather than inside @json, whose argument parser does
+            // not survive a multi-line array literal -- it compiled, then the
+            // generated PHP would not parse.
+            $packPayload = $packs->mapWithKeys(fn ($p) => [$p->product_id => [
+                'unit'     => $p->unit,
+                'price'    => (float) $p->price,
+                'quantity' => optional($p->inventory)->quantity ?? 0,
+            ]]);
+        @endphp
+
+        // Every pack of this oil, so choosing one is a page the customer
+        // already has rather than another request.
+        const PACKS = @json($packPayload);
+
+        let selectedPackId = {{ $product->product_id }};
+
+        function selectPack(productId) {
+            const pack = PACKS[productId];
+            if (!pack || pack.quantity < 1) return;
+
+            selectedPackId = productId;
+
+            document.getElementById('packPrice').textContent =
+                'PHP ' + pack.price.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('packUnit').textContent = pack.unit;
+            document.getElementById('packStock').textContent = pack.quantity + ' available';
+            document.getElementById('packAvailability').textContent =
+                pack.quantity > 0 ? 'Available for order' : 'Currently unavailable';
+
+            // The quantity box is bounded by the pack now selected, not the
+            // one the page happened to open on.
+            const quantityInput = document.getElementById('quantity');
+            if (quantityInput) {
+                quantityInput.max = Math.max(pack.quantity, 1);
+                if (Number(quantityInput.value) > pack.quantity) quantityInput.value = pack.quantity;
+            }
+
+            document.querySelectorAll('.pack-option').forEach((button) => {
+                const id = Number(button.dataset.pack);
+                const isChosen = id === productId;
+                const isOut = (PACKS[id]?.quantity ?? 0) < 1;
+
+                // Same order as the server-rendered markup: out of stock
+                // beats chosen, so the two cannot disagree.
+                button.className = 'pack-option rounded-xl border px-4 py-2.5 text-sm font-bold transition ' + (
+                    isOut ? 'cursor-not-allowed border-[var(--line)] bg-slate-100 text-slate-400 line-through'
+                    : isChosen ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
+                    : 'border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
+                );
+            });
         }
 
         async function addToCart(productId) {

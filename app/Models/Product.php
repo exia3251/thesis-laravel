@@ -22,6 +22,7 @@ class Product extends Model
     protected $fillable = [
         'product_name',
         'brand',
+        'product_line',
         'oil_type',
         'viscosity_grade',
         'unit',
