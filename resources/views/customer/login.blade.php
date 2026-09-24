@@ -19,6 +19,12 @@
                     <h2 class="text-3xl font-extrabold text-[var(--ink)]">Customer Login</h2>
                     <p class="mt-2 text-sm font-semibold tracking-[0.2em] text-[var(--muted)]">RANEY LUBRICANTS TRADING</p>
                 </div>
+                @if (session('status'))
+                    <div class="mt-6 rounded-2xl border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-3.5 text-sm leading-6 text-[var(--primary)]">
+                        {{ session('status') }}
+                    </div>
+                @endif
+
                 <div id="error-message" class="hidden mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700"></div>
                 <form id="loginForm" class="mt-8 space-y-6">
                     <div class="space-y-4">
@@ -29,7 +35,10 @@
                                    placeholder="you@example.com">
                         </div>
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Password</label>
+                            <div class="mb-2 flex items-baseline justify-between gap-3">
+                                <label class="block text-sm font-medium text-[var(--ink)]">Password</label>
+                                <a href="/shop/forgot-password" class="text-xs font-semibold text-[var(--primary)] hover:underline">Forgot password?</a>
+                            </div>
                             <input id="password" name="password" type="password" required minlength="6" maxlength="255"
                                    class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]"
                                    placeholder="Enter your password">

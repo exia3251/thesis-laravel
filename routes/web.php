@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\ChatbotController;
@@ -180,6 +181,22 @@ Route::middleware('guest:web')->group(function () {
     Route::get('/shop/register', function () {
         return view('customer.register');
     })->name('customer.register');
+});
+
+/*
+| Forgotten passwords.
+|
+| Behind guest:web, because somebody already signed in has the Account page
+| for this and does not need a link emailed to them. Throttled at the route
+| as well as by the broker: the broker's own limit is per address, and this
+| one is per caller, which is the limit that matters when the addresses being
+| tried are somebody else's.
+*/
+Route::middleware(['guest:web', 'throttle:10,1'])->group(function () {
+    Route::get('/shop/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('/shop/forgot-password', [PasswordResetController::class, 'sendLink'])->name('password.email');
+    Route::get('/shop/reset-password/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
+    Route::post('/shop/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
 });
 
 Route::post('/shop/login', [AuthController::class, 'customerLogin'])->name('customer.login.submit');
