@@ -28,42 +28,45 @@
                 <div class="max-w-2xl">
                     <div class="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--accent)]">RANEY LUBRICANTS TRADING</div>
                     <h1 class="mt-5 text-4xl font-black leading-tight md:text-5xl">Premium engine oils &amp; lubricants for every engine.</h1>
-                    <p class="mt-4 max-w-xl text-sm leading-7 text-white/70">From daily drivers to heavy-duty machinery — find the right oil, coolant, or fluid for your needs.</p>
                     <div class="mt-7 flex flex-wrap gap-3">
                         <a href="#catalog" class="rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[var(--primary-dark)]">Browse Catalog</a>
                         <a href="#featuredProducts" class="rounded-xl border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">Top Products</a>
                     </div>
                 </div>
 
-                <div class="flex-shrink-0">
-                    <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/50 mb-3">Shop by Brand</div>
-                    <div class="flex flex-wrap gap-3">
-                        <button type="button" onclick="quickFilterBrand('SOLAR')" class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur transition hover:bg-[var(--primary)] hover:border-[var(--primary)]">SOLAR</button>
-                        <button type="button" onclick="quickFilterBrand('CANROYAL')" class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur transition hover:bg-[var(--primary)] hover:border-[var(--primary)]">CANROYAL</button>
-                        <button type="button" onclick="quickFilterBrand('PATROL')" class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur transition hover:bg-[var(--primary)] hover:border-[var(--primary)]">PATROL</button>
+                {{-- The brands are the first question a customer answers, so
+                     they get room rather than being three small pills in a
+                     corner. Each one says how many lines it covers, which is
+                     the next thing you would want to know. --}}
+                <div class="w-full flex-shrink-0 lg:w-auto">
+                    <div class="mb-4 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/50">Shop by Brand</div>
+                    <div id="heroBrands" class="grid grid-cols-3 gap-3 lg:w-[22rem]">
+                        @foreach (['SOLAR', 'CANROYAL', 'PATROL'] as $brand)
+                            <button type="button" onclick="quickFilterBrand('{{ $brand }}')"
+                                    class="group flex flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/10 px-3 py-5 backdrop-blur transition hover:border-[var(--accent)] hover:bg-white/20">
+                                <span class="text-sm font-black tracking-wide text-white">{{ $brand }}</span>
+                                <span class="text-[11px] font-semibold text-white/50 group-hover:text-[var(--accent)]" data-brand-count="{{ $brand }}">&nbsp;</span>
+                            </button>
+                        @endforeach
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="mb-8 grid gap-4 md:grid-cols-3">
-            <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-6">
-                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Featured Brands</div>
-                <div id="brandShowcase" class="mt-4 flex flex-wrap gap-2">
-                    <span class="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">Loading brands...</span>
+        {{-- Two cards, matching. The third was a tips panel nobody needed,
+             and the middle one was cream against two whites, which made the
+             row read as three unrelated things rather than one band. --}}
+        <section class="mb-8 grid items-stretch gap-4 md:grid-cols-2">
+            <div class="flex flex-col rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-6">
+                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Browse by Brand</div>
+                <div id="brandShowcase" class="mt-4 flex flex-wrap content-start gap-2">
+                    <span class="rounded-full border border-[var(--line)] px-4 py-2 text-sm text-[var(--muted)]">Loading brands...</span>
                 </div>
             </div>
-            <div class="rounded-[1.5rem] border border-[var(--accent-soft)] bg-[#fffcf3] p-5 shadow-sm sm:p-6">
-                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[#9d7b20]">Top Product Types</div>
-                <div id="typeShowcase" class="mt-4 flex flex-wrap gap-2">
-                    <span class="rounded-full bg-white px-3 py-2 text-sm text-[#9d7b20]">Loading types...</span>
-                </div>
-            </div>
-            <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-6">
-                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--primary)]">Shopping Tips</div>
-                <div class="mt-4 space-y-2 text-sm leading-6 text-[var(--muted)]">
-                    <p>Check viscosity grade and unit size before adding to cart.</p>
-                    <p>Use filters to compare oil categories, coolant products, and stock-ready items.</p>
+            <div class="flex flex-col rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-6">
+                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Browse by Oil Type</div>
+                <div id="typeShowcase" class="mt-4 flex flex-wrap content-start gap-2">
+                    <span class="rounded-full border border-[var(--line)] px-4 py-2 text-sm text-[var(--muted)]">Loading types...</span>
                 </div>
             </div>
         </section>
@@ -154,18 +157,45 @@
             return match ? `${match[1]}L` : (unit || '');
         }
 
+        // One chip style for both cards, so the two read as a pair.
+        function showcaseChip(label, count, handler, attribute) {
+            return `<button type="button" data-${attribute}="${escapeHtml(label)}" onclick="${handler}(this.dataset.${attribute})"
+                        class="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:bg-[var(--primary-soft)] hover:text-[var(--primary)]">
+                        ${escapeHtml(label)}
+                        <span class="rounded-full bg-[var(--primary-soft)] px-2 py-0.5 text-[11px] font-bold text-[var(--primary)]">${count}</span>
+                    </button>`;
+        }
+
         function renderShowcase() {
-            const brands = [...new Set(products.map((product) => product.brand))].slice(0, 8);
-            const types = [...new Set(products.map((product) => product.oil_type))];
-            const availableCount = products.filter((product) => getProductStock(product) > 0).length;
+            const countBy = (key) => products.reduce((tally, product) => {
+                tally[product[key]] = (tally[product[key]] ?? 0) + 1;
+                return tally;
+            }, {});
+
+            const brandCounts = countBy('brand');
+            const typeCounts = countBy('oil_type');
+
+            // Most-stocked first, so the card leads with what we actually have.
+            const byCount = (counts) => Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+
+            const brands = byCount(brandCounts).slice(0, 8);
+            const types = byCount(typeCounts);
+
+            const empty = (what) => `<span class="rounded-full border border-[var(--line)] px-4 py-2 text-sm text-[var(--muted)]">No ${what} yet</span>`;
 
             document.getElementById('brandShowcase').innerHTML = brands.length
-                ? brands.map((brand) => `<button type="button" data-brand="${escapeHtml(brand)}" onclick="quickFilterBrand(this.dataset.brand)" class="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">${escapeHtml(brand)}</button>`).join('')
-                : '<span class="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">No brands yet</span>';
+                ? brands.map((brand) => showcaseChip(brand, brandCounts[brand], 'quickFilterBrand', 'brand')).join('')
+                : empty('brands');
 
             document.getElementById('typeShowcase').innerHTML = types.length
-                ? types.map((type) => `<button type="button" data-type="${escapeHtml(type)}" onclick="quickFilterType(this.dataset.type)" class="rounded-full border border-transparent bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:bg-[var(--primary-soft)] hover:text-[var(--primary)]">${escapeHtml(type)}</button>`).join('')
-                : '<span class="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">No types yet</span>';
+                ? types.map((type) => showcaseChip(type, typeCounts[type], 'quickFilterType', 'type')).join('')
+                : empty('types');
+
+            // The hero buttons carry the same counts.
+            document.querySelectorAll('[data-brand-count]').forEach((label) => {
+                const count = brandCounts[label.dataset.brandCount] ?? 0;
+                label.textContent = count === 1 ? '1 product' : `${count} products`;
+            });
         }
 
         async function loadFeaturedProducts() {
