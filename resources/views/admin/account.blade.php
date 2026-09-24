@@ -553,7 +553,14 @@
     }
 
     async function removeAvatar() {
-        if (!confirm('Remove your photo? Your initials will be shown instead.')) return;
+        const sure = await askToConfirm({
+            title: 'Remove your photo?',
+            body: 'Your initials will be shown instead, in the sidebar and against everything in the activity log.',
+            confirm: 'Remove it',
+            cancel: 'Keep it',
+        });
+
+        if (!sure) return;
 
         const response = await fetch('/admin-api/account/avatar', {
             method: 'DELETE',

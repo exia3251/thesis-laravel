@@ -60,6 +60,8 @@
         @include('partials.admin-sidebar')
     </div>
 
+    @include('partials.admin-confirm')
+
     <div id="adminScrim" onclick="toggleAdminNav(false)"
          class="fixed inset-0 z-40 hidden bg-slate-900/50 lg:hidden"></div>
 

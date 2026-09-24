@@ -171,7 +171,14 @@
     }
 
     async function deleteBackup(filename) {
-        if (!confirm(`Delete ${filename}? This cannot be undone.`)) return;
+        const sure = await askToConfirm({
+            title: 'Delete this backup?',
+            body: `${filename} will be removed from the server. There is no undoing it, and if it is the only copy the data it holds goes with it.`,
+            confirm: 'Delete it',
+            cancel: 'Keep it',
+        });
+
+        if (!sure) return;
 
         try {
             const response = await fetch(`/admin-api/backups/${encodeURIComponent(filename)}`, {

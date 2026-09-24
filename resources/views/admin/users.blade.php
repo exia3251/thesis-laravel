@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'RANEY LUBRICANTS TRADING — Admin')
+@section('title', 'Users - RANEY LUBRICANTS TRADING')
 
 @section('content')
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -436,9 +436,14 @@
             const user = users.find((item) => item.user_id === userId);
             const name = user ? user.full_name : 'this account';
 
-            if (!confirm(`Archive ${name}?\n\nThey are signed out and can no longer log in. Their orders and the activity log are kept, and you can restore the account later.`)) {
-                return;
-            }
+            const sure = await askToConfirm({
+                title: `Archive ${name}?`,
+                body: 'They are signed out at once and can no longer log in. Their orders and everything in the activity log are kept, and the account can be restored later.',
+                confirm: 'Archive it',
+                cancel: 'Leave it active',
+            });
+
+            if (!sure) return;
 
             const response = await fetch(`/admin-api/users/${userId}`, {
                 method: 'DELETE',

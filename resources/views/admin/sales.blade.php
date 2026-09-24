@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'RANEY LUBRICANTS TRADING — Admin')
+@section('title', 'Sales - RANEY LUBRICANTS TRADING')
 
 @section('content')
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

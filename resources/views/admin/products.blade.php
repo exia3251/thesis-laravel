@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'RANEY LUBRICANTS TRADING — Admin')
+@section('title', 'Products - RANEY LUBRICANTS TRADING')
 
 @section('content')
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -806,9 +806,14 @@
             const product = products.find((item) => item.product_id === productId);
             const name = product ? product.product_name : 'this product';
 
-            if (!confirm(`Archive ${name}?\n\nIt disappears from the shop and the catalogue, but its past orders stay intact and you can restore it later.`)) {
-                return;
-            }
+            const sure = await askToConfirm({
+                title: `Archive ${name}?`,
+                body: 'It disappears from the shop and from this catalogue. Its past orders stay intact, and you can restore it from the Archived tab whenever you like.',
+                confirm: 'Archive it',
+                cancel: 'Leave it on sale',
+            });
+
+            if (!sure) return;
 
             const response = await fetch(`/admin-api/products/${productId}`, {
                 method: 'DELETE',
