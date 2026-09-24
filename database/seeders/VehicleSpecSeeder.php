@@ -304,9 +304,6 @@ class VehicleSpecSeeder extends Seeder
              'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 11.0,
              'notes' => 'Light truck. Sold in 20 and 200 litre drums for fleets.'],
 
-            ['make' => 'Hino', 'model' => '300 Series', 'variant' => 'Diesel Truck', 'fuel' => 'diesel',
-             'aliases' => 'hino 300, dutro', 'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 10.0,
-             'notes' => 'Light truck. Sold in 20 and 200 litre drums for fleets.'],
         ];
     }
 }
