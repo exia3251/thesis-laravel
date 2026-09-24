@@ -14,6 +14,11 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
+        // Everything downstream -- controllers, views, the single-session
+        // check -- resolves auth() to the staff guard from here, so no call
+        // site has to name it.
+        Auth::shouldUse('staff');
+
         if (!Auth::check()) {
             if ($request->expectsJson()) {
                 return response()->json([

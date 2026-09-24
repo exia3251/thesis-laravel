@@ -108,7 +108,8 @@ class AuthController extends Controller
                 $request,
                 $user,
                 'admin_login',
-                'Previous active session was replaced by a new staff login.'
+                'Previous active session was replaced by a new staff login.',
+                'staff'
             );
 
             return response()->json([
@@ -246,9 +247,27 @@ class AuthController extends Controller
     /**
      * Logout.
      */
+    /** Signing out of the shop. */
     public function logout(Request $request)
     {
-        $user = auth()->user();
+        return $this->signOut($request, 'web');
+    }
+
+    /** Signing out of the back office, leaving any shop session alone. */
+    public function staffLogout(Request $request)
+    {
+        return $this->signOut($request, 'staff');
+    }
+
+    /*
+     * The guard is named rather than taken from the default driver: both
+     * logout routes sit outside the middleware groups that choose a guard,
+     * so the default here is always "web" and signing out of the back office
+     * would have signed the customer out instead.
+     */
+    protected function signOut(Request $request, string $guard)
+    {
+        $user = Auth::guard($guard)->user();
         $userId = $user?->user_id;
         $label = $user ? "{$user->full_name} ({$user->email}) logged out" : 'User logged out';
 
@@ -258,11 +277,22 @@ class AuthController extends Controller
             ])->save();
         }
 
-        Auth::logout();
+        Auth::guard($guard)->logout();
+
+        // The session is shared by both guards, so tearing it down is only
+        // safe once nobody is left in it. Otherwise logging out of one role
+        // would silently end the other.
+        $othersStillSignedIn = collect(self::GUARDS)
+            ->reject(fn (string $name) => $name === $guard)
+            ->contains(fn (string $name) => Auth::guard($name)->check());
 
         if ($request->hasSession()) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            if ($othersStillSignedIn) {
+                $request->session()->regenerateToken();
+            } else {
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
         }
 
         if ($userId) {

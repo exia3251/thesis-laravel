@@ -37,8 +37,25 @@ return [
     |
     */
 
+    /*
+     * Two guards over the same table, so one browser can hold a customer
+     * session and a staff session at once. Each keeps its own key in the
+     * session, which is what lets the back office be open in one tab while
+     * the shop is signed in as a customer in another -- useful when a
+     * member of staff needs to see what a customer sees.
+     *
+     * Which guard applies is decided by the route: AdminMiddleware and
+     * CustomerMiddleware each call Auth::shouldUse, so auth() inside a
+     * controller or a view resolves to the right one without every call
+     * site having to name it.
+     */
     'guards' => [
         'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        'staff' => [
             'driver' => 'session',
             'provider' => 'users',
         ],

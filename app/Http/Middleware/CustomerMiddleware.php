@@ -10,6 +10,10 @@ class CustomerMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
+        // The shop's own guard, which is also the default, so a staff member
+        // signed into the back office is not treated as a signed-in customer.
+        Auth::shouldUse('web');
+
         if (!Auth::check()) {
             if ($request->expectsJson()) {
                 return response()->json([

@@ -31,15 +31,22 @@ Route::get('/', function () {
     return redirect('/shop');
 });
 
-// Admin authentication
-Route::middleware('guest')->group(function () {
+/*
+| Admin authentication
+|
+| guest:staff, not plain guest. The bare form asks the default guard, which
+| is the shop's -- so a customer signed in to browse the catalogue was bounced
+| away from the staff login and could never open the back office in the next
+| tab, which is the whole point of the two guards.
+*/
+Route::middleware('guest:staff')->group(function () {
     Route::get('/admin/login', function () {
         return view('admin.login');
     })->name('admin.login');
 });
 
 Route::post('/admin/login', [AuthController::class, 'adminLogin'])->name('admin.login.submit');
-Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
+Route::post('/admin/logout', [AuthController::class, 'staffLogout'])->name('admin.logout');
 
 /*
 |--------------------------------------------------------------------------
@@ -164,8 +171,9 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
     });
 });
 
-// Customer authentication
-Route::middleware('guest')->group(function () {
+// Customer authentication. guest:web is the shop's own guard, so a signed-in
+// staff member can still reach the shop login and sign in as a customer.
+Route::middleware('guest:web')->group(function () {
     Route::get('/shop/login', function () {
         return view('customer.login');
     })->name('customer.login');

@@ -18,19 +18,44 @@ use Illuminate\Support\Facades\Auth;
  */
 trait StartsUserSessions
 {
-    protected function startSession(Request $request, User $user, string $logAction, string $replacedNote): void
-    {
+    /** The guards that can hold a signed-in account at the same time. */
+    public const GUARDS = ['web', 'staff'];
+
+    protected function startSession(
+        Request $request,
+        User $user,
+        string $logAction,
+        string $replacedNote,
+        string $guard = 'web'
+    ): void {
         $previousSessionId = $user->current_session_id;
 
-        Auth::login($user);
+        Auth::guard($guard)->login($user);
 
         if ($request->hasSession()) {
             $request->session()->regenerate();
         }
 
-        $user->forceFill([
-            'current_session_id' => $request->session()->getId(),
-        ])->save();
+        $sessionId = $request->session()->getId();
+
+        /*
+         * Every account signed in on this browser gets the new id, not only
+         * the one that just logged in.
+         *
+         * Regenerating is what protects against session fixation, but it
+         * also means the id changes under anybody already signed in on the
+         * other guard. Their current_session_id would then point at a
+         * session that no longer exists, and the single-session rule would
+         * read that as "signed in somewhere else" and throw them out on
+         * their very next click.
+         */
+        foreach (self::GUARDS as $name) {
+            $signedIn = Auth::guard($name)->user();
+
+            if ($signedIn) {
+                $signedIn->forceFill(['current_session_id' => $sessionId])->save();
+            }
+        }
 
         ActivityLog::logAction(
             $user->user_id,
@@ -38,7 +63,7 @@ trait StartsUserSessions
             "{$user->full_name} ({$user->email}) logged in as {$user->roleLabel()}"
         );
 
-        if ($previousSessionId && $previousSessionId !== $request->session()->getId()) {
+        if ($previousSessionId && $previousSessionId !== $sessionId) {
             ActivityLog::logAction($user->user_id, 'single_session_replaced', $replacedNote);
         }
     }
