@@ -1,0 +1,19 @@
+# Product photographs are committed deliberately, unlike everything else
+# under storage/app/public.
+#
+# They are 2.8 MB for the whole catalogue, and keeping them in the repository
+# means a clone shows the shop as it is meant to look without running a
+# seeder and without reaching two suppliers' websites -- neither of which is
+# a thing to depend on during a demo, or offline.
+#
+# ProductImageSeeder still exists to re-fetch or refresh them.
+#
+# Anything a member of staff uploads through the admin screens lands here
+# too and is NOT wanted in the repository, so this allows the catalogue
+# files by name and ignores the rest.
+
+*
+!.gitignore
+!canroyal-*.png
+!solar-*.jpg
+!patrol-*.jpg

@@ -1,2 +1,8 @@
 *
 !.gitignore
+
+# The catalogue photographs are kept in the repository so a clone renders
+# the shop correctly straight away. Everything else here -- avatars,
+# payment proofs, delivery proofs -- is uploaded by users and stays out.
+# products/ has its own rules for which files inside it are wanted.
+!products/
