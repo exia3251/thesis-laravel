@@ -185,14 +185,13 @@ class ProductCatalogSeeder extends Seeder
             [
                 // The manufacturer publishes JASO MA for this oil. Not MB,
                 // which is the opposite friction case, and not MA2.
-                // UNCONFIRMED base type. Solar's page says "highly refined
-                // base stock", then that the oil is "available fully
-                // synthetic, synthetic blend and mineral", which is three
-                // answers rather than one. Which variant RLT imports decides
-                // this, so confirm it with them before the listing is trusted.
+                // Solar publishes this oil as "available fully synthetic,
+                // synthetic blend and mineral", so the website cannot settle
+                // which one it is. RLT imports the fully synthetic variant,
+                // confirmed by the business on 24 September 2026.
                 'key' => 'solar-moto-10w40',
                 'name' => 'Solar Optima Series Motorcycle Engine Oil 10W40 API SL JASO MA',
-                'brand' => 'SOLAR', 'oil_type' => 'Semi-Synthetic', 'viscosity' => '10W40',
+                'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => '10W40',
                 'per_litre' => 320, 'packs' => ['1L'],
                 'description' => 'Four-stroke motorcycle engine oil meeting API SL and JASO MA, so it suits wet clutches. Not a JASO MB oil; check your handbook if your scooter calls for MB.',
             ],
