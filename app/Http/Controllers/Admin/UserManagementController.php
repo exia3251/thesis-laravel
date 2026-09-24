@@ -18,20 +18,66 @@ class UserManagementController extends Controller
         return view('admin.users');
     }
 
+    /**
+     * How many accounts sit under each role, for the filter buttons.
+     *
+     * Counted across the whole table rather than the page on screen, or the
+     * numbers would change every time somebody turned a page.
+     */
+    private function roleCounts(bool $archived): array
+    {
+        $base = fn () => $archived ? User::onlyTrashed() : User::query();
+
+        $counts = ['all' => $base()->count()];
+
+        foreach ([User::ROLE_ADMIN, User::ROLE_INVENTORY_STAFF, User::ROLE_ACCOUNTING, User::ROLE_CUSTOMER] as $role) {
+            $counts[$role] = $base()->where('role', $role)->count();
+        }
+
+        return $counts;
+    }
+
     public function getUsers(Request $request)
     {
-        $request->validate(['archived' => 'nullable|boolean']);
+        $request->validate([
+            'archived' => 'nullable|boolean',
+            'search' => 'nullable|string|max:100',
+            'role' => 'nullable|in:all,admin,inventory_staff,accounting,customer',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:5|max:100',
+        ]);
 
         // Archived accounts are a separate view rather than greyed-out rows,
         // so nobody edits or promotes one by mistake.
-        $base = $request->boolean('archived')
+        $query = $request->boolean('archived')
             ? User::onlyTrashed()->orderByDesc('deleted_at')
             : User::query()->orderBy('role')->orderBy('full_name');
 
-        $users = $base
-            ->with('customerProfile')
-            ->get()
-            ->map(function (User $user) {
+        $query->with('customerProfile');
+
+        if ($request->filled('role') && $request->input('role') !== 'all') {
+            $query->where('role', $request->input('role'));
+        }
+
+        /*
+         * Searched here rather than in the browser. The list was drawn from
+         * every account in one response and filtered on the page, which is
+         * fine at forty and not at four thousand: the whole table travelled
+         * on every visit, and a search only ever looked at what had already
+         * arrived.
+         */
+        if ($request->filled('search')) {
+            $term = trim($request->input('search'));
+
+            $query->where(function ($q) use ($term) {
+                $q->where('full_name', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%");
+            });
+        }
+
+        return $this->paginated(
+            $query->paginate($this->perPage()),
+            function (User $user) {
                 // Appended rather than sent raw, so the view does not have to
                 // know where uploads live or how initials are derived.
                 return $user->toArray() + [
@@ -41,12 +87,9 @@ class UserManagementController extends Controller
                     'role_label' => $user->roleLabel(),
                     'archived' => $user->trashed(),
                 ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'data' => $users,
-        ]);
+            },
+            ['counts' => $this->roleCounts($request->boolean('archived'))]
+        );
     }
 
     protected function accountRules(?int $ignoreUserId = null): array

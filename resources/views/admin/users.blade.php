@@ -49,6 +49,7 @@
                 </tbody>
             </table>
         </div>
+        <div id="usersPagination"></div>
     </div>
 
     <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
@@ -325,6 +326,8 @@
         let showArchivedUsers = false;
 
         let roleFilter = 'all';
+        let usersMeta = null;
+        let roleCounts = {};
 
         const ROLE_FILTERS = [
             ['all', 'Everyone'],
@@ -335,14 +338,9 @@
         ];
 
         function renderRoleFilters() {
-            const counts = users.reduce((tally, user) => {
-                tally[user.role] = (tally[user.role] || 0) + 1;
-                return tally;
-            }, {});
-
             document.getElementById('roleFilters').innerHTML = ROLE_FILTERS.map(([key, label]) => {
                 const on = key === roleFilter;
-                const count = key === 'all' ? users.length : (counts[key] || 0);
+                const count = roleCounts[key];
 
                 return `
                     <button type="button" onclick="setRoleFilter('${key}')"
@@ -350,29 +348,27 @@
                                 ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
                                 : 'border-[var(--line)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--ink)]'}">
                         ${escapeHtml(label)}
-                        <span class="${on ? 'text-white/80' : 'text-[var(--ink)]'} font-black">${count}</span>
+                        ${count === undefined ? '' : `<span class="${on ? 'text-white/80' : 'text-[var(--ink)]'} font-black">${count}</span>`}
                     </button>`;
             }).join('');
         }
 
         function setRoleFilter(role) {
             roleFilter = role;
-            renderUsers();
+            loadUsers(1);
         }
 
         function renderUsers() {
             const tbody = document.getElementById('usersBody');
-            const search = document.getElementById('userSearch').value.toLowerCase();
-
-            const rows = users.filter(user =>
-                (roleFilter === 'all' || user.role === roleFilter)
-                && (user.full_name.toLowerCase().includes(search) || user.email.toLowerCase().includes(search)));
 
             renderRoleFilters();
-            document.getElementById('userCount').textContent = `${rows.length} of ${users.length} accounts`;
 
-            tbody.innerHTML = rows.length
-                ? rows.map((user) => `
+            document.getElementById('userCount').textContent = usersMeta
+                ? `${usersMeta.total} account${usersMeta.total === 1 ? '' : 's'}`
+                : '';
+
+            tbody.innerHTML = users.length
+                ? users.map((user) => `
                     <tr class="transition hover:bg-[var(--surface)]">
                         <td class="px-5 py-3 sm:px-6">
                             <div class="flex items-center gap-3">
@@ -405,14 +401,27 @@
                 : `<tr><td colspan="4" class="px-6 py-10 text-center text-sm text-[var(--muted)]">${showArchivedUsers ? 'Nothing archived.' : 'Nothing matches that.'}</td></tr>`;
         }
 
-        async function loadUsers() {
-            const query = showArchivedUsers ? '?archived=1' : '';
-            const response = await fetch(`/admin-api/users${query}`, { headers: { Accept: 'application/json' } });
+        async function loadUsers(page = 1) {
+            const params = new URLSearchParams({ page });
+            const search = document.getElementById('userSearch').value.trim();
+
+            if (showArchivedUsers) params.set('archived', '1');
+            if (roleFilter !== 'all') params.set('role', roleFilter);
+            if (search) params.set('search', search);
+
+            const response = await fetch(`/admin-api/users?${params}`, { headers: { Accept: 'application/json' } });
+            if (response.status === 401) { window.location.href = '/admin/login'; return; }
+
             const data = await response.json();
             users = data.data || [];
+            usersMeta = data.meta || null;
+            roleCounts = data.counts || {};
 
             renderUsers();
+            renderPagination('usersPagination', usersMeta, loadUsers);
         }
+
+        const searchUsers = debounce(() => loadUsers(1));
 
         function setArchivedUsers(archived) {
             showArchivedUsers = archived;
@@ -424,7 +433,7 @@
             document.getElementById('tabArchivedUsers').className = `rounded-lg px-4 py-1.5 text-sm font-semibold transition ${archived ? on : off}`;
             document.getElementById('addUserBtn').classList.toggle('hidden', archived);
 
-            loadUsers();
+            loadUsers(1);
         }
 
         function editUser(userId) {
