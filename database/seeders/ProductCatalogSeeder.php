@@ -23,8 +23,10 @@ use Illuminate\Database\Seeder;
  *    for the low-friction scooter case, so one oil cannot claim both.
  *
  *  - Solar sells coolant by concentration with a colour option, not as a
- *    named "green" or "pink" product. Green and Pink below are the colour,
- *    and the concentration is the business's to set.
+ *    named product per colour. Green and Blue below are the colour, and the
+ *    concentration is the business's to set. Those two are carried because
+ *    they are the two Solar has published photographs of; the range also
+ *    includes red and pink.
  *
  * PRICES BELOW ARE PLACEHOLDERS. They are generated from a per-litre base
  * and a pack multiplier so that the ladder is at least internally coherent,
@@ -170,11 +172,15 @@ class ProductCatalogSeeder extends Seeder
                 'description' => 'Ethylene glycol antifreeze coolant, green. Confirm the concentration you need before ordering; ask our staff if you are unsure.',
             ],
             [
-                'key' => 'solar-coolant-pink',
-                'name' => 'Solar Antifreeze Coolant Pink',
+                // Blue rather than pink. Solar lists Green, Blue, Red and
+                // Pink as colours but has only ever photographed the green
+                // and blue caps, so pink was the one line on the site with
+                // no picture of its own.
+                'key' => 'solar-coolant-blue',
+                'name' => 'Solar Antifreeze Coolant Blue',
                 'brand' => 'SOLAR', 'oil_type' => 'Coolant', 'viscosity' => null,
                 'per_litre' => 240, 'packs' => ['1L', '4L', '5L'],
-                'description' => 'Ethylene glycol antifreeze coolant, pink. Confirm the concentration you need before ordering; ask our staff if you are unsure.',
+                'description' => 'Ethylene glycol antifreeze coolant, blue. Confirm the concentration you need before ordering; ask our staff if you are unsure.',
             ],
             [
                 // The manufacturer publishes JASO MA for this oil. Not MB,

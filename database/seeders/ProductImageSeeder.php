@@ -50,13 +50,10 @@ class ProductImageSeeder extends Seeder
             'solar-atf-dex3'      => self::SOLAR . '2023/10/ATF-PREMIUM-DEX-III.jpg',
             'solar-atf-dex6'      => self::SOLAR . '2025/04/Dexron-VI-Fully-synthetic-1L-4L.jpg',
             'solar-coolant-green' => self::SOLAR . '2023/10/ANTIFREEZE-COOLANT-4-LTR-Front-green-cap.jpg',
+            'solar-coolant-blue'  => self::SOLAR . '2023/10/ANTIFREEZE-COOLANT-4-LTR-Front-Blue-cap.jpg',
             'solar-moto-10w40'    => self::SOLAR . '2023/10/4T-MOTOR-CYCLE-ENGINE-OIL-10W40-1LTR-Front-1.jpg',
 
             // Deliberately absent:
-            //
-            //   solar-coolant-pink  Solar's coolant gallery carries green and
-            //     blue caps only. Using the green bottle would show a customer
-            //     a photograph of the wrong product.
             //
             //   patrol-5w30  No manufacturer site to take one from, and the
             //     line is being withdrawn.
