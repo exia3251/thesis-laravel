@@ -19,7 +19,7 @@
 
     {{-- Full screen on a phone, a floating card from small upwards. --}}
     <section id="chatPanel" aria-label="Assistant"
-             class="fixed inset-0 z-[59] hidden flex-col bg-white sm:inset-auto sm:bottom-24 sm:right-6 sm:h-[32rem] sm:max-h-[calc(100vh-8rem)] sm:w-[23rem] sm:rounded-[1.25rem] sm:border sm:border-[var(--line)] sm:shadow-2xl">
+             class="fixed inset-0 z-[59] hidden flex-col overflow-hidden bg-white sm:inset-auto sm:bottom-24 sm:right-6 sm:h-[32rem] sm:max-h-[calc(100vh-8rem)] sm:w-[23rem] sm:rounded-[1.25rem] sm:border sm:border-[var(--line)] sm:shadow-2xl">
 
         <header class="flex shrink-0 items-center gap-3 bg-[var(--primary)] px-4 py-3 sm:rounded-t-[1.25rem]">
             <span class="flex h-9 w-9 items-center justify-center rounded-full bg-white/15">
@@ -44,6 +44,23 @@
                 </svg>
             </button>
         </header>
+
+        {{-- Asked inside the panel rather than through confirm(), which
+             greys the whole page, names the host as "127.0.0.1:8000" and
+             looks like the browser warning the visitor about the site. --}}
+        <div id="chatConfirm" class="absolute inset-0 z-10 hidden items-center justify-center bg-[rgba(22,32,42,0.55)] px-5 backdrop-blur-sm sm:rounded-[1.25rem]"
+             role="dialog" aria-modal="true" aria-labelledby="chatConfirmTitle">
+            <div class="w-full rounded-2xl border border-[var(--line)] bg-white p-5 shadow-xl">
+                <h2 id="chatConfirmTitle" class="text-sm font-bold text-[var(--ink)]">Start a new conversation?</h2>
+                <p class="mt-2 text-sm leading-6 text-[var(--muted)]">This clears what is on screen. Your orders are not affected.</p>
+                <div class="mt-5 flex justify-end gap-2">
+                    <button type="button" onclick="chatConfirmAnswer(false)"
+                            class="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">Keep it</button>
+                    <button type="button" id="chatConfirmYes" onclick="chatConfirmAnswer(true)"
+                            class="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-bold text-white transition hover:brightness-110">Start over</button>
+                </div>
+            </div>
+        </div>
 
         <div id="chatLog" class="flex-1 space-y-3 overflow-y-auto bg-[var(--surface)] px-3.5 py-4" aria-live="polite"></div>
 
@@ -250,8 +267,41 @@
         chatAsk(message, null);
     }
 
+    /* Resolves when the visitor answers the in-panel dialog. */
+    let chatConfirmResolve = null;
+
+    function chatAskToReset() {
+        const box = chatEl('chatConfirm');
+        box.classList.remove('hidden');
+        box.classList.add('flex');
+        chatEl('chatConfirmYes').focus();
+
+        return new Promise((resolve) => {
+            chatConfirmResolve = resolve;
+        });
+    }
+
+    /* Escape backs out, which is what a dialog is expected to do and what
+       confirm() gave for free. */
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && chatConfirmResolve) {
+            event.stopPropagation();
+            chatConfirmAnswer(false);
+        }
+    });
+
+    function chatConfirmAnswer(answer) {
+        const box = chatEl('chatConfirm');
+        box.classList.add('hidden');
+        box.classList.remove('flex');
+
+        const resolve = chatConfirmResolve;
+        chatConfirmResolve = null;
+        if (resolve) resolve(answer);
+    }
+
     async function chatReset() {
-        if (!confirm('Start a new conversation? This clears what is on screen.')) return;
+        if (!await chatAskToReset()) return;
 
         try {
             const response = await fetch('/shop-api/chat/reset', {
