@@ -8,14 +8,29 @@
             <h1 class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">Dashboard</h1>
             <p class="mt-1 text-sm text-[var(--muted)]">Recent trade, and anything that needs doing today.</p>
         </div>
-        <div class="flex items-center gap-2">
-            <select id="rangeSelect" onchange="loadDashboard()"
+        <div class="flex flex-wrap items-center gap-2">
+            <select id="rangeSelect" onchange="rangeChanged()"
                     class="rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--ink)] outline-none transition focus:border-[var(--primary)]">
-                <option value="7">Last 7 days</option>
-                <option value="30" selected>Last 30 days</option>
-                <option value="90">Last 90 days</option>
+                <option value="all">All time</option>
+                <option value="12m">Last 12 months</option>
+                <option value="6m">Last 6 months</option>
+                <option value="3m">Last 3 months</option>
+                <option value="30d" selected>Last 30 days</option>
+                <option value="7d">Last 7 days</option>
+                <option value="custom">Custom range</option>
             </select>
-            <a href="/admin/analytics" class="rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">Open Analytics</a>
+
+            {{-- Native date fields, so the calendar is the one the operator
+                 already knows from every other site. --}}
+            <div id="customRange" class="hidden flex-wrap items-center gap-2">
+                <input type="date" id="rangeFrom" aria-label="Start date"
+                       class="rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--ink)] outline-none transition focus:border-[var(--primary)]">
+                <span class="text-sm text-[var(--muted)]">to</span>
+                <input type="date" id="rangeTo" aria-label="End date"
+                       class="rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--ink)] outline-none transition focus:border-[var(--primary)]">
+                <button type="button" onclick="loadDashboard()"
+                        class="rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110">Apply</button>
+            </div>
         </div>
     </div>
 
@@ -28,9 +43,9 @@
 
         <section class="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
             <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
-                <h2 class="text-base font-bold text-[var(--ink)]">Monthly collections</h2>
-                <p class="mt-1 text-xs text-[var(--muted)]">Money actually received, last six months</p>
-                <div id="monthlyBars" class="mt-6 space-y-5"></div>
+                <h2 class="text-base font-bold text-[var(--ink)]">Collections</h2>
+                <p id="collectionsNote" class="mt-1 text-xs text-[var(--muted)]">Money actually received</p>
+                <div id="collectionsChart" class="mt-6"></div>
             </div>
 
             <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
@@ -116,11 +131,35 @@
         }).join('');
     }
 
-    /** Month label, value, and a bar underneath - the reference's shape. */
-    function renderMonthly(series) {
-        const peak = Math.max(...series.map(m => m.collected), 1);
+    /**
+     * Collections over the chosen window.
+     *
+     * Few buckets read best as a list, because each one can carry its own
+     * figure. Many buckets cannot -- thirty of those is a page and a half --
+     * so past a dozen it becomes columns, and the figures move to the
+     * tooltip and the caption underneath.
+     */
+    function renderCollections(series, range) {
+        const note = document.getElementById('collectionsNote');
+        note.textContent = 'Money actually received, ' + (range.description || '');
 
-        document.getElementById('monthlyBars').innerHTML = series.map(m => `
+        const holder = document.getElementById('collectionsChart');
+
+        if (!series.length) {
+            holder.innerHTML = '<p class="rounded-xl border border-[var(--line)] p-6 text-center text-xs text-[var(--muted)]">No trade in this period.</p>';
+            return;
+        }
+
+        const peak = Math.max(...series.map(m => m.collected), 1);
+        const busiest = series.reduce((best, m) => (m.collected > best.collected ? m : best), series[0]);
+
+        holder.innerHTML = series.length <= 12
+            ? barList(series, peak)
+            : columns(series, peak, busiest);
+    }
+
+    function barList(series, peak) {
+        return '<div class="space-y-5">' + series.map(m => `
             <div>
                 <div class="flex items-end justify-between gap-3">
                     <span class="text-sm font-semibold text-[var(--ink)]">${escapeHtml(m.label)}</span>
@@ -129,7 +168,30 @@
                 <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-[var(--surface)]" title="${escapeHtml(m.full_label)}">
                     <div class="h-full rounded-full bg-[var(--primary)]" style="width:${(m.collected / peak) * 100}%"></div>
                 </div>
+            </div>`).join('') + '</div>';
+    }
+
+    function columns(series, peak, busiest) {
+        // Every label will not fit, so roughly a dozen of them are kept and
+        // the rest are left blank rather than overlapped into mush.
+        const every = Math.ceil(series.length / 12);
+
+        const bars = series.map(m => `
+            <div class="flex-1 rounded-t bg-[var(--primary)] transition hover:brightness-110"
+                 style="height:${Math.max(m.collected > 0 ? 3 : 1, (m.collected / peak) * 100)}%"
+                 title="${escapeHtml(m.full_label)}: ${peso(m.collected)} over ${m.orders} orders"></div>`).join('');
+
+        const labels = series.map((m, i) => `
+            <div class="flex-1 overflow-hidden text-center text-[10px] leading-4 text-[var(--muted)]">
+                ${i % every === 0 ? escapeHtml(m.label) : ''}
             </div>`).join('');
+
+        return `
+            <div class="flex h-56 items-end gap-[2px]">${bars}</div>
+            <div class="mt-2 flex gap-[2px]">${labels}</div>
+            <p class="mt-4 border-t border-[var(--line)] pt-3 text-xs text-[var(--muted)]">
+                Tallest bar: ${escapeHtml(busiest.full_label)}, ${peso(busiest.collected)} over ${busiest.orders} orders.
+            </p>`;
     }
 
     function renderStatus(rows) {
@@ -156,7 +218,7 @@
                 <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] px-3 py-2.5">
                     <div class="min-w-0">
                         <div class="truncate text-sm font-medium text-[var(--ink)]" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
-                        <div class="text-xs text-[var(--muted)]">${escapeHtml(item.brand)}</div>
+                        <div class="text-xs text-[var(--muted)]">${escapeHtml(item.brand)}${item.unit ? ' &middot; ' + escapeHtml(item.unit) : ''}</div>
                     </div>
                     <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${tone}">
                         ${item.quantity} left
@@ -166,14 +228,58 @@
             : '<p class="rounded-xl border border-[var(--line)] p-4 text-center text-xs text-[var(--muted)]">Nothing here right now.</p>';
     }
 
+    function today() {
+        return new Date().toLocaleDateString('en-CA');
+    }
+
+    /** Custom shows the two date fields, and starts them somewhere sensible. */
+    function rangeChanged() {
+        const custom = document.getElementById('rangeSelect').value === 'custom';
+        const holder = document.getElementById('customRange');
+
+        holder.classList.toggle('hidden', !custom);
+        holder.classList.toggle('flex', custom);
+
+        if (!custom) {
+            loadDashboard();
+            return;
+        }
+
+        const from = document.getElementById('rangeFrom');
+        const to = document.getElementById('rangeTo');
+
+        to.max = from.max = today();
+
+        if (!from.value || !to.value) {
+            const start = new Date();
+            start.setDate(start.getDate() - 29);
+            from.value = start.toLocaleDateString('en-CA');
+            to.value = today();
+        }
+
+        loadDashboard();
+    }
+
+    function rangeQuery() {
+        const range = document.getElementById('rangeSelect').value;
+
+        if (range !== 'custom') {
+            return `range=${range}`;
+        }
+
+        const from = document.getElementById('rangeFrom').value;
+        const to = document.getElementById('rangeTo').value;
+
+        return `range=custom&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    }
+
     async function loadDashboard() {
-        const days = document.getElementById('rangeSelect').value;
         document.getElementById('dashBody').classList.add('hidden');
         document.getElementById('dashLoading').classList.remove('hidden');
         document.getElementById('dashLoading').textContent = 'Loading dashboard...';
 
         try {
-            const response = await fetch(`/admin-api/dashboard/stats?days=${days}`, { headers: { Accept: 'application/json' } });
+            const response = await fetch(`/admin-api/dashboard/stats?${rangeQuery()}`, { headers: { Accept: 'application/json' } });
 
             if (response.status === 401) {
                 window.location.href = '/admin/login';
@@ -181,11 +287,20 @@
             }
 
             const payload = await response.json();
+
+            // A refused range is the operator's to correct, so it says which
+            // part was wrong rather than "could not load".
+            if (response.status === 422) {
+                document.getElementById('dashLoading').textContent = Object.values(payload.errors || {}).flat().join(' ')
+                    || 'That date range cannot be read.';
+                return;
+            }
+
             if (!payload.success) throw new Error('Failed to load.');
 
             const d = payload.data;
             renderCards(d.cards);
-            renderMonthly(d.monthly_revenue);
+            renderCollections(d.collections, d.range);
             renderStatus(d.order_status);
             renderStockList('outOfStock', 'outOfStockCount', d.attention.out_of_stock, d.attention.out_of_stock_total, 'bg-red-100 text-red-800');
             renderStockList('lowStock', 'lowStockCount', d.attention.low_stock, d.attention.low_stock_total, 'bg-amber-100 text-amber-800');
