@@ -148,12 +148,12 @@ class ProductCatalogSeeder extends Seeder
                 'description' => 'Semi synthetic 10W30 meeting API SN, for everyday petrol engines.',
             ],
             [
-                // Left as Other on purpose. Solar's page says "premium
-                // quality base oils" and stops there, so unlike the other
-                // three transmission fluids there is nothing to call this.
+                // Solar's page says only "premium quality base oils", so the
+                // website cannot settle this one. Synthetic, confirmed by the
+                // business on 24 September 2026.
                 'key' => 'solar-atf-dex3',
                 'name' => 'Solar Premium Series Automatic Transmission Fluid API DEX III',
-                'brand' => 'SOLAR', 'oil_type' => 'Other', 'viscosity' => 'ATF',
+                'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => 'ATF',
                 'per_litre' => 370, 'packs' => ['1L', '4L', '5L'],
                 'description' => 'Automatic transmission fluid to the DEXRON-III specification.',
             ],
