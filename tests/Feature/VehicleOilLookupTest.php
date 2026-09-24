@@ -78,6 +78,50 @@ class VehicleOilLookupTest extends TestCase
         );
     }
 
+    public static function uncoveredMakes(): array
+    {
+        return [
+            'a supercar'        => ['what oil for my ferrari', 'Ferrari'],
+            'a German saloon'   => ['oil for my bmw 320i', 'BMW'],
+            'spelled out'       => ['what does a mercedes-benz take', 'Mercedes-Benz'],
+            'a Japanese make'   => ['what oil does my subaru forester take', 'Subaru'],
+            'asked in Filipino' => ['anong oil sa lexus ko', 'Lexus'],
+            'sold here'         => ['oil for my chery tiggo', 'Chery'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('uncoveredMakes')]
+    public function it_names_a_make_it_does_not_cover(string $question, string $expected): void
+    {
+        // Offering a Ferrari owner a list of makes that does not contain
+        // Ferrari reads as not having understood the question.
+        $this->assertSame($expected, (new VehicleMatcher)->unsupportedMake($question));
+    }
+
+    #[Test]
+    public function a_make_it_does_cover_is_never_called_uncovered(): void
+    {
+        $matcher = new VehicleMatcher;
+
+        foreach ($matcher->makes() as $make) {
+            $this->assertNull(
+                $matcher->unsupportedMake("what oil for my {$make}"),
+                "{$make} is in the guide but was reported as uncovered."
+            );
+        }
+    }
+
+    #[Test]
+    public function an_ordinary_question_names_no_uncovered_make(): void
+    {
+        $matcher = new VehicleMatcher;
+
+        foreach (['how can i pay', 'do you deliver to my city', 'can i cancel my order'] as $question) {
+            $this->assertNull($matcher->unsupportedMake($question));
+        }
+    }
+
     #[Test]
     public function an_everyday_word_still_works_when_the_message_is_about_a_vehicle(): void
     {

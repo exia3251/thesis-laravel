@@ -36,6 +36,43 @@ class VehicleMatcher
         'sasakyan', 'kotse', 'makina', 'lubricant', 'recommend', 'use', 'uses',
     ];
 
+    /**
+     * Makes a customer here might plausibly type that the guide does not
+     * cover, so "what oil for my Ferrari" can be answered with "we do not
+     * have specifications for Ferrari" rather than with "which make is it?"
+     * and a list that does not contain it.
+     *
+     * Kept as a list rather than guessed at, because the alternative is
+     * treating any unrecognised word as a car and telling somebody asking
+     * about delivery that we do not stock oil for their "tomorrow".
+     */
+    private const UNSUPPORTED_MAKES = [
+        // European
+        'bmw' => 'BMW', 'mercedes' => 'Mercedes-Benz', 'mercedes-benz' => 'Mercedes-Benz',
+        'benz' => 'Mercedes-Benz', 'audi' => 'Audi', 'volkswagen' => 'Volkswagen',
+        'vw' => 'Volkswagen', 'porsche' => 'Porsche', 'ferrari' => 'Ferrari',
+        'lamborghini' => 'Lamborghini', 'maserati' => 'Maserati', 'bentley' => 'Bentley',
+        'jaguar' => 'Jaguar', 'volvo' => 'Volvo', 'peugeot' => 'Peugeot',
+        'renault' => 'Renault', 'citroen' => 'Citroen', 'skoda' => 'Skoda',
+        'fiat' => 'Fiat', 'mini' => 'MINI', 'opel' => 'Opel',
+
+        // Japanese and Korean we do not hold specifications for
+        'subaru' => 'Subaru', 'lexus' => 'Lexus', 'infiniti' => 'Infiniti',
+        'acura' => 'Acura', 'daihatsu' => 'Daihatsu', 'genesis' => 'Genesis',
+        'ssangyong' => 'SsangYong',
+
+        // American
+        'chevrolet' => 'Chevrolet', 'chevy' => 'Chevrolet', 'jeep' => 'Jeep',
+        'dodge' => 'Dodge', 'chrysler' => 'Chrysler', 'cadillac' => 'Cadillac',
+        'gmc' => 'GMC', 'tesla' => 'Tesla', 'lincoln' => 'Lincoln',
+
+        // Chinese and Indian marques sold here
+        'byd' => 'BYD', 'chery' => 'Chery', 'haval' => 'Haval', 'gwm' => 'GWM',
+        'foton' => 'Foton', 'jac' => 'JAC', 'maxus' => 'Maxus',
+        'changan' => 'Changan', 'dongfeng' => 'Dongfeng', 'baic' => 'BAIC',
+        'mahindra' => 'Mahindra', 'tata' => 'Tata',
+    ];
+
     private ?Collection $specs = null;
 
     /**
@@ -97,6 +134,25 @@ class VehicleMatcher
         return $hasContext
             ? $result
             : ['specs' => collect(), 'year' => null, 'matched' => null];
+    }
+
+    /**
+     * The make a customer named that the guide does not cover, if any.
+     *
+     * Only consulted once a lookup has come back empty, so a make we do hold
+     * is never mistaken for one we do not.
+     */
+    public function unsupportedMake(string $message): ?string
+    {
+        $tokens = explode(' ', $this->normalise($message));
+
+        foreach ($tokens as $token) {
+            if (isset(self::UNSUPPORTED_MAKES[$token])) {
+                return self::UNSUPPORTED_MAKES[$token];
+            }
+        }
+
+        return null;
     }
 
     /** Every make held, for the guided flow. */

@@ -411,6 +411,16 @@ class Responder
         $found = $this->vehicles->findConfident($message);
 
         if ($found['matched'] === null) {
+            // A make we simply do not cover is a different answer from "no
+            // vehicle mentioned". Offering a Ferrari owner a list of makes
+            // that does not include Ferrari reads as though the assistant
+            // did not understand the question.
+            $unsupported = $this->vehicles->unsupportedMake($message);
+
+            if ($unsupported) {
+                return $this->unsupportedVehicle($conversation, $unsupported);
+            }
+
             return $this->askForMake($conversation);
         }
 
@@ -460,6 +470,34 @@ class Responder
         }
 
         return null;
+    }
+
+    /**
+     * A make the guide does not cover.
+     *
+     * It still ends somewhere useful: the grade is what decides whether we
+     * can help, and a customer holding their handbook can read it off in a
+     * moment. Better than a flat refusal, and it does not pretend to know a
+     * vehicle we have no figures for.
+     */
+    private function unsupportedVehicle(ChatConversation $conversation, string $make): array
+    {
+        $conversation->clearContext();
+
+        $body = "We do not carry oil specifications for {$make}, so I cannot tell you what a {$make} takes."
+            . "
+
+Our guide covers " . $this->vehicles->makes()->join(', ', ' and ') . '.'
+            . "
+
+If your handbook names a grade, tell me which one and I will check whether we stock it.";
+
+        return $this->reply($body, [
+            'chips' => [
+                ['label' => 'What oils do you sell?', 'value' => 'what oils do you sell'],
+                ['label' => 'Talk to our staff', 'value' => 'how do i contact you'],
+            ],
+        ]);
     }
 
     private function askForMake(ChatConversation $conversation): array
