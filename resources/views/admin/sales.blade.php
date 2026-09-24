@@ -3,63 +3,50 @@
 @section('title', 'RANEY LUBRICANTS TRADING — Admin')
 
 @section('content')
-    <div class="flex justify-between items-center mb-6">
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <h1 class="text-2xl font-black text-[var(--ink)] sm:text-3xl">Sales</h1>
-            <p class="text-[var(--muted)]">Review sales history, confirm customer payment requests, and manage delivery progress.</p>
+            <h1 class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">Sales</h1>
+            <p class="mt-1 text-sm text-[var(--muted)]">Every order, what it owes, and where it has got to.</p>
         </div>
-        <button onclick="openSaleModal()" class="bg-[var(--primary)] text-white px-4 py-2 rounded hover:bg-[var(--primary-dark)]">
-            Create New Sale
+        <button onclick="openSaleModal()"
+                class="rounded-xl bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110">
+            Create new sale
         </button>
     </div>
 
     <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
     <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
-        <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap gap-3 items-center">
-            <input type="text" id="salesSearch" oninput="searchSales()" placeholder="Search customer or sale ID..." class="rounded border border-gray-300 px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:border-blue-400">
-            <div class="flex gap-2 text-sm">
-                <button onclick="setPaymentFilter('all')" id="payFilter-all" class="pay-filter-btn px-3 py-1.5 rounded border font-medium bg-gray-900 text-white border-gray-900">All</button>
-                <button onclick="setPaymentFilter('paid')" id="payFilter-paid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Paid</button>
-                <button onclick="setPaymentFilter('partial')" id="payFilter-partial" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Partial</button>
-                <button onclick="setPaymentFilter('unpaid')" id="payFilter-unpaid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Unpaid</button>
-                <button onclick="setPaymentFilter('processing')" id="payFilter-processing" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Awaiting Confirmation</button>
+        <div class="space-y-3 border-b border-[var(--line)] px-5 py-4 sm:px-6">
+            <div class="flex flex-wrap items-center gap-3">
+                <input type="text" id="salesSearch" oninput="searchSales()" placeholder="Search customer, order or receipt number..."
+                       class="w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] sm:w-80">
+                <span id="salesCount" class="ml-auto text-xs font-semibold text-[var(--muted)]"></span>
             </div>
 
-            {{-- Shown when the dashboard sent us here for one job. It is a
-                 chip rather than another button, because it is a temporary
-                 view of the list and not a filter to be kept. --}}
-            <div id="focusChip" class="hidden items-center gap-2 rounded-full bg-[var(--primary-soft)] px-3 py-1.5 text-sm font-semibold text-[var(--primary)]">
-                <span id="focusLabel"></span>
-                <button type="button" onclick="clearFocus()" aria-label="Show all sales"
-                        class="rounded-full p-0.5 transition hover:bg-white/60">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
+            {{-- The same states the dashboard's action list counts, so a job
+                 it sends you here to clear is one click away from the rest. --}}
+            <div id="salesFilters" class="flex flex-wrap gap-2"></div>
         </div>
+
         <div class="admin-table-wrap">
             <table class="min-w-full">
                 <thead class="bg-[var(--surface)]">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Sale ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Customer</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Payment</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Delivery</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Paid Amount</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Total Amount</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">Order</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Customer</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Payment</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Delivery</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Money</th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="salesBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
-                    <tr>
-                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading sales...</td>
-                    </tr>
+                <tbody id="salesBody" class="divide-y divide-[var(--line)] bg-[var(--card)]">
+                    <tr><td colspan="6" class="px-6 py-10 text-center text-sm text-[var(--muted)]">Loading sales...</td></tr>
                 </tbody>
             </table>
         </div>
-    </div>
-</div>
+        <div id="salesPagination"></div>
     </div>
 
     {{-- Reviewing a payment means comparing a receipt against what the order
@@ -263,7 +250,6 @@
                         </tr>
                     </tbody>
                 </table>
-                <div id="salesPagination"></div>
             </div>
         </div>
 
@@ -326,109 +312,144 @@
         }
 
         let allSales = [];
-        let activePaymentFilter = 'all';
         let salesMeta = null;
+        let salesCounts = {};
 
-        /* One job, arrived at from the dashboard's action list. */
-        const FOCUS_LABELS = {
-            owing: 'Orders awaiting payment',
-            processing: 'Payments to verify',
-            to_deliver: 'Paid orders not yet delivered',
-            refunds: 'Refunds to process',
+        /**
+         * One set of states, shared with the dashboard.
+         *
+         * The page used to filter by payment status while the dashboard's
+         * action list linked in with something else entirely, so the two
+         * counted different things and only one of them was visible.
+         */
+        const FOCUS_SETS = [
+            ['all', 'Everything', 'slate'],
+            ['owing', 'Awaiting payment', 'amber'],
+            ['processing', 'Payment to verify', 'sky'],
+            ['paid', 'Paid', 'emerald'],
+            ['to_deliver', 'To hand over', 'violet'],
+            ['delivered', 'Delivered', 'emerald'],
+            ['refunds', 'Refunds to process', 'red'],
+            ['cancelled', 'Cancelled', 'slate'],
+        ];
+
+        const FOCUS_DOTS = {
+            slate: '#8b97a5', amber: '#d97706', sky: '#0284c7',
+            emerald: '#148a67', violet: '#7c3aed', red: '#dc2626',
         };
 
         const requestedFocus = new URLSearchParams(window.location.search).get('focus');
-        let activeFocus = FOCUS_LABELS[requestedFocus] ? requestedFocus : null;
+        let activeFocus = FOCUS_SETS.some(([key]) => key === requestedFocus) ? requestedFocus : 'all';
 
-        function showFocus() {
-            const chip = document.getElementById('focusChip');
+        function renderFilters() {
+            document.getElementById('salesFilters').innerHTML = FOCUS_SETS.map(([key, label, tone]) => {
+                const on = key === activeFocus;
+                const count = salesCounts[key];
 
-            chip.classList.toggle('hidden', !activeFocus);
-            chip.classList.toggle('flex', !!activeFocus);
-
-            if (activeFocus) document.getElementById('focusLabel').textContent = FOCUS_LABELS[activeFocus];
+                return `
+                    <button type="button" onclick="setFocus('${key}')"
+                            class="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${on
+                                ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
+                                : 'border-[var(--line)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--ink)]'}">
+                        ${key === 'all' ? '' : `<span class="h-2 w-2 rounded-full" style="background:${on ? '#ffffff' : FOCUS_DOTS[tone]}"></span>`}
+                        ${escapeHtml(label)}
+                        ${count === undefined ? '' : `<span class="${on ? 'text-white/80' : 'text-[var(--ink)]'} font-black">${count}</span>`}
+                    </button>`;
+            }).join('');
         }
 
-        function clearFocus() {
-            activeFocus = null;
-            showFocus();
+        function setFocus(focus) {
+            activeFocus = focus;
+            renderFilters();
             loadSales(1);
         }
 
-        function setPaymentFilter(filter) {
-            // The two would fight each other -- unpaid within "paid orders not
-            // yet delivered" is an empty table -- so choosing one drops the
-            // other, and the chip disappearing says so.
-            activeFocus = null;
-            showFocus();
+        function deliveryBadge(sale) {
+            const tones = {
+                to_deliver: ['bg-slate-100 text-slate-700', 'To hand over'],
+                to_receive: ['bg-violet-100 text-violet-800', 'With the courier'],
+                delivered: ['bg-emerald-100 text-emerald-800', 'Delivered'],
+            };
+            const [cls, label] = tones[sale.delivery_status] || ['bg-slate-100 text-slate-700', sale.delivery_status];
 
-            activePaymentFilter = filter;
-            document.querySelectorAll('.pay-filter-btn').forEach(btn => {
-                btn.classList.remove('bg-gray-900', 'text-white', 'border-gray-900');
-                btn.classList.add('text-gray-600', 'border-gray-300');
-            });
-            const active = document.getElementById('payFilter-' + filter);
-            if (active) {
-                active.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
-                active.classList.remove('text-gray-600', 'border-gray-300');
-            }
-            loadSales(1);
+            return `<span class="inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${cls}">${escapeHtml(label)}</span>`;
         }
 
         function renderSales() {
             const tbody = document.getElementById('salesBody');
-            const sales = allSales;
 
-            tbody.innerHTML = sales.length
-                ? sales.map((sale) => {
-                    const paymentRequests = Array.isArray(sale.payment_requests) ? sale.payment_requests : [];
-                    const pendingRequestsHtml = paymentRequests
-                        .filter((request) => request.status === 'processing')
-                        .map((request) => `
-                            <div class="rounded-lg border border-sky-200 bg-sky-50 p-2 text-xs text-sky-900">
-                                <div class="font-semibold">Customer GCash request: ${formatCurrency(request.amount)}</div>
-                                <div class="mt-1">${request.reference_no ? `Ref: ${escapeHtml(request.reference_no)}` : 'No reference given'}</div>
-                                <button type="button" onclick="openVerifyModal(${sale.sale_id}, ${request.id})" class="mt-2 w-full rounded bg-sky-700 px-2 py-1.5 font-semibold text-white transition hover:bg-sky-800">Review payment</button>
-                            </div>
-                        `).join('');
+            document.getElementById('salesCount').textContent = salesMeta
+                ? `${salesMeta.total} order${salesMeta.total === 1 ? '' : 's'}`
+                : '';
+
+            tbody.innerHTML = allSales.length
+                ? allSales.map((sale) => {
+                    const requests = Array.isArray(sale.payment_requests) ? sale.payment_requests : [];
+                    const pending = requests.filter((request) => request.status === 'processing');
+
+                    const pendingHtml = pending.map((request) => `
+                        <div class="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-xs text-sky-900">
+                            <div class="font-semibold">GCash claim: ${formatCurrency(request.amount)}</div>
+                            <div class="mt-0.5">${request.reference_no ? `Ref ${escapeHtml(request.reference_no)}` : 'No reference given'}</div>
+                            <button type="button" onclick="openVerifyModal(${sale.sale_id}, ${request.id})"
+                                    class="mt-2 w-full rounded-lg bg-sky-700 px-2 py-1.5 font-semibold text-white transition hover:bg-sky-800">Review payment</button>
+                        </div>`).join('');
+
+                    const owed = Number(sale.balance_due || 0);
+                    const cancelled = sale.order_status === 'cancelled';
 
                     return `
-                    <tr>
-                        <td class="px-6 py-4">
-                            <div class="font-semibold">#${sale.sale_id}</div>
-                            ${sale.receipt_no ? `<div class="mt-1 text-xs font-medium text-[var(--primary)]">${escapeHtml(sale.receipt_no)}</div>` : ''}
+                    <tr class="align-top transition hover:bg-[var(--surface)] ${cancelled ? 'opacity-70' : ''}">
+                        <td class="px-5 py-4 sm:px-6">
+                            <div class="text-sm font-bold text-[var(--ink)]">${escapeHtml(sale.order_no || '#' + sale.sale_id)}</div>
+                            <div class="mt-0.5 text-xs text-[var(--muted)]">${new Date(sale.sale_date).toLocaleDateString()} &middot; ${new Date(sale.sale_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            ${sale.receipt_no ? `<div class="mt-1 text-xs font-semibold text-[var(--primary)]">${escapeHtml(sale.receipt_no)}</div>` : ''}
                             ${sale.delivery_no ? `<div class="text-xs text-[var(--muted)]">${escapeHtml(sale.delivery_no)}</div>` : ''}
+                            ${cancelled ? '<div class="mt-1 inline-block rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-700">Cancelled</div>' : ''}
                         </td>
-                        <td class="px-6 py-4">${new Date(sale.sale_date).toLocaleString()}</td>
-                        <td class="px-6 py-4">${escapeHtml(sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in Customer')}</td>
-                        <td class="px-6 py-4">
+                        <td class="px-5 py-4">
+                            <div class="text-sm font-medium text-[var(--ink)]">${escapeHtml(sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in customer')}</div>
+                            <div class="text-xs text-[var(--muted)]">${(sale.items || []).length} item${(sale.items || []).length === 1 ? '' : 's'}</div>
+                        </td>
+                        <td class="px-5 py-4">
                             ${getPaymentBadge(sale.payment_status)}
+                            ${pending.length ? `<div class="mt-1 text-[11px] font-semibold text-sky-700">${pending.length} to review</div>` : ''}
                         </td>
-                        <td class="px-6 py-4">
-                            <select id="delivery_status_${sale.sale_id}" class="rounded border px-2 py-1">
-                                <option value="to_deliver" ${sale.delivery_status === 'to_deliver' ? 'selected' : ''}>To Deliver</option>
-                                <option value="to_receive" ${sale.delivery_status === 'to_receive' ? 'selected' : ''}>To Receive</option>
-                                <option value="delivered" ${sale.delivery_status === 'delivered' ? 'selected' : ''} ${sale.payment_status === 'unpaid' ? 'disabled' : ''}>Delivered</option>
-                            </select>
+                        <td class="px-5 py-4">
+                            ${cancelled ? deliveryBadge(sale) : `
+                                <select id="delivery_status_${sale.sale_id}"
+                                        class="rounded-lg border border-[var(--line)] bg-white px-2 py-1.5 text-xs font-semibold outline-none focus:border-[var(--primary)]">
+                                    <option value="to_deliver" ${sale.delivery_status === 'to_deliver' ? 'selected' : ''}>To hand over</option>
+                                    <option value="to_receive" ${sale.delivery_status === 'to_receive' ? 'selected' : ''}>With the courier</option>
+                                    <option value="delivered" ${sale.delivery_status === 'delivered' ? 'selected' : ''} ${sale.payment_status === 'unpaid' ? 'disabled' : ''}>Delivered</option>
+                                </select>`}
                         </td>
-                        <td class="px-6 py-4">
-                            <input id="paid_amount_${sale.sale_id}" type="number" min="0" step="1" value="${Math.round(Number(sale.paid_amount || 0))}" class="w-28 rounded border px-2 py-1">
+                        <td class="px-5 py-4">
+                            <div class="text-sm font-bold text-[var(--ink)]">${formatCurrency(sale.total_amount)}</div>
+                            <div class="mt-1 flex items-center gap-1.5 text-xs">
+                                <span class="text-[var(--muted)]">paid</span>
+                                <input id="paid_amount_${sale.sale_id}" type="number" min="0" step="1"
+                                       value="${Math.round(Number(sale.paid_amount || 0))}"
+                                       class="w-24 rounded-lg border border-[var(--line)] px-2 py-1 text-xs outline-none focus:border-[var(--primary)]"
+                                       ${cancelled ? 'disabled' : ''}>
+                            </div>
+                            ${owed > 0 ? `<div class="mt-1 text-xs font-semibold text-amber-700">${formatCurrency(owed)} owing</div>` : ''}
                         </td>
-                        <td class="px-6 py-4">${formatCurrency(sale.total_amount)}</td>
-                        <td class="px-6 py-4">
-                            <div class="space-y-2">
-                                <div class="flex flex-wrap gap-2">
-                                    ${sale.order_status === 'cancelled' ? '' : `<button type="button" onclick="updateSaleStatus(${sale.sale_id})" class="rounded border border-[var(--line)] px-2 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-50">Update</button>`}
-                                    <button type="button" onclick="openHistoryModal(${sale.sale_id})" class="rounded border border-[var(--line)] px-2 py-1 text-xs font-semibold text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]">History${(sale.payment_requests || []).length ? ` (${(sale.payment_requests || []).length})` : ''}</button>
+                        <td class="px-5 py-4 text-right sm:px-6">
+                            <div class="inline-flex flex-col items-stretch gap-2">
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    ${cancelled ? '' : `<button type="button" onclick="updateSaleStatus(${sale.sale_id})"
+                                            class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Update</button>`}
+                                    <button type="button" onclick="openHistoryModal(${sale.sale_id})"
+                                            class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--muted)] transition hover:text-[var(--ink)]">History${requests.length ? ` (${requests.length})` : ''}</button>
                                 </div>
                                 ${renderLifecycleActions(sale)}
-                                ${pendingRequestsHtml}
+                                ${pendingHtml}
                             </div>
                         </td>
-                    </tr>
-                `;
+                    </tr>`;
                 }).join('')
-                : '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No matching sales records.</td></tr>';
+                : '<tr><td colspan="6" class="px-6 py-10 text-center text-sm text-[var(--muted)]">Nothing matches that.</td></tr>';
         }
 
         async function loadSales(page = 1) {
@@ -436,8 +457,7 @@
             const search = document.getElementById('salesSearch').value.trim();
 
             if (search) params.set('search', search);
-            if (activePaymentFilter !== 'all') params.set('payment_status', activePaymentFilter);
-            if (activeFocus) params.set('focus', activeFocus);
+            if (activeFocus !== 'all') params.set('focus', activeFocus);
 
             const response = await fetch(`/admin-api/sales?${params}`, { headers: { Accept: 'application/json' } });
             if (response.status === 401) { window.location.href = '/admin/login'; return; }
@@ -445,7 +465,9 @@
             const data = await response.json();
             allSales = data.data || [];
             salesMeta = data.meta || null;
+            salesCounts = data.counts || {};
 
+            renderFilters();
             renderSales();
             renderPagination('salesPagination', salesMeta, loadSales);
         }
@@ -956,7 +978,7 @@
             });
         });
 
-        showFocus();
+        renderFilters();
         loadSales();
 </script>
 @endpush

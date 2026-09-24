@@ -16,11 +16,11 @@ abstract class Controller
      *
      * @param  callable|null  $mapper  applied to each row before it is sent
      */
-    protected function paginated(LengthAwarePaginator $page, ?callable $mapper = null): JsonResponse
+    protected function paginated(LengthAwarePaginator $page, ?callable $mapper = null, array $extra = []): JsonResponse
     {
         $rows = collect($page->items());
 
-        return response()->json([
+        return response()->json($extra + [
             'success' => true,
             'data' => $mapper ? $rows->map($mapper)->values()->all() : $rows->values()->all(),
             'meta' => [

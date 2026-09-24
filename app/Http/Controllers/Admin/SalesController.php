@@ -15,6 +15,7 @@ use App\Mail\PaymentReviewed;
 use App\Services\Notifier;
 use App\Services\OrderCancellation;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -38,8 +39,7 @@ class SalesController extends Controller
     {
         $request->validate([
             'search' => 'nullable|string|max:100',
-            'payment_status' => 'nullable|in:all,unpaid,processing,partial,paid',
-            'focus' => 'nullable|in:owing,processing,to_deliver,refunds',
+            'focus' => ['nullable', Rule::in(array_keys(self::FOCUS_SETS))],
             'from' => 'nullable|date',
             'to' => 'nullable|date',
             'page' => 'nullable|integer|min:1',
@@ -52,26 +52,7 @@ class SalesController extends Controller
             $query->whereBetween('sale_date', [$request->from, $request->to]);
         }
 
-        if ($request->filled('payment_status') && $request->payment_status !== 'all') {
-            $query->where('payment_status', $request->payment_status);
-        }
-
-        /*
-         * The dashboard's action list links here. Each of these is the exact
-         * set the count on that list was taken from, so the number and the
-         * rows behind it cannot drift apart.
-         */
-        match ($request->input('focus')) {
-            'owing' => $query->where('order_status', Sale::STATUS_ACTIVE)
-                ->whereIn('payment_status', ['unpaid', 'partial']),
-            'processing' => $query->where('order_status', Sale::STATUS_ACTIVE)
-                ->where('payment_status', 'processing'),
-            'to_deliver' => $query->where('order_status', Sale::STATUS_ACTIVE)
-                ->where('payment_status', 'paid')
-                ->where('delivery_status', '!=', 'delivered'),
-            'refunds' => $query->where('refund_status', Sale::REFUND_PENDING),
-            default => null,
-        };
+        $this->applyFocus($query, $request->input('focus'));
 
         if ($request->filled('search')) {
             $term = trim($request->search);
@@ -85,8 +66,60 @@ class SalesController extends Controller
         }
 
         return $this->paginated(
-            $query->orderByDesc('sale_date')->paginate($this->perPage())
+            $query->orderByDesc('sale_date')->paginate($this->perPage()),
+            null,
+            ['counts' => $this->focusCounts()]
         );
+    }
+
+    /**
+     * The states an order can be in, as the dashboard names them.
+     *
+     * One idea, shared: the action list links here with a focus, the filter
+     * buttons on the page set the same focus, and the counts beside those
+     * buttons are taken from these same sets. There is nowhere left for the
+     * number and the rows to disagree.
+     */
+    private const FOCUS_SETS = [
+        'all' => 'Everything',
+        'owing' => 'Awaiting payment',
+        'processing' => 'Payment to verify',
+        'paid' => 'Paid',
+        'to_deliver' => 'To hand over',
+        'delivered' => 'Delivered',
+        'refunds' => 'Refunds to process',
+        'cancelled' => 'Cancelled',
+    ];
+
+    private function applyFocus($query, ?string $focus): void
+    {
+        $active = fn ($q) => $q->where('order_status', Sale::STATUS_ACTIVE);
+
+        match ($focus) {
+            'owing' => $active($query)->whereIn('payment_status', ['unpaid', 'partial']),
+            'processing' => $active($query)->where('payment_status', 'processing'),
+            'paid' => $active($query)->where('payment_status', 'paid'),
+            'to_deliver' => $active($query)->where('payment_status', 'paid')
+                ->where('delivery_status', '!=', 'delivered'),
+            'delivered' => $active($query)->where('delivery_status', 'delivered'),
+            'refunds' => $query->where('refund_status', Sale::REFUND_PENDING),
+            'cancelled' => $query->where('order_status', Sale::STATUS_CANCELLED),
+            default => null,
+        };
+    }
+
+    /** How many orders sit in each state, for the filter buttons. */
+    private function focusCounts(): array
+    {
+        $counts = [];
+
+        foreach (array_keys(self::FOCUS_SETS) as $focus) {
+            $query = Sale::query();
+            $this->applyFocus($query, $focus === 'all' ? null : $focus);
+            $counts[$focus] = $query->count();
+        }
+
+        return $counts;
     }
 
     // Get single sale
