@@ -29,29 +29,52 @@ class ProductImageSeeder extends Seeder
     private const SOLAR = 'https://www.solarlubricants.com/wp-content/uploads/';
 
     /**
-     * product_line => the image on the manufacturer's own catalogue.
+     * product_line => ['main' => url, 'alt' => url|null]
      *
-     * Canroyal's are the 800x450 crops their own grid serves. The originals
-     * are 1920x1080 PNGs of about 1.5 MB each, which put roughly 8 MB of
-     * bottle photographs on a single page of the shop.
+     * `main` is what the catalogue card and the cart row show, so it wants
+     * one bottle, upright, filling the frame. Canroyal publish that as their
+     * -AR-FRONT image; their -AR-ALL group shots are several bottles at an
+     * angle, which shrink to a blue smudge in a card and were unreadable in
+     * the cart.
+     *
+     * `alt` is the extra picture on the product page. Canroyal's group shot
+     * earns its place there because it shows the pack sizes side by side.
+     *
+     * Solar publish one square photograph per product that already reads
+     * well small, so their lines have no alt.
      */
     private function sources(): array
     {
         return [
-            'canroyal-5w30'       => self::CANROYAL . '2024/01/CRL-FS-G-5W30-SN-CRL-1L-AR-ALL-1-800x450.png',
-            'canroyal-15w40'      => self::CANROYAL . '2024/01/CRL-FS-D-15W40-CI-4-ADNOCK-1L-AR-ALL-800x450.png',
-            'canroyal-10w30'      => self::CANROYAL . '2024/01/CRL-SS-G-10W30-SM-CRL-1L-AR-ALL-800x450.png',
-            'canroyal-atf-dex3'   => self::CANROYAL . '2024/01/CRL-M-ATF-A-ADNOCK-1L-AR-ALL-2-800x450.png',
-            'canroyal-atf-dex6'   => self::CANROYAL . '2024/01/CRL-FS-ATF-DVI-CRL-1L-AR-ALL-800x450.png',
+            'canroyal-5w30' => [
+                'main' => self::CANROYAL . '2024/01/CRL-FS-G-5W30-SN-CRL-1L-AR-FRONT-1.png',
+                'alt'  => self::CANROYAL . '2024/01/CRL-FS-G-5W30-SN-CRL-1L-AR-ALL-1-800x450.png',
+            ],
+            'canroyal-15w40' => [
+                'main' => self::CANROYAL . '2024/01/CRL-FS-D-15W40-CI-4-ADNOCK-1L-AR-FRONT.png',
+                'alt'  => self::CANROYAL . '2024/01/CRL-FS-D-15W40-CI-4-ADNOCK-1L-AR-ALL-800x450.png',
+            ],
+            'canroyal-10w30' => [
+                'main' => self::CANROYAL . '2024/01/CRL-SS-G-10W30-SM-CRL-1L-AR-FRONT.png',
+                'alt'  => self::CANROYAL . '2024/01/CRL-SS-G-10W30-SM-CRL-1L-AR-ALL-800x450.png',
+            ],
+            'canroyal-atf-dex3' => [
+                'main' => self::CANROYAL . '2024/01/CRL-M-ATF-A-ADNOCK-1L-AR-FRONT-1.png',
+                'alt'  => self::CANROYAL . '2024/01/CRL-M-ATF-A-ADNOCK-1L-AR-ALL-2-800x450.png',
+            ],
+            'canroyal-atf-dex6' => [
+                'main' => self::CANROYAL . '2024/01/CRL-FS-ATF-DVI-CRL-1L-AR-FRONT.png',
+                'alt'  => self::CANROYAL . '2024/01/CRL-FS-ATF-DVI-CRL-1L-AR-ALL-800x450.png',
+            ],
 
-            'solar-5w30'          => self::SOLAR . '2024/08/MOTOR-ENGINE-OIL-PREMIUM-5W30.jpg',
-            'solar-15w40'         => self::SOLAR . '2025/04/15w40.jpg',
-            'solar-10w30'         => self::SOLAR . '2024/08/MOTOR-ENGINE-OIL-OPTIMA-10W30.jpg',
-            'solar-atf-dex3'      => self::SOLAR . '2023/10/ATF-PREMIUM-DEX-III.jpg',
-            'solar-atf-dex6'      => self::SOLAR . '2025/04/Dexron-VI-Fully-synthetic-1L-4L.jpg',
-            'solar-coolant-green' => self::SOLAR . '2023/10/ANTIFREEZE-COOLANT-4-LTR-Front-green-cap.jpg',
-            'solar-coolant-blue'  => self::SOLAR . '2023/10/ANTIFREEZE-COOLANT-4-LTR-Front-Blue-cap.jpg',
-            'solar-moto-10w40'    => self::SOLAR . '2023/10/4T-MOTOR-CYCLE-ENGINE-OIL-10W40-1LTR-Front-1.jpg',
+            'solar-5w30'          => ['main' => self::SOLAR . '2024/08/MOTOR-ENGINE-OIL-PREMIUM-5W30.jpg'],
+            'solar-15w40'         => ['main' => self::SOLAR . '2025/04/15w40.jpg'],
+            'solar-10w30'         => ['main' => self::SOLAR . '2024/08/MOTOR-ENGINE-OIL-OPTIMA-10W30.jpg'],
+            'solar-atf-dex3'      => ['main' => self::SOLAR . '2023/10/ATF-PREMIUM-DEX-III.jpg'],
+            'solar-atf-dex6'      => ['main' => self::SOLAR . '2025/04/Dexron-VI-Fully-synthetic-1L-4L.jpg'],
+            'solar-coolant-green' => ['main' => self::SOLAR . '2023/10/ANTIFREEZE-COOLANT-4-LTR-Front-green-cap.jpg'],
+            'solar-coolant-blue'  => ['main' => self::SOLAR . '2023/10/ANTIFREEZE-COOLANT-4-LTR-Front-Blue-cap.jpg'],
+            'solar-moto-10w40'    => ['main' => self::SOLAR . '2023/10/4T-MOTOR-CYCLE-ENGINE-OIL-10W40-1LTR-Front-1.jpg'],
 
             // Deliberately absent:
             //
@@ -64,30 +87,43 @@ class ProductImageSeeder extends Seeder
     {
         $done = $skipped = $failed = 0;
 
-        foreach ($this->sources() as $line => $url) {
-            $extension = strtolower(pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION)) ?: 'jpg';
-            $path = 'products/' . $line . '.' . $extension;
+        foreach ($this->sources() as $line => $urls) {
+            $columns = [];
 
-            if (Storage::disk('public')->exists($path)) {
-                Product::where('product_line', $line)->update(['image_path' => $path]);
-                $skipped++;
-                continue;
+            foreach (['main' => 'image_path', 'alt' => 'image_path_2'] as $slot => $column) {
+                $url = $urls[$slot] ?? null;
+
+                if (!$url) {
+                    continue;
+                }
+
+                $extension = strtolower(pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION)) ?: 'jpg';
+                $path = 'products/' . $line . ($slot === 'alt' ? '-alt' : '') . '.' . $extension;
+
+                if (Storage::disk('public')->exists($path)) {
+                    $columns[$column] = $path;
+                    $skipped++;
+                    continue;
+                }
+
+                $body = $this->download($url);
+
+                if ($body === null) {
+                    $this->command?->warn("  could not fetch the {$slot} image for {$line}");
+                    $failed++;
+                    continue;
+                }
+
+                Storage::disk('public')->put($path, $body);
+                $columns[$column] = $path;
+                $done++;
             }
 
-            $body = $this->download($url);
-
-            if ($body === null) {
-                $this->command?->warn("  could not fetch the image for {$line}");
-                $failed++;
-                continue;
+            if ($columns) {
+                // Every pack of the line, so the 4L page is not blank merely
+                // because the shop card read its picture off the 1L.
+                Product::where('product_line', $line)->update($columns);
             }
-
-            Storage::disk('public')->put($path, $body);
-
-            // Every pack of the line, so the 4L page is not blank merely
-            // because the shop card read its picture off the 1L.
-            Product::where('product_line', $line)->update(['image_path' => $path]);
-            $done++;
         }
 
         $this->command?->info("Downloaded {$done}, already had {$skipped}, failed {$failed}.");

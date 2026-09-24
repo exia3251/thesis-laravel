@@ -19,12 +19,37 @@
         </section>
 
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
-                @if ($product->image_path)
-                    <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}" class="h-[420px] w-full bg-white object-contain p-6">
-                @else
-                    <div class="flex h-[420px] items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))]">
-                        <span class="rounded-full bg-white/90 px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Product Image</span>
+            <div>
+                <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
+                    @if ($product->image_path)
+                        <img id="productImage" src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}" class="h-[420px] w-full bg-white object-contain p-6">
+                    @else
+                        <div class="flex h-[420px] items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))]">
+                            <span class="rounded-full bg-white/90 px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Product Image</span>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- The second picture is the pack-size group shot. It is
+                     unreadable at card size, which is why the card shows a
+                     single bottle, but it is worth seeing once someone is
+                     looking properly. --}}
+                @if ($product->image_path && $product->image_path_2)
+                    @php
+                        $shots = [
+                            ['path' => $product->image_path,   'label' => 'Product'],
+                            ['path' => $product->image_path_2, 'label' => 'Pack sizes'],
+                        ];
+                    @endphp
+                    <div class="mt-3 flex gap-3">
+                        @foreach ($shots as $index => $shot)
+                            <button type="button"
+                                    onclick="showShot('{{ asset('storage/' . $shot['path']) }}', this)"
+                                    class="product-shot overflow-hidden rounded-xl border-2 bg-white p-1 transition {{ $index === 0 ? 'border-[var(--primary)]' : 'border-[var(--line)] hover:border-[var(--primary)]' }}"
+                                    title="{{ $shot['label'] }}">
+                                <img src="{{ asset('storage/' . $shot['path']) }}" alt="{{ $shot['label'] }}" class="h-16 w-20 object-contain">
+                            </button>
+                        @endforeach
                     </div>
                 @endif
             </div>
@@ -321,6 +346,16 @@
                 : (data.message || 'Cart updated.');
 
             showMessage(note, response.ok ? 'success' : 'error');
+        }
+
+        function showShot(url, button) {
+            const image = document.getElementById('productImage');
+            if (image) image.src = url;
+
+            document.querySelectorAll('.product-shot').forEach((el) => {
+                el.className = 'product-shot overflow-hidden rounded-xl border-2 bg-white p-1 transition '
+                    + (el === button ? 'border-[var(--primary)]' : 'border-[var(--line)] hover:border-[var(--primary)]');
+            });
         }
 
         // The page opens on a pack, so the box option has to be worked out

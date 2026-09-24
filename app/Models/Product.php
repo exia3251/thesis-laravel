@@ -30,6 +30,7 @@ class Product extends Model
         'reorder_level',
         'description',
         'image_path',
+        'image_path_2',
     ];
 
     protected $casts = [

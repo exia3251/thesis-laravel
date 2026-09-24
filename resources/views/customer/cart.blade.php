@@ -105,10 +105,23 @@
                                class="block w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 pl-12 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)]"
                                oninput="onSplitAmountChange()">
                     </div>
+                    @php
+                        // Built from the floor rather than hard-coded. These
+                        // were 20/50/75 while the floor was 20; when the floor
+                        // moved to 50 the first button went on offering an
+                        // amount the checkout rejects, so the shortcut handed
+                        // the customer a validation error.
+                        $floor = (int) config('payments.minimum_down_payment_percent');
+                        $shortcuts = collect([$floor, (int) (round((($floor + 100) / 2) / 5) * 5), 90])
+                            ->filter(fn ($p) => $p >= $floor && $p < 100)
+                            ->unique()
+                            ->sort()
+                            ->values();
+                    @endphp
                     <div class="flex gap-2">
-                        <button type="button" onclick="setSplitPercent(20)" class="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">20%</button>
-                        <button type="button" onclick="setSplitPercent(50)" class="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">50%</button>
-                        <button type="button" onclick="setSplitPercent(75)" class="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">75%</button>
+                        @foreach ($shortcuts as $percent)
+                            <button type="button" onclick="setSplitPercent({{ $percent }})" class="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--muted)] transition hover:border-[var(--primary)] hover:text-[var(--ink)]">{{ $percent }}%</button>
+                        @endforeach
                     </div>
                 </div>
                 <p id="splitError" class="mt-2 hidden text-xs font-semibold text-red-600"></p>
@@ -204,7 +217,7 @@
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-4">
                                 ${item.image_url
-                                    ? `<img src="${item.image_url}" alt="${escapeHtml(item.product_name)}" class="h-16 w-16 rounded-2xl border border-[var(--line)] object-cover ${item.is_unavailable ? 'grayscale opacity-60' : ''}">`
+                                    ? `<img src="${item.image_url}" alt="${escapeHtml(item.product_name)}" class="h-16 w-16 rounded-2xl border border-[var(--line)] bg-white object-contain p-1 ${item.is_unavailable ? 'grayscale opacity-60' : ''}">`
                                     : `<div class="flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--line)] bg-slate-100 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">No Image</div>`}
                                 <div>
                                     <div class="font-semibold text-[var(--ink)]">${escapeHtml(item.product_name)}</div>
