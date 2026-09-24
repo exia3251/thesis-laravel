@@ -223,14 +223,112 @@ class DashboardRangeTest extends TestCase
     }
 
     #[Test]
-    public function stock_warnings_name_the_pack_size(): void
+    public function the_average_order_is_what_was_booked_over_how_many(): void
+    {
+        $admin = $this->admin();
+        $this->sale($admin, now()->subDay()->toDateTimeString(), 1000);
+        $this->sale($admin, now()->subDays(2)->toDateTimeString(), 3000);
+
+        $average = collect($this->stats($admin)->assertOk()->json('data.cards'))
+            ->firstWhere('key', 'average_order');
+
+        $this->assertEqualsWithDelta(2000, $average['value'], 0.001);
+    }
+
+    #[Test]
+    public function the_average_order_survives_a_period_with_no_orders(): void
     {
         $admin = $this->admin();
 
-        $attention = $this->stats($admin)->assertOk()->json('data.attention');
+        $average = collect($this->stats($admin, ['range' => '7d'])->assertOk()->json('data.cards'))
+            ->firstWhere('key', 'average_order');
 
-        foreach (array_merge($attention['out_of_stock'], $attention['low_stock']) as $row) {
-            $this->assertArrayHasKey('unit', $row, 'Three pack sizes share one product name.');
+        $this->assertEqualsWithDelta(0, $average['value'], 0.001, 'Nothing divided by nothing is not an error.');
+    }
+
+    #[Test]
+    public function the_action_list_counts_the_work_waiting(): void
+    {
+        $admin = $this->admin();
+
+        // Two owing, one paid but undelivered, one refund to pay back.
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update(['payment_status' => 'unpaid']);
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update(['payment_status' => 'partial']);
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update(['delivery_status' => 'to_receive']);
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update([
+            'order_status' => Sale::STATUS_CANCELLED,
+            'refund_status' => Sale::REFUND_PENDING,
+        ]);
+
+        $actions = collect($this->stats($admin)->assertOk()->json('data.actions'))->keyBy('key');
+
+        $this->assertSame(2, $actions['awaiting_payment']['count']);
+        $this->assertSame(1, $actions['to_deliver']['count']);
+        $this->assertSame(1, $actions['refunds']['count']);
+        $this->assertSame(0, $actions['to_verify']['count']);
+    }
+
+    #[Test]
+    public function an_action_row_reads_as_a_sentence_either_way(): void
+    {
+        $admin = $this->admin();
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update(['payment_status' => 'unpaid']);
+
+        $actions = collect($this->stats($admin)->assertOk()->json('data.actions'))->keyBy('key');
+
+        $this->assertSame('order awaiting payment', $actions['awaiting_payment']['label']);
+
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update(['payment_status' => 'unpaid']);
+
+        $actions = collect($this->stats($admin)->assertOk()->json('data.actions'))->keyBy('key');
+
+        $this->assertSame('orders awaiting payment', $actions['awaiting_payment']['label']);
+    }
+
+    /**
+     * The point of the whole panel: the count and the page it opens have to
+     * be the same set of orders, or the list is lying to whoever clicks it.
+     */
+    #[Test]
+    public function every_action_link_lands_on_exactly_what_it_counted(): void
+    {
+        $admin = $this->admin();
+
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update(['payment_status' => 'unpaid']);
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update(['payment_status' => 'partial']);
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update(['payment_status' => 'processing']);
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update(['delivery_status' => 'to_receive']);
+        $this->sale($admin, now()->toDateTimeString(), 1000)->update([
+            'order_status' => Sale::STATUS_CANCELLED,
+            'refund_status' => Sale::REFUND_PENDING,
+        ]);
+
+        $actions = collect($this->stats($admin)->assertOk()->json('data.actions'))->keyBy('key');
+
+        foreach (['awaiting_payment' => 'owing', 'to_verify' => 'processing', 'to_deliver' => 'to_deliver', 'refunds' => 'refunds'] as $key => $focus) {
+            $this->assertStringContainsString("focus={$focus}", $actions[$key]['href']);
+
+            $landed = $this->actingAs($admin, 'staff')
+                ->getJson("/admin-api/sales?focus={$focus}&per_page=100")
+                ->assertOk()
+                ->json('data');
+
+            $this->assertCount(
+                $actions[$key]['count'],
+                $landed,
+                "The dashboard says {$actions[$key]['count']} for {$key}; the page it opens disagrees."
+            );
         }
+    }
+
+    #[Test]
+    public function an_unknown_focus_is_refused_rather_than_ignored(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin, 'staff')
+            ->getJson('/admin-api/sales?focus=everything')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['focus']);
     }
 }

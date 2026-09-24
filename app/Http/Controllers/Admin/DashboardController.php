@@ -7,7 +7,6 @@ use App\Models\Product;
 use App\Models\Sale;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -70,8 +69,7 @@ class DashboardController extends Controller
                 ],
                 'cards' => $this->cards($range),
                 'collections' => $this->collections($range),
-                'order_status' => $this->orderStatus(),
-                'attention' => $this->attention(),
+                'actions' => $this->actions(),
             ],
         ]);
     }
@@ -207,9 +205,15 @@ class DashboardController extends Controller
             ->where('balance_due', '>', 0)
             ->count();
 
+        // What a typical order is worth. Booked rather than collected, because
+        // an order half paid for is still an order of its full size.
+        $average = $now->orders > 0 ? (float) $now->booked / (int) $now->orders : 0.0;
+        $averageWas = $was && $was->orders > 0 ? (float) $was->booked / (int) $was->orders : null;
+
         return [
             $this->card('collected', 'Collected', (float) $now->collected, $was ? (float) $was->collected : null, 'money', 'peso'),
             $this->card('orders', 'Orders', (int) $now->orders, $was ? (int) $was->orders : null, 'count', 'cart'),
+            $this->card('average_order', 'Average order', $average, $averageWas, 'money', 'receipt'),
             [
                 'key' => 'inventory_value',
                 'label' => 'Stock on hand',
@@ -319,54 +323,76 @@ class DashboardController extends Controller
         return $series;
     }
 
-    /** Where every live order currently sits. */
-    private function orderStatus(): array
+    /**
+     * The work waiting on somebody here, and where to go and do it.
+     *
+     * Deliberately not tied to the period above: a customer who has not paid
+     * has not paid whichever span the chart is showing. Every row carries the
+     * address of the page that can clear it, filtered to the same set it
+     * counted, so the number and the screen behind it always agree.
+     */
+    private function actions(): array
     {
-        $active = Sale::where('order_status', Sale::STATUS_ACTIVE);
+        $stock = Product::with('inventory')->get()->map(fn (Product $product) => [
+            'quantity' => (int) ($product->inventory->quantity ?? 0),
+            'reorder' => (int) $product->reorder_level,
+        ]);
 
-        $toPay = (clone $active)->where('payment_status', '!=', 'paid')->count();
-        $awaitingReview = DB::table('payment_requests')->where('status', 'processing')->count();
-        $toReceive = (clone $active)->where('payment_status', 'paid')->where('delivery_status', '!=', 'delivered')->count();
-        $delivered = (clone $active)->where('delivery_status', 'delivered')->count();
-        $cancelled = Sale::where('order_status', Sale::STATUS_CANCELLED)->count();
+        $active = fn () => Sale::where('order_status', Sale::STATUS_ACTIVE);
 
         return [
-            ['key' => 'to_pay', 'label' => 'Awaiting payment', 'count' => $toPay, 'tone' => 'amber'],
-            ['key' => 'review', 'label' => 'Payment to review', 'count' => $awaitingReview, 'tone' => 'sky'],
-            ['key' => 'to_receive', 'label' => 'Out for delivery', 'count' => $toReceive, 'tone' => 'violet'],
-            ['key' => 'delivered', 'label' => 'Delivered', 'count' => $delivered, 'tone' => 'emerald'],
-            ['key' => 'cancelled', 'label' => 'Cancelled', 'count' => $cancelled, 'tone' => 'slate'],
+            $this->action(
+                'out_of_stock',
+                $stock->filter(fn ($row) => $row['quantity'] <= 0)->count(),
+                'product out of stock', 'products out of stock',
+                'red', '/admin/inventory?stock=out_of_stock'
+            ),
+            $this->action(
+                'low_stock',
+                $stock->filter(fn ($row) => $row['quantity'] > 0 && $row['quantity'] <= $row['reorder'])->count(),
+                'product running low', 'products running low',
+                'amber', '/admin/inventory?stock=low_stock'
+            ),
+            $this->action(
+                'awaiting_payment',
+                $active()->whereIn('payment_status', ['unpaid', 'partial'])->count(),
+                'order awaiting payment', 'orders awaiting payment',
+                'amber', '/admin/sales?focus=owing'
+            ),
+            $this->action(
+                // Counted on the order rather than on the receipt attached to
+                // it, so this number matches the rows the link lands on.
+                'to_verify',
+                $active()->where('payment_status', 'processing')->count(),
+                'payment to verify', 'payments to verify',
+                'sky', '/admin/sales?focus=processing'
+            ),
+            $this->action(
+                'to_deliver',
+                $active()->where('payment_status', 'paid')->where('delivery_status', '!=', 'delivered')->count(),
+                'paid order not yet delivered', 'paid orders not yet delivered',
+                'violet', '/admin/sales?focus=to_deliver'
+            ),
+            $this->action(
+                // Money owed back on a cancelled order. There is no separate
+                // returns queue in this system; a return that is agreed is
+                // settled as a refund, and this is that queue.
+                'refunds',
+                Sale::where('refund_status', Sale::REFUND_PENDING)->count(),
+                'refund to process', 'refunds to process',
+                'emerald', '/admin/sales?focus=refunds'
+            ),
         ];
     }
 
-    /**
-     * Named products rather than a count, because "7 out of stock" is not
-     * something anyone can act on without opening another page.
-     */
-    private function attention(): array
+    private function action(string $key, int $count, string $singular, string $plural, string $tone, string $href): array
     {
-        $rows = Product::with('inventory')->get()->map(function ($product) {
-            $quantity = (int) ($product->inventory->quantity ?? 0);
-            $reorder = (int) $product->reorder_level;
-
-            return [
-                'product_id' => $product->product_id,
-                'name' => $product->product_name,
-                // Without the pack size the three Patrol 5W30 rows are the
-                // same sentence three times over.
-                'unit' => $product->unit,
-                'brand' => $product->brand,
-                'quantity' => $quantity,
-                'reorder_level' => $reorder,
-                'status' => $quantity <= 0 ? 'out' : ($quantity <= $reorder ? 'low' : 'ok'),
-            ];
-        });
-
         return [
-            'out_of_stock' => $rows->where('status', 'out')->sortBy('name')->values()->take(5)->all(),
-            'low_stock' => $rows->where('status', 'low')->sortBy('quantity')->values()->take(5)->all(),
-            'out_of_stock_total' => $rows->where('status', 'out')->count(),
-            'low_stock_total' => $rows->where('status', 'low')->count(),
+            'key' => $key,
+            'count' => $count,
+            'label' => $count === 1 ? $singular : $plural,
+            'tone' => $tone,
+            'href' => $href,
         ];
     }
 }

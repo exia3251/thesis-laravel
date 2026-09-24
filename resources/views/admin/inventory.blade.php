@@ -98,7 +98,12 @@
             messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
         }
 
-        let activeStockFilter = 'all';
+        /* The dashboard's action list links straight here, so the filter it
+           counted is applied on arrival rather than left to be found. */
+        const STOCK_FILTERS = ['all', 'in_stock', 'low_stock', 'out_of_stock'];
+        const requestedFilter = new URLSearchParams(window.location.search).get('stock');
+
+        let activeStockFilter = STOCK_FILTERS.includes(requestedFilter) ? requestedFilter : 'all';
 
         function setStockFilter(filter) {
             activeStockFilter = filter;
@@ -214,6 +219,8 @@
                 loadInventory();
             }
         });
+
+        if (activeStockFilter !== 'all') setStockFilter(activeStockFilter);
 
         loadInventory();
 </script>

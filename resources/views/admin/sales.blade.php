@@ -25,6 +25,17 @@
                 <button onclick="setPaymentFilter('unpaid')" id="payFilter-unpaid" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Unpaid</button>
                 <button onclick="setPaymentFilter('processing')" id="payFilter-processing" class="pay-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Awaiting Confirmation</button>
             </div>
+
+            {{-- Shown when the dashboard sent us here for one job. It is a
+                 chip rather than another button, because it is a temporary
+                 view of the list and not a filter to be kept. --}}
+            <div id="focusChip" class="hidden items-center gap-2 rounded-full bg-[var(--primary-soft)] px-3 py-1.5 text-sm font-semibold text-[var(--primary)]">
+                <span id="focusLabel"></span>
+                <button type="button" onclick="clearFocus()" aria-label="Show all sales"
+                        class="rounded-full p-0.5 transition hover:bg-white/60">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
         </div>
         <div class="admin-table-wrap">
             <table class="min-w-full">
@@ -318,7 +329,39 @@
         let activePaymentFilter = 'all';
         let salesMeta = null;
 
+        /* One job, arrived at from the dashboard's action list. */
+        const FOCUS_LABELS = {
+            owing: 'Orders awaiting payment',
+            processing: 'Payments to verify',
+            to_deliver: 'Paid orders not yet delivered',
+            refunds: 'Refunds to process',
+        };
+
+        const requestedFocus = new URLSearchParams(window.location.search).get('focus');
+        let activeFocus = FOCUS_LABELS[requestedFocus] ? requestedFocus : null;
+
+        function showFocus() {
+            const chip = document.getElementById('focusChip');
+
+            chip.classList.toggle('hidden', !activeFocus);
+            chip.classList.toggle('flex', !!activeFocus);
+
+            if (activeFocus) document.getElementById('focusLabel').textContent = FOCUS_LABELS[activeFocus];
+        }
+
+        function clearFocus() {
+            activeFocus = null;
+            showFocus();
+            loadSales(1);
+        }
+
         function setPaymentFilter(filter) {
+            // The two would fight each other -- unpaid within "paid orders not
+            // yet delivered" is an empty table -- so choosing one drops the
+            // other, and the chip disappearing says so.
+            activeFocus = null;
+            showFocus();
+
             activePaymentFilter = filter;
             document.querySelectorAll('.pay-filter-btn').forEach(btn => {
                 btn.classList.remove('bg-gray-900', 'text-white', 'border-gray-900');
@@ -394,6 +437,7 @@
 
             if (search) params.set('search', search);
             if (activePaymentFilter !== 'all') params.set('payment_status', activePaymentFilter);
+            if (activeFocus) params.set('focus', activeFocus);
 
             const response = await fetch(`/admin-api/sales?${params}`, { headers: { Accept: 'application/json' } });
             if (response.status === 401) { window.location.href = '/admin/login'; return; }
@@ -912,6 +956,7 @@
             });
         });
 
+        showFocus();
         loadSales();
 </script>
 @endpush

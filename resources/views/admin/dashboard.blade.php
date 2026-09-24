@@ -39,7 +39,7 @@
     </div>
 
     <div id="dashBody" class="hidden space-y-5">
-        <section id="statCards" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"></section>
+        <section id="statCards" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"></section>
 
         <section class="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
             <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
@@ -48,28 +48,18 @@
                 <div id="collectionsChart" class="mt-6"></div>
             </div>
 
+            {{-- The jobs waiting on somebody here. Each one is a link to the
+                 screen that clears it, filtered to the same set it counted,
+                 so the number and the page behind it cannot disagree. --}}
             <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
-                <h2 class="text-base font-bold text-[var(--ink)]">Order status</h2>
-                <p class="mt-1 text-xs text-[var(--muted)]">Where every order currently sits</p>
-                <div id="orderStatus" class="mt-6 space-y-3"></div>
-            </div>
-        </section>
-
-        <section class="grid gap-5 lg:grid-cols-2">
-            <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <h2 class="text-base font-bold text-[var(--ink)]">Out of stock</h2>
-                    <span id="outOfStockCount" class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800"></span>
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-[var(--ink)]">Action required</h2>
+                        <p class="mt-1 text-xs text-[var(--muted)]">Live right now, whatever period is shown</p>
+                    </div>
+                    <span id="actionTotal" class="shrink-0 rounded-full bg-[var(--primary-soft)] px-3 py-1 text-xs font-bold text-[var(--primary)]"></span>
                 </div>
-                <div id="outOfStock" class="mt-4 space-y-2"></div>
-            </div>
-
-            <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <h2 class="text-base font-bold text-[var(--ink)]">Running low</h2>
-                    <span id="lowStockCount" class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800"></span>
-                </div>
-                <div id="lowStock" class="mt-4 space-y-2"></div>
+                <div id="actionList" class="mt-5 space-y-2"></div>
             </div>
         </section>
     </div>
@@ -82,14 +72,16 @@
         cart: 'M3 4h2l.4 2m0 0L7 14h10l2-8H5.4ZM7 14l-1 5h12M9 20a1 1 0 1 0 0 .01M17 20a1 1 0 1 0 0 .01',
         box:  'm21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9',
         clock: 'M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+        receipt: 'M9 8h6m-6 4h6m-6 4h3M6 3h12a1 1 0 0 1 1 1v17l-3.5-2-3.5 2-3.5-2L5 21V4a1 1 0 0 1 1-1Z',
     };
 
-    const STATUS_TONES = {
-        amber:   { dot: '#d97706', text: 'text-amber-800' },
-        sky:     { dot: '#0284c7', text: 'text-sky-800' },
-        violet:  { dot: '#7c3aed', text: 'text-violet-800' },
-        emerald: { dot: '#148a67', text: 'text-emerald-800' },
-        slate:   { dot: '#8b97a5', text: 'text-slate-700' },
+    /* The dot, the number and the hover, per kind of job. */
+    const ACTION_TONES = {
+        red:     { dot: '#dc2626', text: 'text-red-700',     hover: 'hover:border-red-300 hover:bg-red-50' },
+        amber:   { dot: '#d97706', text: 'text-amber-700',   hover: 'hover:border-amber-300 hover:bg-amber-50' },
+        sky:     { dot: '#0284c7', text: 'text-sky-700',     hover: 'hover:border-sky-300 hover:bg-sky-50' },
+        violet:  { dot: '#7c3aed', text: 'text-violet-700',  hover: 'hover:border-violet-300 hover:bg-violet-50' },
+        emerald: { dot: '#148a67', text: 'text-emerald-700', hover: 'hover:border-emerald-300 hover:bg-emerald-50' },
     };
 
     const peso = (n) => 'PHP ' + Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -153,79 +145,78 @@
         const peak = Math.max(...series.map(m => m.collected), 1);
         const busiest = series.reduce((best, m) => (m.collected > best.collected ? m : best), series[0]);
 
-        holder.innerHTML = series.length <= 12
-            ? barList(series, peak)
-            : columns(series, peak, busiest);
-    }
-
-    function barList(series, peak) {
-        return '<div class="space-y-5">' + series.map(m => `
-            <div>
-                <div class="flex items-end justify-between gap-3">
-                    <span class="text-sm font-semibold text-[var(--ink)]">${escapeHtml(m.label)}</span>
-                    <span class="text-xs text-[var(--muted)]">${peso(m.collected)} &middot; ${m.orders} orders</span>
-                </div>
-                <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-[var(--surface)]" title="${escapeHtml(m.full_label)}">
-                    <div class="h-full rounded-full bg-[var(--primary)]" style="width:${(m.collected / peak) * 100}%"></div>
-                </div>
-            </div>`).join('') + '</div>';
+        holder.innerHTML = columns(series, peak, busiest);
     }
 
     function columns(series, peak, busiest) {
-        // Every label will not fit, so roughly a dozen of them are kept and
-        // the rest are left blank rather than overlapped into mush.
+        // Every label will not fit on a long span, so roughly a dozen of them
+        // are kept and the rest left blank rather than overlapped into mush.
         const every = Math.ceil(series.length / 12);
 
+        // Capped, or three days of trade would be three enormous slabs.
+        const width = 'flex-1 max-w-[74px]';
+
         const bars = series.map(m => `
-            <div class="flex-1 rounded-t bg-[var(--primary)] transition hover:brightness-110"
-                 style="height:${Math.max(m.collected > 0 ? 3 : 1, (m.collected / peak) * 100)}%"
-                 title="${escapeHtml(m.full_label)}: ${peso(m.collected)} over ${m.orders} orders"></div>`).join('');
+            <div class="${width} flex h-full flex-col justify-end">
+                <div class="rounded-t bg-[var(--primary)] transition hover:brightness-110"
+                     style="height:${Math.max(m.collected > 0 ? 3 : 1, (m.collected / peak) * 100)}%"
+                     title="${escapeHtml(m.full_label)}: ${peso(m.collected)} over ${m.orders} orders"></div>
+            </div>`).join('');
 
         const labels = series.map((m, i) => `
-            <div class="flex-1 overflow-hidden text-center text-[10px] leading-4 text-[var(--muted)]">
+            <div class="${width} overflow-hidden text-center text-[10px] leading-4 text-[var(--muted)]">
                 ${i % every === 0 ? escapeHtml(m.label) : ''}
             </div>`).join('');
 
         return `
-            <div class="flex h-56 items-end gap-[2px]">${bars}</div>
-            <div class="mt-2 flex gap-[2px]">${labels}</div>
+            <div class="flex h-56 items-stretch gap-[3px]">${bars}</div>
+            <div class="mt-2 flex gap-[3px]">${labels}</div>
             <p class="mt-4 border-t border-[var(--line)] pt-3 text-xs text-[var(--muted)]">
                 Tallest bar: ${escapeHtml(busiest.full_label)}, ${peso(busiest.collected)} over ${busiest.orders} orders.
             </p>`;
     }
 
-    function renderStatus(rows) {
-        document.getElementById('orderStatus').innerHTML = rows.map(row => {
-            const tone = STATUS_TONES[row.tone] || STATUS_TONES.slate;
+    /**
+     * Every job, including the ones with nothing in them.
+     *
+     * A line reading "0 payments to verify" is worth its space: it says the
+     * queue was looked at and is empty, which a missing line does not. Those
+     * lines are dimmed and are not links, because there is nothing to open.
+     */
+    function renderActions(rows) {
+        const outstanding = rows.reduce((total, row) => total + row.count, 0);
+        const badge = document.getElementById('actionTotal');
+
+        badge.textContent = outstanding ? `${outstanding} waiting` : 'All clear';
+        badge.className = outstanding
+            ? 'shrink-0 rounded-full bg-[var(--primary-soft)] px-3 py-1 text-xs font-bold text-[var(--primary)]'
+            : 'shrink-0 rounded-full bg-[var(--surface)] px-3 py-1 text-xs font-bold text-[var(--muted)]';
+
+        document.getElementById('actionList').innerHTML = rows.map(row => {
+            const tone = ACTION_TONES[row.tone] || ACTION_TONES.amber;
+
+            if (!row.count) {
+                return `
+                    <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] px-3.5 py-3 opacity-60">
+                        <span class="flex min-w-0 items-center gap-3">
+                            <span class="h-2.5 w-2.5 shrink-0 rounded-full border border-[var(--line)]"></span>
+                            <span class="truncate text-sm text-[var(--muted)]">No ${escapeHtml(row.label)}</span>
+                        </span>
+                    </div>`;
+            }
+
             return `
-                <div class="flex items-center justify-between gap-4 rounded-2xl border border-[var(--line)] px-4 py-3.5">
+                <a href="${escapeHtml(row.href)}"
+                   class="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] px-3.5 py-3 transition ${tone.hover}">
                     <span class="flex min-w-0 items-center gap-3">
                         <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background:${tone.dot}"></span>
-                        <span class="truncate text-sm font-medium text-[var(--ink)]">${escapeHtml(row.label)}</span>
+                        <span class="truncate text-sm font-medium text-[var(--ink)]">
+                            <span class="font-black ${tone.text}">${row.count}</span> ${escapeHtml(row.label)}
+                        </span>
                     </span>
-                    <span class="shrink-0 text-2xl font-black ${tone.text}">${row.count}</span>
-                </div>`;
+                    <svg class="h-4 w-4 shrink-0 text-[var(--muted)]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+                </a>`;
         }).join('');
-    }
-
-    function renderStockList(containerId, countId, items, total, tone) {
-        const badge = document.getElementById(countId);
-        badge.textContent = total;
-        badge.classList.toggle('hidden', !total);
-
-        document.getElementById(containerId).innerHTML = items.length
-            ? items.map(item => `
-                <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] px-3 py-2.5">
-                    <div class="min-w-0">
-                        <div class="truncate text-sm font-medium text-[var(--ink)]" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
-                        <div class="text-xs text-[var(--muted)]">${escapeHtml(item.brand)}${item.unit ? ' &middot; ' + escapeHtml(item.unit) : ''}</div>
-                    </div>
-                    <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${tone}">
-                        ${item.quantity} left
-                    </span>
-                </div>`).join('')
-              + (total > items.length ? `<p class="pt-1 text-xs text-[var(--muted)]">and ${total - items.length} more</p>` : '')
-            : '<p class="rounded-xl border border-[var(--line)] p-4 text-center text-xs text-[var(--muted)]">Nothing here right now.</p>';
     }
 
     function today() {
@@ -301,9 +292,7 @@
             const d = payload.data;
             renderCards(d.cards);
             renderCollections(d.collections, d.range);
-            renderStatus(d.order_status);
-            renderStockList('outOfStock', 'outOfStockCount', d.attention.out_of_stock, d.attention.out_of_stock_total, 'bg-red-100 text-red-800');
-            renderStockList('lowStock', 'lowStockCount', d.attention.low_stock, d.attention.low_stock_total, 'bg-amber-100 text-amber-800');
+            renderActions(d.actions);
 
             document.getElementById('dashLoading').classList.add('hidden');
             document.getElementById('dashBody').classList.remove('hidden');

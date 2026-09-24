@@ -137,12 +137,22 @@
             <div class="mt-5 overflow-x-auto"><div id="paretoChart" class="min-w-[620px]"></div></div>
         </section>
 
-        {{-- Which payment option customers actually chose. --}}
-        <section class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
-            <h2 class="text-sm font-semibold text-[var(--ink)]">How customers paid</h2>
-            <p class="mt-1 text-xs text-[var(--muted)]">Share of orders by the option chosen at checkout</p>
-            <div id="paymentMix" class="mt-5 space-y-4"></div>
-        </section>
+        <div class="grid gap-5 lg:grid-cols-2">
+            {{-- Which payment option customers actually chose. --}}
+            <section class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
+                <h2 class="text-sm font-semibold text-[var(--ink)]">How customers paid</h2>
+                <p class="mt-1 text-xs text-[var(--muted)]">Share of orders by the option chosen at checkout</p>
+                <div id="paymentMix" class="mt-5 space-y-4"></div>
+            </section>
+
+            {{-- Moved off the dashboard, which now lists the jobs waiting
+                 instead. Scoped to the period, unlike the version there. --}}
+            <section class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
+                <h2 class="text-sm font-semibold text-[var(--ink)]">Where these orders stand</h2>
+                <p class="mt-1 text-xs text-[var(--muted)]">Every order placed in this period, by where it has got to</p>
+                <div id="orderStatus" class="mt-5 space-y-3"></div>
+            </section>
+        </div>
     </div>
 @endsection
 
@@ -156,6 +166,14 @@
     const GOLD = '#d9b14a';
     const GREY = '#d8dee6';
     const BRAND_TONES = [GREEN, GOLD, '#4f8bbd', '#8d6cb5', '#c2703f'];
+
+    const STATUS_TONES = {
+        amber:   { dot: '#d97706', text: 'text-amber-800' },
+        sky:     { dot: '#0284c7', text: 'text-sky-800' },
+        violet:  { dot: '#7c3aed', text: 'text-violet-800' },
+        emerald: { dot: '#148a67', text: 'text-emerald-800' },
+        slate:   { dot: '#8b97a5', text: 'text-slate-700' },
+    };
 
     const STOCK_TONES = {
         out:     { dot: '#dc2626', chip: 'bg-red-100 text-red-800',        label: 'Out of stock' },
@@ -495,6 +513,18 @@
                     <div class="h-full rounded-full bg-[var(--primary)]" style="width:${(m.orders / busiest) * 100}%"></div>
                 </div>
             </div>`).join('');
+
+        document.getElementById('orderStatus').innerHTML = d.order_status.map(row => {
+            const tone = STATUS_TONES[row.tone] || STATUS_TONES.slate;
+            return `
+                <div class="flex items-center justify-between gap-4 rounded-2xl border border-[var(--line)] px-4 py-3.5">
+                    <span class="flex min-w-0 items-center gap-3">
+                        <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background:${tone.dot}"></span>
+                        <span class="truncate text-sm font-medium text-[var(--ink)]">${escapeHtml(row.label)}</span>
+                    </span>
+                    <span class="shrink-0 text-2xl font-black ${tone.text}">${row.count}</span>
+                </div>`;
+        }).join('');
 
         document.getElementById('analyticsLoading').classList.add('hidden');
         document.getElementById('analyticsBody').classList.remove('hidden');

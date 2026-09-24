@@ -60,6 +60,7 @@ class AnalyticsController extends Controller
                 'inventory_health' => $this->inventoryHealth($from, $to),
                 'concentration' => $this->concentration($from, $to),
                 'payment_mix' => $this->paymentMix($from, $to),
+                'order_status' => $this->orderStatus($from, $to),
                 'receivables' => $this->receivables(),
             ],
         ]);
@@ -194,6 +195,33 @@ class AnalyticsController extends Controller
             'units' => (int) $row->units,
             'share' => $total > 0 ? round((float) $row->revenue / $total * 100, 1) : 0,
         ])->all();
+    }
+
+    /**
+     * Where the orders placed in this period have got to.
+     *
+     * This lived on the dashboard, where it competed with the list of jobs
+     * that actually need doing. It reads better here: on the dashboard it
+     * was a live count of everything ever ordered, and here it is the
+     * outcome of one period's trade, which is a question analytics answers.
+     */
+    private function orderStatus(Carbon $from, Carbon $to): array
+    {
+        $placed = fn () => Sale::whereBetween('sale_date', [$from, $to]);
+        $active = fn () => $placed()->where('order_status', Sale::STATUS_ACTIVE);
+
+        return [
+            ['key' => 'to_pay', 'label' => 'Awaiting payment', 'tone' => 'amber',
+                'count' => $active()->whereIn('payment_status', ['unpaid', 'partial'])->count()],
+            ['key' => 'review', 'label' => 'Payment to review', 'tone' => 'sky',
+                'count' => $active()->where('payment_status', 'processing')->count()],
+            ['key' => 'to_receive', 'label' => 'Out for delivery', 'tone' => 'violet',
+                'count' => $active()->where('payment_status', 'paid')->where('delivery_status', '!=', 'delivered')->count()],
+            ['key' => 'delivered', 'label' => 'Delivered', 'tone' => 'emerald',
+                'count' => $active()->where('delivery_status', 'delivered')->count()],
+            ['key' => 'cancelled', 'label' => 'Cancelled', 'tone' => 'slate',
+                'count' => $placed()->where('order_status', Sale::STATUS_CANCELLED)->count()],
+        ];
     }
 
     private function paymentMix(Carbon $from, Carbon $to): array

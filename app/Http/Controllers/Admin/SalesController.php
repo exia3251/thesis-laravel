@@ -39,6 +39,7 @@ class SalesController extends Controller
         $request->validate([
             'search' => 'nullable|string|max:100',
             'payment_status' => 'nullable|in:all,unpaid,processing,partial,paid',
+            'focus' => 'nullable|in:owing,processing,to_deliver,refunds',
             'from' => 'nullable|date',
             'to' => 'nullable|date',
             'page' => 'nullable|integer|min:1',
@@ -54,6 +55,23 @@ class SalesController extends Controller
         if ($request->filled('payment_status') && $request->payment_status !== 'all') {
             $query->where('payment_status', $request->payment_status);
         }
+
+        /*
+         * The dashboard's action list links here. Each of these is the exact
+         * set the count on that list was taken from, so the number and the
+         * rows behind it cannot drift apart.
+         */
+        match ($request->input('focus')) {
+            'owing' => $query->where('order_status', Sale::STATUS_ACTIVE)
+                ->whereIn('payment_status', ['unpaid', 'partial']),
+            'processing' => $query->where('order_status', Sale::STATUS_ACTIVE)
+                ->where('payment_status', 'processing'),
+            'to_deliver' => $query->where('order_status', Sale::STATUS_ACTIVE)
+                ->where('payment_status', 'paid')
+                ->where('delivery_status', '!=', 'delivered'),
+            'refunds' => $query->where('refund_status', Sale::REFUND_PENDING),
+            default => null,
+        };
 
         if ($request->filled('search')) {
             $term = trim($request->search);
