@@ -39,12 +39,24 @@
     </div>
 
     <div id="dashBody" class="hidden space-y-5">
-        <section id="statCards" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"></section>
+        <section id="statCards" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5"></section>
 
         <section class="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
             <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
-                <h2 class="text-base font-bold text-[var(--ink)]">Collections</h2>
-                <p id="collectionsNote" class="mt-1 text-xs text-[var(--muted)]">Money actually received</p>
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-[var(--ink)]">Collections</h2>
+                        <p id="collectionsNote" class="mt-1 text-xs text-[var(--muted)]">Money received and orders placed</p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-3 text-xs font-medium text-[var(--muted)]">
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="h-2.5 w-2.5 rounded-sm bg-[var(--primary)]"></span>Money
+                        </span>
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="h-2.5 w-2.5 rounded-sm bg-[var(--accent)]"></span>Orders
+                        </span>
+                    </div>
+                </div>
                 <div id="collectionsChart" class="mt-6"></div>
             </div>
 
@@ -115,7 +127,7 @@
                             <span class="text-sm font-medium text-[var(--muted)]">${escapeHtml(card.label)}</span>
                         </div>
                     </div>
-                    <div class="mt-4 text-3xl font-black tracking-tight text-[var(--ink)]">
+                    <div class="mt-4 whitespace-nowrap text-3xl font-black tracking-tight text-[var(--ink)]">
                         ${card.format === 'money' ? pesoShort(card.value) : Number(card.value).toLocaleString()}
                     </div>
                     <div class="mt-2 flex flex-wrap items-center gap-2">${delta}</div>
@@ -133,7 +145,7 @@
      */
     function renderCollections(series, range) {
         const note = document.getElementById('collectionsNote');
-        note.textContent = 'Money actually received, ' + (range.description || '');
+        note.textContent = 'Money received and orders placed, ' + (range.description || '');
 
         const holder = document.getElementById('collectionsChart');
 
@@ -143,12 +155,18 @@
         }
 
         const peak = Math.max(...series.map(m => m.collected), 1);
+        const peakOrders = Math.max(...series.map(m => m.orders), 1);
         const busiest = series.reduce((best, m) => (m.collected > best.collected ? m : best), series[0]);
 
-        holder.innerHTML = columns(series, peak, busiest);
+        holder.innerHTML = columns(series, peak, peakOrders, busiest);
     }
 
-    function columns(series, peak, busiest) {
+    /** A bar that is still visible when the period was quiet but not empty. */
+    function barHeight(value, peak) {
+        return Math.max(value > 0 ? 3 : 1, (value / peak) * 100);
+    }
+
+    function columns(series, peak, peakOrders, busiest) {
         // Every label will not fit on a long span, so roughly a dozen of them
         // are kept and the rest left blank rather than overlapped into mush.
         const every = Math.ceil(series.length / 12);
@@ -156,11 +174,17 @@
         // Capped, or three days of trade would be three enormous slabs.
         const width = 'flex-1 max-w-[74px]';
 
+        /* Money and orders are counted in different things, so each is drawn
+           against its own peak. That is the only way both fit in one panel,
+           and it is why the caption says the heights do not compare. */
         const bars = series.map(m => `
-            <div class="${width} flex h-full flex-col justify-end">
-                <div class="rounded-t bg-[var(--primary)] transition hover:brightness-110"
-                     style="height:${Math.max(m.collected > 0 ? 3 : 1, (m.collected / peak) * 100)}%"
-                     title="${escapeHtml(m.full_label)}: ${peso(m.collected)} over ${m.orders} orders"></div>
+            <div class="${width} flex h-full items-end gap-px">
+                <div class="flex-1 rounded-t bg-[var(--primary)] transition hover:brightness-110"
+                     style="height:${barHeight(m.collected, peak)}%"
+                     title="${escapeHtml(m.full_label)}: ${peso(m.collected)} collected"></div>
+                <div class="flex-1 rounded-t bg-[var(--accent)] transition hover:brightness-110"
+                     style="height:${barHeight(m.orders, peakOrders)}%"
+                     title="${escapeHtml(m.full_label)}: ${m.orders} ${m.orders === 1 ? 'order' : 'orders'}"></div>
             </div>`).join('');
 
         const labels = series.map((m, i) => `
@@ -171,8 +195,11 @@
         return `
             <div class="flex h-56 items-stretch gap-[3px]">${bars}</div>
             <div class="mt-2 flex gap-[3px]">${labels}</div>
-            <p class="mt-4 border-t border-[var(--line)] pt-3 text-xs text-[var(--muted)]">
-                Tallest bar: ${escapeHtml(busiest.full_label)}, ${peso(busiest.collected)} over ${busiest.orders} orders.
+            <p class="mt-4 border-t border-[var(--line)] pt-3 text-xs leading-5 text-[var(--muted)]">
+                Best period: ${escapeHtml(busiest.full_label)}, ${peso(busiest.collected)} over ${busiest.orders} orders.
+                Busiest: ${escapeHtml(series.reduce((best, m) => (m.orders > best.orders ? m : best), series[0]).full_label)},
+                ${Math.max(...series.map(m => m.orders))} orders.
+                <span class="block">Each colour is scaled to its own peak, so heights compare within a colour and not across them.</span>
             </p>`;
     }
 
