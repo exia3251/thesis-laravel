@@ -227,7 +227,18 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">${formatCurrency(item.price)}</td>
                         <td class="px-6 py-4">
-                            <input type="number" min="1" step="1" max="${Math.max(item.stock, 1)}" value="${item.quantity}" onchange="updateQuantity(${item.cart_id}, this.value)" class="w-20 rounded-xl border border-[var(--line)] px-3 py-2 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)] ${item.is_unavailable ? 'bg-slate-100 text-slate-400' : 'bg-white'}" ${item.is_unavailable ? 'disabled' : ''}>
+                            <div class="inline-flex items-stretch overflow-hidden rounded-xl border border-[var(--line)] ${item.is_unavailable ? 'bg-slate-100' : 'bg-white'}">
+                                <button type="button" class="qty-step flex w-8 items-center justify-center text-lg font-bold text-[var(--muted)] transition hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--muted)]"
+                                        data-cart="${item.cart_id}" data-step="-1" aria-label="One fewer" ${item.is_unavailable ? 'disabled' : ''}>&minus;</button>
+
+                                <input class="qty-input w-12 border-x border-[var(--line)] px-2 py-2 text-center outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] ${item.is_unavailable ? 'bg-slate-100 text-slate-400' : 'bg-white'}"
+                                       type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]*" maxlength="3"
+                                       data-cart="${item.cart_id}" data-max="${Math.max(item.stock, 1)}" data-was="${item.quantity}"
+                                       value="${item.quantity}" ${item.is_unavailable ? 'disabled' : ''}>
+
+                                <button type="button" class="qty-step flex w-8 items-center justify-center text-lg font-bold text-[var(--muted)] transition hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--muted)]"
+                                        data-cart="${item.cart_id}" data-step="1" aria-label="One more" ${item.is_unavailable ? 'disabled' : ''}>+</button>
+                            </div>
                         </td>
                         <td class="px-6 py-4">
                             ${item.is_unavailable
@@ -273,6 +284,134 @@
             document.getElementById('profileAddress').textContent = profile.address
                 ? `${escapeHtml(profile.address)}${profile.phone ? ` | ${escapeHtml(profile.phone)}` : ''}`
                 : 'Complete your profile address and phone before placing an order.';
+        }
+
+        /*
+         * The same rules as the product page: digits only, refused at the
+         * keystroke, and steppers that clamp rather than count.
+         *
+         * Delegated from the table because the rows are rebuilt after every
+         * change, so anything bound to a row would be bound to a row that no
+         * longer exists. Installed once, below.
+         */
+        (function guardCartQuantities() {
+            const table = document.getElementById('cartBody') || document;
+            const strip = (text) => String(text ?? '').replace(/[^0-9]/g, '');
+            const ceilingOf = (input) => Number(input.dataset.max) || 1;
+
+            const refreshRow = (input) => {
+                const row = input.closest('div');
+                const value = parseInt(input.value, 10);
+                const [down, up] = row.querySelectorAll('.qty-step');
+
+                if (down) down.disabled = input.disabled || !Number.isInteger(value) || value <= 1;
+                if (up) up.disabled = input.disabled || (Number.isInteger(value) && value >= ceilingOf(input));
+            };
+
+            table.addEventListener('keypress', (event) => {
+                const input = event.target.closest('.qty-input');
+                if (!input) return;
+                if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+                if (!/^[0-9]$/.test(event.key)) {
+                    event.preventDefault();
+                }
+            });
+
+            const insertDigitsOnly = (event, input, text) => {
+                const kept = strip(text);
+                event.preventDefault();
+
+                const start = input.selectionStart ?? input.value.length;
+                const end = input.selectionEnd ?? input.value.length;
+                const next = (input.value.slice(0, start) + kept + input.value.slice(end)).slice(0, 3);
+
+                input.value = next;
+                const caret = Math.min(start + kept.length, next.length);
+                input.setSelectionRange(caret, caret);
+                refreshRow(input);
+            };
+
+            table.addEventListener('paste', (event) => {
+                const input = event.target.closest('.qty-input');
+                if (input) insertDigitsOnly(event, input, (event.clipboardData || window.clipboardData).getData('text'));
+            });
+
+            table.addEventListener('drop', (event) => {
+                const input = event.target.closest('.qty-input');
+                if (input) insertDigitsOnly(event, input, event.dataTransfer.getData('text'));
+            });
+
+            table.addEventListener('input', (event) => {
+                const input = event.target.closest('.qty-input');
+                if (!input) return;
+
+                const cleaned = strip(input.value);
+                if (cleaned !== input.value) {
+                    input.value = cleaned;
+                }
+
+                refreshRow(input);
+            });
+
+            // Typed changes are sent when the box is left, not on every
+            // keystroke, so typing "12" does not order 1 and then 12.
+            table.addEventListener('change', (event) => {
+                const input = event.target.closest('.qty-input');
+                if (!input) return;
+
+                clearTimeout(stepTimers.get(input));
+                commitQuantity(input);
+            });
+
+            table.addEventListener('click', (event) => {
+                const button = event.target.closest('.qty-step');
+                if (!button || button.disabled) return;
+
+                const input = button.parentElement.querySelector('.qty-input');
+                const current = parseInt(input.value, 10);
+                const usable = Number.isInteger(current) && current >= 1;
+                const next = usable ? current + Number(button.dataset.step) : 1;
+
+                input.value = Math.min(Math.max(next, 1), ceilingOf(input));
+                refreshRow(input);
+
+                // Pressing + ten times is one decision, not ten. Without
+                // this each press sent its own request and reloaded the
+                // cart under the finger doing the pressing.
+                clearTimeout(stepTimers.get(input));
+                stepTimers.set(input, setTimeout(() => commitQuantity(input), 400));
+            });
+        })();
+
+        /** One pending commit per row, so rapid presses collapse into one. */
+        const stepTimers = new WeakMap();
+
+        /**
+         * Sends a quantity only once it is a whole number of at least one and
+         * within stock. Anything else is put back to what the row last held,
+         * with a reason, rather than travelling to the server to be refused.
+         */
+        function commitQuantity(input) {
+            const previous = Number(input.dataset.was) || 1;
+            const ceiling = Number(input.dataset.max) || 1;
+            const value = parseInt(input.value, 10);
+
+            if (!Number.isInteger(value) || value < 1) {
+                input.value = previous;
+                showMessage('Quantity has to be a whole number of at least 1.', 'error');
+                return;
+            }
+
+            if (value > ceiling) {
+                input.value = ceiling;
+                showMessage(`Only ${ceiling} left in stock.`, 'error');
+                return;
+            }
+
+            if (value === previous) return;
+
+            updateQuantity(Number(input.dataset.cart), value);
         }
 
         async function updateQuantity(cartId, quantity) {
