@@ -99,9 +99,28 @@
                     <p class="mt-3 text-sm leading-7 text-[var(--muted)]">{{ $product->description ?: 'No detailed product description is available yet for this item.' }}</p>
                 </div>
 
+                {{-- Singly or by the box. A box is not another product: it is
+                     a count of the same bottles, so what reaches the cart is
+                     still a number of bottles and every stock and money rule
+                     downstream carries on unchanged. --}}
+                <div id="buyModeRow" class="mt-6 hidden">
+                    <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">How would you like to buy?</div>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <button type="button" id="buyModeSingle" onclick="setBuyMode('single')"
+                                class="rounded-xl border border-[var(--primary)] bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition">
+                            Single
+                        </button>
+                        <button type="button" id="buyModeBox" onclick="setBuyMode('box')"
+                                class="rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-bold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">
+                            Box of {{ (int) config('catalogue.bulk_box.quantity') }}
+                        </button>
+                    </div>
+                    <p id="buyModeNote" class="mt-2 text-xs leading-6 text-[var(--muted)]"></p>
+                </div>
+
                 <div class="mt-6 flex flex-wrap gap-3">
                     <div class="rounded-2xl border border-[var(--line)] bg-white/80 px-4 py-3">
-                        <label for="quantity" class="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Quantity</label>
+                        <label for="quantity" id="quantityLabel" class="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Quantity</label>
                         <input id="quantity" type="number" min="1" max="{{ max(optional($product->inventory)->quantity ?? 1, 1) }}" step="1" value="1" class="mt-2 w-24 rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)] {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'bg-slate-100 text-slate-400' : 'bg-white' }}" {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'disabled' : '' }}>
                     </div>
 
@@ -164,6 +183,74 @@
 
         let selectedPackId = {{ $product->product_id }};
 
+        const BOX_QUANTITY = {{ (int) config('catalogue.bulk_box.quantity') }};
+        const BOX_MAX_LITRES = {{ (int) config('catalogue.bulk_box.max_litres_per_unit') }};
+
+        let buyMode = 'single';
+
+        function litresOf(unit) {
+            const match = String(unit || '').match(/^(\d+)/);
+            return match ? Number(match[1]) : 1;
+        }
+
+        // A box is offered on bottles, not on drums, and only when there are
+        // actually enough on the shelf to fill one.
+        function boxAvailable(pack) {
+            return !!pack
+                && litresOf(pack.unit) <= BOX_MAX_LITRES
+                && pack.quantity >= BOX_QUANTITY;
+        }
+
+        function money(value) {
+            return 'PHP ' + Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function setBuyMode(mode) {
+            const pack = PACKS[selectedPackId];
+            buyMode = (mode === 'box' && boxAvailable(pack)) ? 'box' : 'single';
+            refreshBuyMode();
+        }
+
+        function refreshBuyMode() {
+            const pack = PACKS[selectedPackId];
+            if (!pack) return;
+
+            const canBox = boxAvailable(pack);
+            const row = document.getElementById('buyModeRow');
+            row.classList.toggle('hidden', !canBox);
+
+            if (!canBox) buyMode = 'single';
+
+            const single = document.getElementById('buyModeSingle');
+            const box = document.getElementById('buyModeBox');
+            const chosen = 'rounded-xl border border-[var(--primary)] bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition';
+            const other = 'rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-bold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]';
+            single.className = buyMode === 'single' ? chosen : other;
+            box.className = buyMode === 'box' ? chosen : other;
+
+            // In box mode the quantity box counts boxes, so its ceiling is
+            // how many whole boxes the shelf can fill.
+            const input = document.getElementById('quantity');
+            const maxBoxes = Math.floor(pack.quantity / BOX_QUANTITY);
+
+            if (buyMode === 'box') {
+                document.getElementById('quantityLabel').textContent = 'Boxes';
+                input.max = Math.max(maxBoxes, 1);
+                if (Number(input.value) > maxBoxes) input.value = Math.max(maxBoxes, 1);
+                document.getElementById('packPrice').textContent = money(pack.price * BOX_QUANTITY);
+                document.getElementById('buyModeNote').textContent =
+                    `One box is ${BOX_QUANTITY} x ${pack.unit} at ${money(pack.price * BOX_QUANTITY)}. `
+                    + `${maxBoxes} box${maxBoxes === 1 ? '' : 'es'} available.`;
+            } else {
+                document.getElementById('quantityLabel').textContent = 'Quantity';
+                input.max = Math.max(pack.quantity, 1);
+                if (Number(input.value) > pack.quantity) input.value = pack.quantity;
+                document.getElementById('packPrice').textContent = money(pack.price);
+                document.getElementById('buyModeNote').textContent =
+                    canBox ? `Buying ${BOX_QUANTITY} or more? A box is ${BOX_QUANTITY} x ${pack.unit}.` : '';
+            }
+        }
+
         function selectPack(productId) {
             const pack = PACKS[productId];
             if (!pack || pack.quantity < 1) return;
@@ -198,10 +285,21 @@
                     : 'border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
                 );
             });
+
+            // A 5L may box where the drum beside it does not, so the option
+            // is re-read for whichever pack is now selected. This also puts
+            // the price back, having just overwritten it above.
+            refreshBuyMode();
         }
 
         async function addToCart(productId) {
             const quantityInput = document.getElementById('quantity');
+
+            // The cart counts bottles, always. A box is turned into the
+            // bottles it holds here, so the stock check, the order and the
+            // receipt never need to know a box was involved.
+            const entered = Math.max(Number(quantityInput.value || 1), 1);
+            const units = buyMode === 'box' ? entered * BOX_QUANTITY : entered;
 
             const response = await fetch('/shop-api/cart/add', {
                 method: 'POST',
@@ -212,12 +310,21 @@
                 },
                 body: JSON.stringify({
                     product_id: productId,
-                    quantity: Number(quantityInput.value || 1)
+                    quantity: units
                 })
             });
 
             const data = await response.json();
-            showMessage(data.message || 'Cart updated.', response.ok ? 'success' : 'error');
+
+            const note = response.ok && buyMode === 'box'
+                ? `${entered} box${entered === 1 ? '' : 'es'} added - ${units} x ${PACKS[productId]?.unit ?? 'units'}.`
+                : (data.message || 'Cart updated.');
+
+            showMessage(note, response.ok ? 'success' : 'error');
         }
+
+        // The page opens on a pack, so the box option has to be worked out
+        // for it before anyone touches the size buttons.
+        refreshBuyMode();
 </script>
 @endpush

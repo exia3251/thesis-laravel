@@ -142,13 +142,13 @@ class DemoSalesSeeder extends Seeder
         $buyer = $this->buyerCache[$buyerId] ??= User::find($buyerId);
 
         $placedAt = $day->copy()->setTime(random_int(8, 17), random_int(0, 59));
-        $lines = $products->random(random_int(1, 4));
+        $lines = $this->pickLines($products);
 
         $total = 0.0;
         $rows = [];
 
         foreach ($lines as $product) {
-            $qty = random_int(1, 6);
+            $qty = $this->quantityFor($product);
             $subtotal = (float) $product->price * $qty;
             $total += $subtotal;
 
@@ -205,6 +205,56 @@ class DemoSalesSeeder extends Seeder
     }
 
     /** @return array{0:string,1:float} */
+    /**
+     * What goes in one order.
+     *
+     * Drums are drawn rarely. Treating a PHP 104,000 drum as just another row
+     * put one in roughly every third order, which swamped the revenue charts
+     * and made the average order value meaningless.
+     */
+    private function pickLines($products)
+    {
+        $bottles = $products->reject(fn ($p) => $this->litres($p) > 5)->values();
+        $drums   = $products->filter(fn ($p) => $this->litres($p) > 5)->values();
+
+        $lines = $bottles->isEmpty()
+            ? collect()
+            : $bottles->random(min(random_int(1, 4), $bottles->count()));
+
+        // Roughly one order in twenty is a drum order, which is about what a
+        // trade counter with a few fleet accounts actually looks like.
+        if ($drums->isNotEmpty() && random_int(1, 20) === 1) {
+            $lines = $lines->push($drums->random());
+        }
+
+        return $lines;
+    }
+
+    /**
+     * How many of a line someone bought.
+     *
+     * Bottles sell by the box as well as singly, so a share of these come out
+     * as whole multiples of the box quantity. That is what makes the box
+     * option visible in the history rather than only on the product page.
+     */
+    private function quantityFor($product): int
+    {
+        if ($this->litres($product) > 5) {
+            return random_int(1, 2);
+        }
+
+        $box = (int) config('catalogue.bulk_box.quantity', 6);
+
+        return random_int(1, 100) <= 35
+            ? $box * random_int(1, 3)
+            : random_int(1, 5);
+    }
+
+    private function litres($product): int
+    {
+        return (int) (preg_match('/^(\d+)/', (string) $product->unit, $m) ? $m[1] : 1);
+    }
+
     private function plan(float $total): array
     {
         $roll = random_int(1, 100);
@@ -217,7 +267,13 @@ class DemoSalesSeeder extends Seeder
             return [Sale::PLAN_GCASH_FULL, $total];
         }
 
-        $percent = [25, 30, 40, 50][array_rand([25, 30, 40, 50])];
+        // Drawn from the configured floor upward rather than from a fixed
+        // list. The floor moved from 20% to 50% and this quietly went on
+        // fabricating 25% down payments that the checkout would now reject,
+        // so the demo history disagreed with the rule it was meant to show.
+        $floor = (int) config('payments.minimum_down_payment_percent', 50);
+        $choices = array_values(array_filter([$floor, $floor + 10, $floor + 20, $floor + 30], fn ($p) => $p < 100));
+        $percent = $choices[array_rand($choices)];
 
         return [Sale::PLAN_SPLIT, round($total * $percent / 100, 2)];
     }
