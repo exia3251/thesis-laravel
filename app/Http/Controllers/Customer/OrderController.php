@@ -196,7 +196,14 @@ class OrderController extends Controller
                 'payment_status' => 'unpaid',
                 'paid_amount' => 0,
                 'balance_due' => $total,
-                'delivery_status' => 'to_receive',
+                /*
+                 * Processing, not already with a courier. An order was
+                 * written straight to to_receive at checkout, before anybody
+                 * had been near a shelf, so the back office showed every new
+                 * order as though it had already been handed over. Staff move
+                 * it on when it actually leaves.
+                 */
+                'delivery_status' => 'to_deliver',
                 'sale_date' => now()
             ]);
 

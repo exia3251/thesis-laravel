@@ -35,6 +35,7 @@
                     <tr>
                         <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">Order</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Customer</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">How they pay</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Payment</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Delivery</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Money</th>
@@ -42,7 +43,7 @@
                     </tr>
                 </thead>
                 <tbody id="salesBody" class="divide-y divide-[var(--line)] bg-[var(--card)]">
-                    <tr><td colspan="6" class="px-6 py-10 text-center text-sm text-[var(--muted)]">Loading sales...</td></tr>
+                    <tr><td colspan="7" class="px-6 py-10 text-center text-sm text-[var(--muted)]">Loading sales...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -106,19 +107,30 @@
         </div>
     </div>
 
-    <div id="historyModal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto">
+    {{-- The whole order on one sheet: what was bought, what it came to, how
+         it is being paid for, every payment claimed against it, and where it
+         has got to. The table can only ever show a summary of each of those,
+         and staff were opening three places to answer one question. --}}
+    <div id="receiptModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/60">
         <div class="mx-auto my-8 w-full max-w-3xl rounded-[1.5rem] bg-white shadow-2xl">
-            <div class="flex items-start justify-between border-b border-[var(--line)] px-6 py-4">
+            <div class="flex items-start justify-between gap-3 border-b border-[var(--line)] px-6 py-5">
                 <div>
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Payment history</p>
-                    <h2 class="mt-1 text-xl font-black text-[var(--ink)]">Order <span id="hsSaleId"></span> &mdash; <span id="hsCustomer"></span></h2>
-                    <p id="hsSummary" class="mt-1 text-sm text-[var(--muted)]"></p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Order receipt</p>
+                    <h2 id="rcOrderNo" class="mt-1 text-xl font-black text-[var(--ink)]"></h2>
+                    <p id="rcSubtitle" class="mt-1 text-sm text-[var(--muted)]"></p>
                 </div>
-                <button type="button" onclick="closeHistoryModal()" class="rounded-full p-2 text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]">
+                <button type="button" onclick="closeReceipt()" aria-label="Close"
+                        class="rounded-full p-2 text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div id="hsBody" class="max-h-[32rem] space-y-3 overflow-y-auto p-6"></div>
+
+            <div id="rcBody" class="max-h-[70vh] space-y-6 overflow-y-auto px-6 py-6"></div>
+
+            <div class="flex justify-end border-t border-[var(--line)] px-6 py-4">
+                <button type="button" onclick="closeReceipt()"
+                        class="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--surface)]">Close</button>
+            </div>
         </div>
     </div>
 
@@ -364,14 +376,48 @@
             loadSales(1);
         }
 
-        /* These say where the order stands, not where the goods are.
-           A shop order is written as to_receive the moment it is placed --
-           before anyone has been near the shelf -- so wording like "with the
-           courier" claimed a fact the system does not hold. */
+        /**
+         * How the order is being paid for, which the table never said.
+         *
+         * Three arrangements, and the difference matters to whoever is
+         * handing the goods over: cash on delivery means collect the lot at
+         * the door, GCash in full means collect nothing, and a split means
+         * collect exactly what was not paid online.
+         */
+        const PLAN_TONES = {
+            cod: ['bg-amber-100 text-amber-800', 'Cash on delivery'],
+            gcash_full: ['bg-sky-100 text-sky-800', 'GCash in full'],
+            split: ['bg-violet-100 text-violet-800', 'Split'],
+        };
+
+        function codAmount(sale) {
+            return Math.max(Number(sale.total_amount || 0) - Number(sale.gcash_amount || 0), 0);
+        }
+
+        function planCell(sale) {
+            const [chip, label] = PLAN_TONES[sale.payment_plan] || ['bg-slate-100 text-slate-700', sale.payment_plan || 'Not set'];
+            const cash = codAmount(sale);
+
+            return `
+                <span class="inline-block rounded-full px-2.5 py-1 text-xs font-bold ${chip}">${escapeHtml(label)}</span>
+                ${sale.payment_plan === 'split'
+                    ? `<div class="mt-1 text-[11px] leading-4 text-[var(--muted)]">
+                           ${formatCurrency(sale.gcash_amount)} down by GCash<br>${formatCurrency(cash)} cash on arrival
+                       </div>`
+                    : ''}
+                ${sale.payment_plan === 'cod' && cash > 0
+                    ? `<div class="mt-1 text-[11px] leading-4 text-[var(--muted)]">${formatCurrency(cash)} to collect</div>`
+                    : ''}`;
+        }
+
+        /* Three states an order passes through: we are getting it ready, it
+           has left with a courier, it has arrived. Orders now begin at
+           Processing, so the middle one is set by somebody who watched it
+           happen rather than assumed at checkout. */
         function deliveryBadge(sale) {
             const tones = {
-                to_deliver: ['bg-slate-100 text-slate-700', 'Not dispatched'],
-                to_receive: ['bg-violet-100 text-violet-800', 'Awaiting receipt'],
+                to_deliver: ['bg-slate-100 text-slate-700', 'Processing'],
+                to_receive: ['bg-violet-100 text-violet-800', 'With the courier'],
                 delivered: ['bg-emerald-100 text-emerald-800', 'Delivered'],
             };
             const [cls, label] = tones[sale.delivery_status] || ['bg-slate-100 text-slate-700', sale.delivery_status];
@@ -415,6 +461,7 @@
                             <div class="text-sm font-medium text-[var(--ink)]">${escapeHtml(sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in customer')}</div>
                             <div class="text-xs text-[var(--muted)]">${(sale.items || []).length} item${(sale.items || []).length === 1 ? '' : 's'}</div>
                         </td>
+                        <td class="px-5 py-4">${planCell(sale)}</td>
                         <td class="px-5 py-4">
                             ${getPaymentBadge(sale.payment_status)}
                             ${pending.length ? `<div class="mt-1 text-[11px] font-semibold text-sky-700">${pending.length} to review</div>` : ''}
@@ -423,8 +470,8 @@
                             ${cancelled ? deliveryBadge(sale) : `
                                 <select id="delivery_status_${sale.sale_id}"
                                         class="rounded-lg border border-[var(--line)] bg-white px-2 py-1.5 text-xs font-semibold outline-none focus:border-[var(--primary)]">
-                                    <option value="to_deliver" ${sale.delivery_status === 'to_deliver' ? 'selected' : ''}>Not dispatched</option>
-                                    <option value="to_receive" ${sale.delivery_status === 'to_receive' ? 'selected' : ''}>Awaiting receipt</option>
+                                    <option value="to_deliver" ${sale.delivery_status === 'to_deliver' ? 'selected' : ''}>Processing</option>
+                                    <option value="to_receive" ${sale.delivery_status === 'to_receive' ? 'selected' : ''}>With the courier</option>
                                     <option value="delivered" ${sale.delivery_status === 'delivered' ? 'selected' : ''} ${sale.payment_status === 'unpaid' ? 'disabled' : ''}>Delivered</option>
                                 </select>`}
                         </td>
@@ -444,8 +491,8 @@
                                 <div class="flex flex-wrap justify-end gap-2">
                                     ${cancelled ? '' : `<button type="button" onclick="updateSaleStatus(${sale.sale_id})"
                                             class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Update</button>`}
-                                    <button type="button" onclick="openHistoryModal(${sale.sale_id})"
-                                            class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--muted)] transition hover:text-[var(--ink)]">History${requests.length ? ` (${requests.length})` : ''}</button>
+                                    <button type="button" onclick="openReceipt(${sale.sale_id})"
+                                            class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--muted)] transition hover:text-[var(--ink)]">Receipt${requests.length ? ` (${requests.length})` : ''}</button>
                                 </div>
                                 ${renderLifecycleActions(sale)}
                                 ${pendingHtml}
@@ -453,7 +500,7 @@
                         </td>
                     </tr>`;
                 }).join('')
-                : '<tr><td colspan="6" class="px-6 py-10 text-center text-sm text-[var(--muted)]">Nothing matches that.</td></tr>';
+                : '<tr><td colspan="7" class="px-6 py-10 text-center text-sm text-[var(--muted)]">Nothing matches that.</td></tr>';
         }
 
         async function loadSales(page = 1) {
@@ -757,64 +804,150 @@
             processing: { pill: 'bg-sky-100 text-sky-800',         label: 'Awaiting review' },
         };
 
-        function openHistoryModal(saleId) {
+        function receiptRow(label, value, strong = false) {
+            return `
+                <div class="flex items-baseline justify-between gap-4 py-1.5">
+                    <span class="text-sm text-[var(--muted)]">${escapeHtml(label)}</span>
+                    <span class="text-sm ${strong ? 'font-black text-[var(--ink)]' : 'font-semibold text-[var(--ink)]'}">${value}</span>
+                </div>`;
+        }
+
+        function openReceipt(saleId) {
             const sale = allSales.find((s) => Number(s.sale_id) === Number(saleId));
             if (!sale) return;
 
-            const requests = [...(sale.payment_requests || [])]
-                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            const items = sale.items || [];
+            const requests = [...(sale.payment_requests || [])].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            const [, planLabel] = PLAN_TONES[sale.payment_plan] || ['', sale.payment_plan || 'Not set'];
+            const cash = codAmount(sale);
+            const owed = Number(sale.balance_due || 0);
 
-            const approved = requests
-                .filter((r) => r.status === 'approved')
-                .reduce((sum, r) => sum + Number(r.amount), 0);
+            document.getElementById('rcOrderNo').textContent = sale.order_no || ('#' + sale.sale_id);
+            document.getElementById('rcSubtitle').textContent =
+                new Date(sale.sale_date).toLocaleString() + ' \u00b7 '
+                + (sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in customer');
 
-            document.getElementById('hsSaleId').textContent = '#' + sale.sale_id;
-            document.getElementById('hsCustomer').textContent = sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in Customer';
-            document.getElementById('hsSummary').textContent =
-                requests.length + ' payment request' + (requests.length === 1 ? '' : 's') + ' \u00b7 '
-                + formatCurrency(approved) + ' approved of ' + formatCurrency(sale.total_amount);
+            const paperwork = [
+                sale.receipt_no ? `<span class="font-semibold text-[var(--primary)]">${escapeHtml(sale.receipt_no)}</span>` : null,
+                sale.delivery_no ? `<span>${escapeHtml(sale.delivery_no)}</span>` : null,
+            ].filter(Boolean).join(' &middot; ');
 
-            document.getElementById('hsBody').innerHTML = requests.length
-                ? requests.map((r) => {
-                    const style = REQUEST_STATUS_STYLES[r.status] || { pill: 'bg-slate-100 text-slate-700', label: r.status };
-                    const reviewer = r.reviewer && r.reviewer.full_name;
+            document.getElementById('rcBody').innerHTML = `
+                <section class="grid gap-4 sm:grid-cols-2">
+                    <div class="rounded-2xl border border-[var(--line)] p-4">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Delivering to</p>
+                        <p class="mt-2 text-sm font-semibold text-[var(--ink)]">${escapeHtml(sale.customer_name || (sale.user && sale.user.full_name) || 'Walk-in customer')}</p>
+                        <p class="mt-1 text-sm leading-6 text-[var(--muted)]">${escapeHtml(sale.delivery_address || 'No address on the order')}</p>
+                        ${sale.contact_phone ? `<p class="mt-1 text-sm text-[var(--muted)]">${escapeHtml(sale.contact_phone)}</p>` : ''}
+                    </div>
+                    <div class="rounded-2xl border border-[var(--line)] p-4">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Where it has got to</p>
+                        <div class="mt-2">${deliveryBadge(sale)}</div>
+                        ${sale.delivered_at ? `<p class="mt-2 text-xs text-[var(--muted)]">Handed over ${new Date(sale.delivered_at).toLocaleString()}</p>` : ''}
+                        ${sale.received_at ? `<p class="mt-1 text-xs text-[var(--muted)]">Customer confirmed ${new Date(sale.received_at).toLocaleString()}</p>` : ''}
+                        ${paperwork ? `<p class="mt-2 text-xs text-[var(--muted)]">${paperwork}</p>` : ''}
+                        ${sale.order_status === 'cancelled'
+                            ? `<p class="mt-2 text-xs font-semibold text-red-700">Cancelled${sale.cancellation_reason ? ': ' + escapeHtml(sale.cancellation_reason) : ''}</p>`
+                            : ''}
+                    </div>
+                </section>
 
-                    return `
-                        <div class="flex gap-4 rounded-2xl border border-[var(--line)] p-4">
-                            ${r.proof_image_path
-                                ? `<a href="/storage/${r.proof_image_path}" target="_blank" class="shrink-0">
-                                       <img src="/storage/${r.proof_image_path}" alt="Receipt" class="h-24 w-24 rounded-xl border border-[var(--line)] object-cover transition hover:opacity-80">
-                                   </a>`
-                                : `<div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">No receipt</div>`}
-                            <div class="min-w-0 flex-1">
-                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                    <div class="text-lg font-black text-[var(--ink)]">${formatCurrency(r.amount)}</div>
-                                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ${style.pill}">${style.label}</span>
-                                </div>
-                                <div class="mt-1 text-sm text-[var(--muted)]">
-                                    ${r.payment_method ? r.payment_method.toUpperCase() : 'GCASH'}
-                                    ${r.reference_no ? ` &middot; Ref <code class="rounded bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)]">${escapeHtml(r.reference_no)}</code>` : ' &middot; no reference given'}
-                                </div>
-                                <div class="mt-1 text-xs text-[var(--muted)]">
-                                    Submitted ${new Date(r.created_at).toLocaleString()}
-                                    ${r.reviewed_at ? ` &middot; reviewed ${new Date(r.reviewed_at).toLocaleString()}${reviewer ? ' by ' + reviewer : ''}` : ''}
-                                </div>
-                                ${r.admin_notes ? `<div class="mt-2 rounded-lg bg-[var(--surface)] px-3 py-2 text-xs leading-5 text-[var(--ink)]">${escapeHtml(r.admin_notes)}</div>` : ''}
-                            </div>
+                <section>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">What was bought</p>
+                    <div class="mt-2 overflow-hidden rounded-2xl border border-[var(--line)]">
+                        <table class="min-w-full text-sm">
+                            <tbody class="divide-y divide-[var(--line)]">
+                                ${items.length ? items.map((item) => `
+                                    <tr>
+                                        <td class="px-4 py-3">
+                                            <div class="font-medium text-[var(--ink)]">${escapeHtml(item.product ? item.product.product_name : 'Product removed from the catalogue')}</div>
+                                            <div class="text-xs text-[var(--muted)]">
+                                                ${item.product && item.product.brand ? escapeHtml(item.product.brand) : ''}${item.product && item.product.unit ? ' &middot; ' + escapeHtml(item.product.unit) : ''}
+                                            </div>
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-3 text-right text-[var(--muted)]">${item.quantity} &times; ${formatCurrency(item.unit_price)}</td>
+                                        <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-[var(--ink)]">${formatCurrency(item.subtotal)}</td>
+                                    </tr>`).join('')
+                                : '<tr><td class="px-4 py-6 text-center text-[var(--muted)]">No items recorded on this order.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="grid gap-4 sm:grid-cols-2">
+                    <div class="rounded-2xl border border-[var(--line)] p-4">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">The money</p>
+                        <div class="mt-2 divide-y divide-[var(--line)]">
+                            ${receiptRow('Order total', formatCurrency(sale.total_amount), true)}
+                            ${receiptRow('Paid so far', formatCurrency(sale.paid_amount))}
+                            ${receiptRow('Still owed', `<span class="${owed > 0 ? 'text-amber-700' : 'text-emerald-700'}">${formatCurrency(owed)}</span>`, true)}
                         </div>
-                    `;
-                }).join('')
-                : '<p class="py-8 text-center text-sm text-[var(--muted)]">No payment has been claimed against this order yet.</p>';
+                    </div>
+                    <div class="rounded-2xl border border-[var(--line)] p-4">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">How they are paying</p>
+                        <p class="mt-2 text-sm font-bold text-[var(--ink)]">${escapeHtml(planLabel)}</p>
+                        <div class="mt-2 divide-y divide-[var(--line)]">
+                            ${Number(sale.gcash_amount) > 0 ? receiptRow('Online by GCash', formatCurrency(sale.gcash_amount)) : ''}
+                            ${cash > 0 ? receiptRow('Cash on arrival', formatCurrency(cash)) : ''}
+                            ${receiptRow('Recorded method', escapeHtml((sale.payment_method || 'not set').toUpperCase()))}
+                        </div>
+                        ${sale.refund_status && sale.refund_status !== 'none'
+                            ? `<p class="mt-3 text-xs font-semibold text-[var(--ink)]">Refund ${escapeHtml(sale.refund_status)}${Number(sale.refund_amount) ? ' \u00b7 ' + formatCurrency(sale.refund_amount) : ''}</p>`
+                            : ''}
+                    </div>
+                </section>
 
-            document.getElementById('historyModal').classList.remove('hidden');
+                <section>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                        Payments claimed against it${requests.length ? ` (${requests.length})` : ''}
+                    </p>
+                    <div class="mt-2 space-y-3">
+                        ${requests.length ? requests.map((r) => {
+                            const style = REQUEST_STATUS_STYLES[r.status] || { pill: 'bg-slate-100 text-slate-700', label: r.status };
+                            const reviewer = r.reviewer && r.reviewer.full_name;
+
+                            return `
+                                <div class="flex gap-4 rounded-2xl border border-[var(--line)] p-4">
+                                    ${r.proof_image_path
+                                        ? `<a href="/storage/${r.proof_image_path}" target="_blank" rel="noopener" class="shrink-0">
+                                               <img src="/storage/${r.proof_image_path}" alt="Receipt" class="h-24 w-24 rounded-xl border border-[var(--line)] object-cover transition hover:opacity-80">
+                                           </a>`
+                                        : '<div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">No receipt</div>'}
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <div class="text-lg font-black text-[var(--ink)]">${formatCurrency(r.amount)}</div>
+                                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ${style.pill}">${style.label}</span>
+                                        </div>
+                                        <div class="mt-1 text-sm text-[var(--muted)]">
+                                            ${r.payment_method ? escapeHtml(r.payment_method.toUpperCase()) : 'GCASH'}
+                                            ${r.reference_no ? ' &middot; Ref ' + escapeHtml(r.reference_no) : ''}
+                                        </div>
+                                        <div class="mt-1 text-xs text-[var(--muted)]">
+                                            Sent ${new Date(r.created_at).toLocaleString()}${reviewer ? ' &middot; reviewed by ' + escapeHtml(reviewer) : ''}
+                                        </div>
+                                        ${r.admin_notes ? `<div class="mt-2 rounded-lg bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)]">${escapeHtml(r.admin_notes)}</div>` : ''}
+                                        ${r.status === 'processing'
+                                            ? `<button type="button" onclick="closeReceipt(); openVerifyModal(${sale.sale_id}, ${r.id})"
+                                                       class="mt-2 rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-800">Review this payment</button>`
+                                            : ''}
+                                    </div>
+                                </div>`;
+                        }).join('')
+                        : `<p class="rounded-2xl border border-dashed border-[var(--line)] px-4 py-6 text-center text-sm text-[var(--muted)]">
+                               Nothing claimed online${sale.payment_plan === 'cod' ? '. This one is cash on delivery.' : ' yet.'}
+                           </p>`}
+                    </div>
+                </section>`;
+
+            document.getElementById('receiptModal').classList.remove('hidden');
         }
 
-        function closeHistoryModal() {
-            document.getElementById('historyModal').classList.add('hidden');
+        function closeReceipt() {
+            document.getElementById('receiptModal').classList.add('hidden');
         }
 
-        document.getElementById('historyModal').addEventListener('click', (event) => {
-            if (event.target.id === 'historyModal') closeHistoryModal();
+        document.getElementById('receiptModal').addEventListener('click', (event) => {
+            if (event.target.id === 'receiptModal') closeReceipt();
         });
 
 
