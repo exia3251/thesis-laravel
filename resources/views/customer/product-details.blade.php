@@ -237,8 +237,8 @@
                 <div class="mt-6 flex flex-wrap gap-3">
                     <div class="rounded-2xl border border-[var(--line)] bg-white/80 px-4 py-3">
                         <label for="quantity" id="quantityLabel" class="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Quantity</label>
-                        <input id="quantity" type="number" inputmode="numeric" min="1" max="{{ max(optional($product->inventory)->quantity ?? 1, 1) }}" step="1" value="1"
-                               oninput="sanitiseQuantity()" onblur="normaliseQuantity()" class="mt-2 w-24 rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)] {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'bg-slate-100 text-slate-400' : 'bg-white' }}" {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'disabled' : '' }}>
+                        <input id="quantity" type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]*" maxlength="3" data-max="{{ max(optional($product->inventory)->quantity ?? 1, 1) }}" value="1"
+                               class="mt-2 w-24 rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)] {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'bg-slate-100 text-slate-400' : 'bg-white' }}" {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'disabled' : '' }}>
                     </div>
 
                     @auth
@@ -352,7 +352,7 @@
 
             if (buyMode === 'box') {
                 document.getElementById('quantityLabel').textContent = 'Boxes';
-                input.max = Math.max(maxBoxes, 1);
+                input.dataset.max = Math.max(maxBoxes, 1);
                 if (Number(input.value) > maxBoxes) input.value = Math.max(maxBoxes, 1);
                 document.getElementById('packPrice').textContent = money(pack.price * BOX_QUANTITY);
                 document.getElementById('buyModeNote').textContent =
@@ -360,7 +360,7 @@
                     + `${maxBoxes} box${maxBoxes === 1 ? '' : 'es'} available.`;
             } else {
                 document.getElementById('quantityLabel').textContent = 'Quantity';
-                input.max = Math.max(pack.quantity, 1);
+                input.dataset.max = Math.max(pack.quantity, 1);
                 if (Number(input.value) > pack.quantity) input.value = pack.quantity;
                 document.getElementById('packPrice').textContent = money(pack.price);
                 document.getElementById('buyModeNote').textContent =
@@ -384,7 +384,7 @@
             // one the page happened to open on.
             const quantityInput = document.getElementById('quantity');
             if (quantityInput) {
-                quantityInput.max = Math.max(pack.quantity, 1);
+                quantityInput.dataset.max = Math.max(pack.quantity, 1);
                 if (Number(quantityInput.value) > pack.quantity) quantityInput.value = pack.quantity;
             }
 
@@ -408,43 +408,86 @@
             refreshBuyMode();
         }
 
-        // A number input still lets "e", "-" and "+" be typed, and can be
-        // left empty. Strip anything that is not a digit as it is entered.
-        function sanitiseQuantity() {
+        /*
+         * Only digits may enter the quantity box.
+         *
+         * This is a text field, not a number field, on purpose. A number
+         * input reports value as "" for anything it considers invalid, so "a"
+         * could be typed, sit there looking typed, and read back as empty --
+         * and repairing that on blur is what made letters order one bottle:
+         * the box said "a", the value said "", blur made it 1, and Add to
+         * Cart was perfectly happy. A text field's value is always exactly
+         * what is on screen, so refusing a character actually refuses it.
+         *
+         * The stock ceiling lives in data-max rather than the max attribute,
+         * which means nothing on a text input.
+         */
+        (function guardQuantity() {
             const input = document.getElementById('quantity');
-            const cleaned = input.value.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+            if (!input) return;
 
-            if (cleaned !== input.value) {
-                input.value = cleaned;
-            }
-        }
+            const strip = (text) => String(text ?? '').replace(/[^0-9]/g, '');
 
-        // Leaving the box empty or on zero settles back to one, rather than
-        // being carried to the server as a value it has to reject.
-        function normaliseQuantity() {
-            const input = document.getElementById('quantity');
-            const ceiling = Number(input.max) || 1;
-            let value = parseInt(input.value, 10);
+            // One character at a time: refuse anything that is not a digit.
+            input.addEventListener('keypress', (event) => {
+                if (event.ctrlKey || event.metaKey || event.altKey) return;
 
-            if (!Number.isFinite(value) || value < 1) {
-                value = 1;
-            }
+                if (!/^[0-9]$/.test(event.key)) {
+                    event.preventDefault();
+                }
+            });
 
-            input.value = Math.min(value, ceiling);
-        }
+            // Pasting and dropping arrive as whole strings. Keeping the
+            // digits is kinder than refusing the lot, and a paste of "abc"
+            // then simply leaves the box as it was.
+            const insertDigitsOnly = (event, text) => {
+                const kept = strip(text);
+                event.preventDefault();
+
+                const start = input.selectionStart ?? input.value.length;
+                const end = input.selectionEnd ?? input.value.length;
+                const next = (input.value.slice(0, start) + kept + input.value.slice(end)).slice(0, 3);
+
+                input.value = next;
+                const caret = Math.min(start + kept.length, next.length);
+                input.setSelectionRange(caret, caret);
+            };
+
+            input.addEventListener('paste', (event) => {
+                insertDigitsOnly(event, (event.clipboardData || window.clipboardData).getData('text'));
+            });
+
+            input.addEventListener('drop', (event) => {
+                insertDigitsOnly(event, event.dataTransfer.getData('text'));
+            });
+
+            // Last line: whatever route the text took -- IME, autofill, a
+            // browser this code has not met -- the value is swept to digits.
+            input.addEventListener('input', () => {
+                const cleaned = strip(input.value);
+                if (cleaned !== input.value) {
+                    const caret = input.selectionStart;
+                    input.value = cleaned;
+                    if (caret !== null) {
+                        const at = Math.max(0, Math.min(caret - 1, cleaned.length));
+                        input.setSelectionRange(at, at);
+                    }
+                }
+            });
+        })();
 
         async function addToCart(productId) {
             const quantityInput = document.getElementById('quantity');
 
             const entered = parseInt(quantityInput.value, 10);
-            const ceiling = Number(quantityInput.max) || 1;
+            const ceiling = Number(quantityInput.dataset.max) || 1;
 
             // Checked rather than coerced. Math.max(Number("abc"), 1) is NaN,
             // which JSON turns into null, which the server used to read as a
             // quantity of one -- so typing letters silently ordered a bottle.
             if (!Number.isInteger(entered) || entered < 1) {
-                normaliseQuantity();
-                showMessage('Enter how many you want, as a whole number.', 'error');
+                quantityInput.focus();
+                showMessage('Enter how many you want, as a whole number of at least 1.', 'error');
                 return;
             }
 
