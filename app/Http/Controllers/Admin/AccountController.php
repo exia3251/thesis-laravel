@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Support\PasswordPolicy;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\User;
@@ -121,7 +122,7 @@ class AccountController extends Controller
 
         $request->validate([
             'current_password' => [$hasPassword ? 'required' : 'nullable', 'string', 'max:255'],
-            'new_password' => 'required|string|min:8|max:32|confirmed',
+            'new_password' => PasswordPolicy::rules(),
         ], [
             'new_password.confirmed' => 'The two new passwords do not match.',
         ]);

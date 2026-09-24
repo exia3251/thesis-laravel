@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\PasswordPolicy;
 use App\Http\Controllers\Concerns\StartsUserSessions;
 use App\Models\User;
 use App\Models\CustomerProfile;
@@ -20,7 +21,7 @@ class AuthController extends Controller
     {
         return [
             'email' => ['required', 'string', 'email', 'max:150'],
-            'password' => ['required', 'string', 'min:6', 'max:255'],
+            'password' => PasswordPolicy::loginRules(),
         ];
     }
 
@@ -31,7 +32,6 @@ class AuthController extends Controller
             'email.email' => 'Enter a valid email address.',
             'email.max' => 'Email address must not exceed 150 characters.',
             'password.required' => 'Password is required.',
-            'password.min' => 'Password must be at least 6 characters.',
         ];
     }
 
@@ -39,7 +39,7 @@ class AuthController extends Controller
     {
         return [
             'email' => ['required', 'email', 'max:150', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
+            'password' => PasswordPolicy::rules(),
             'full_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[A-Za-z][A-Za-z\s\'.-]*$/'],
             'phone' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/', 'unique:customer_profiles,phone'],
             'house_street' => ['required', 'string', 'min:5', 'max:160'],
@@ -52,13 +52,10 @@ class AuthController extends Controller
 
     protected function customerRegistrationMessages(): array
     {
-        return [
+        return PasswordPolicy::messages() + [
             'email.required' => 'Email address is required.',
             'email.email'   => 'Enter a valid email address.',
             'email.unique'  => 'That email address is already registered.',
-            'password.required' => 'Password is required.',
-            'password.min' => 'Password must be at least 8 characters.',
-            'password.confirmed' => 'Password confirmation does not match.',
             'full_name.required' => 'Full name is required.',
             'full_name.min' => 'Full name must be at least 2 characters.',
             'full_name.regex' => 'Full name may only contain letters, spaces, apostrophes, periods, and hyphens.',

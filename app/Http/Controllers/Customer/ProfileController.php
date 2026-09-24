@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Support\PasswordPolicy;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\CustomerProfile;
@@ -132,7 +133,7 @@ class ProfileController extends Controller
 
         $request->validate([
             'current_password' => [$hasPassword ? 'required' : 'nullable', 'string', 'max:255'],
-            'new_password' => 'required|string|min:8|max:32|confirmed',
+            'new_password' => PasswordPolicy::rules(),
         ]);
 
         if ($hasPassword && !Hash::check($request->current_password, $user->password)) {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Support\PasswordPolicy;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\CustomerProfile;
@@ -54,7 +55,7 @@ class UserManagementController extends Controller
 
         return [
             'email'     => ['required', 'email', 'max:150', $emailUnique],
-            'password'  => [$ignoreUserId ? 'nullable' : 'required', 'string', 'min:8', 'max:32'],
+            'password'  => PasswordPolicy::rules(confirmed: false, optional: (bool) $ignoreUserId),
             'full_name' => ['required', 'string', 'min:5', 'max:60', 'regex:/^[A-Za-z]{2,}(\s[A-Za-z]{2,})+$/'],
             'role'      => 'required|in:admin,inventory_staff,accounting,customer',
             'is_active' => 'nullable|boolean',
