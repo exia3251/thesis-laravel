@@ -111,14 +111,14 @@ class ProductCatalogSeeder extends Seeder
             [
                 'key' => 'canroyal-atf-dex3',
                 'name' => 'Canroyal Semi Synthetic Automatic Transmission Fluid DEXRON-III',
-                'brand' => 'CANROYAL', 'oil_type' => 'Other', 'viscosity' => 'ATF',
+                'brand' => 'CANROYAL', 'oil_type' => 'Semi-Synthetic', 'viscosity' => 'ATF',
                 'per_litre' => 380, 'packs' => ['1L', '4L', '5L'],
                 'description' => 'Automatic transmission fluid meeting General Motors DEXRON-III. Back-serviceable where DEXRON-II or III is specified, and suitable for power steering units.',
             ],
             [
                 'key' => 'canroyal-atf-dex6',
                 'name' => 'Canroyal Full Synthetic Automatic Transmission Fluid DEXRON-VI',
-                'brand' => 'CANROYAL', 'oil_type' => 'Other', 'viscosity' => 'ATF',
+                'brand' => 'CANROYAL', 'oil_type' => 'Synthetic', 'viscosity' => 'ATF',
                 'per_litre' => 520, 'packs' => ['1L', '4L', '5L'],
                 'description' => 'Full synthetic automatic transmission fluid meeting DEXRON-VI, for transmissions that call for the later specification.',
             ],
@@ -146,6 +146,9 @@ class ProductCatalogSeeder extends Seeder
                 'description' => 'Semi synthetic 10W30 meeting API SN, for everyday petrol engines.',
             ],
             [
+                // Left as Other on purpose. Solar's page says "premium
+                // quality base oils" and stops there, so unlike the other
+                // three transmission fluids there is nothing to call this.
                 'key' => 'solar-atf-dex3',
                 'name' => 'Solar Premium Series Automatic Transmission Fluid API DEX III',
                 'brand' => 'SOLAR', 'oil_type' => 'Other', 'viscosity' => 'ATF',
@@ -155,7 +158,7 @@ class ProductCatalogSeeder extends Seeder
             [
                 'key' => 'solar-atf-dex6',
                 'name' => 'Solar Premium Series Automatic Transmission Fluid DEXRON VI / MERCON LV',
-                'brand' => 'SOLAR', 'oil_type' => 'Other', 'viscosity' => 'ATF',
+                'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => 'ATF',
                 'per_litre' => 510, 'packs' => ['1L', '4L', '5L'],
                 'description' => 'Automatic transmission fluid meeting DEXRON VI and MERCON LV.',
             ],
@@ -176,6 +179,11 @@ class ProductCatalogSeeder extends Seeder
             [
                 // The manufacturer publishes JASO MA for this oil. Not MB,
                 // which is the opposite friction case, and not MA2.
+                // UNCONFIRMED base type. Solar's page says "highly refined
+                // base stock", then that the oil is "available fully
+                // synthetic, synthetic blend and mineral", which is three
+                // answers rather than one. Which variant RLT imports decides
+                // this, so confirm it with them before the listing is trusted.
                 'key' => 'solar-moto-10w40',
                 'name' => 'Solar Optima Series Motorcycle Engine Oil 10W40 API SL JASO MA',
                 'brand' => 'SOLAR', 'oil_type' => 'Semi-Synthetic', 'viscosity' => '10W40',
