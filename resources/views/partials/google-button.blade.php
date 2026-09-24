@@ -13,7 +13,7 @@
         <span class="h-px flex-1 bg-[var(--line)]"></span>
     </div>
 
-    <a href="/auth/google/redirect{{ ($from ?? null) === 'admin' ? '?from=admin' : '' }}"
+    <a href="/auth/google/redirect"
        class="flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm font-bold text-[var(--ink)] transition hover:border-[var(--primary)] hover:bg-[var(--surface)]">
         {{-- Google's mark, which their brand terms require be used as-is
              rather than redrawn in one colour. --}}

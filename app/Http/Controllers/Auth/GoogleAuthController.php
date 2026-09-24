@@ -35,17 +35,12 @@ class GoogleAuthController extends Controller
             return redirect('/shop/login')->with('error', 'Google Sign-In is not set up on this installation.');
         }
 
-        // Remembered so a member of staff who started at the back office door
-        // is returned to it, rather than landing in the shop.
-        $request->session()->put('google_auth_from', $request->query('from') === 'admin' ? 'admin' : 'shop');
-
         return Socialite::driver('google')->redirect();
     }
 
     public function callback(Request $request)
     {
-        $entry = $request->session()->pull('google_auth_from', 'shop');
-        $loginPage = $entry === 'admin' ? '/admin/login' : '/shop/login';
+        $loginPage = '/shop/login';
 
         if (!$this->configured()) {
             return redirect($loginPage)->with('error', 'Google Sign-In is not set up on this installation.');
@@ -68,11 +63,31 @@ class GoogleAuthController extends Controller
             return redirect($loginPage)->with('error', $failure);
         }
 
+        /*
+         * Google Sign-In is for customers. A staff account reaching here
+         * would be signed in on the shop's guard, and the back office asks
+         * the staff guard, so it would bounce them straight back to the
+         * login page with nothing to explain why.
+         *
+         * Refusing outright is also the safer rule: who may enter the back
+         * office is something an administrator decides by issuing a
+         * password, not something a Google account confers.
+         */
+        if ($user->isStaff()) {
+            Log::warning('A staff account attempted Google sign-in.', ['user_id' => $user->user_id]);
+
+            return redirect('/admin/login')->with(
+                'error',
+                'Staff accounts sign in with their email and password, not with Google.'
+            );
+        }
+
         $this->startSession(
             $request,
             $user,
-            $user->isStaff() ? 'admin_login' : 'customer_login',
-            "{$user->full_name} signed in with Google elsewhere, so the earlier session was ended."
+            'customer_login',
+            "{$user->full_name} signed in with Google elsewhere, so the earlier session was ended.",
+            'web'
         );
 
         // Someone who has just been created through Google has nothing but

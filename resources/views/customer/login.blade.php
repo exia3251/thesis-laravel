@@ -16,8 +16,7 @@
             </div>
             <section class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-8">
                 <div class="text-center">
-                    <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">Customer Access</div>
-                    <h2 class="mt-4 text-3xl font-extrabold text-[var(--ink)]">Customer Login</h2>
+                    <h2 class="text-3xl font-extrabold text-[var(--ink)]">Customer Login</h2>
                     <p class="mt-2 text-sm font-semibold tracking-[0.2em] text-[var(--muted)]">RANEY LUBRICANTS TRADING</p>
                 </div>
                 <div id="error-message" class="hidden mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700"></div>

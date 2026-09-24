@@ -49,8 +49,6 @@
                         Sign in
                     </button>
 
-                    @include('partials.google-button', ['from' => 'admin'])
-
                     {{-- Seeded logins, for local development only. This block is
                          absent once APP_ENV is anything other than local. --}}
                     @if (app()->environment('local'))
