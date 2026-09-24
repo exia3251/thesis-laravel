@@ -235,10 +235,27 @@
                 </div>
 
                 <div class="mt-6 flex flex-wrap gap-3">
+                    @php $soldOut = (optional($product->inventory)->quantity ?? 0) < 1; @endphp
                     <div class="rounded-2xl border border-[var(--line)] bg-white/80 px-4 py-3">
                         <label for="quantity" id="quantityLabel" class="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Quantity</label>
-                        <input id="quantity" type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]*" maxlength="3" data-max="{{ max(optional($product->inventory)->quantity ?? 1, 1) }}" value="1"
-                               class="mt-2 w-24 rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)] {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'bg-slate-100 text-slate-400' : 'bg-white' }}" {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'disabled' : '' }}>
+
+                        {{-- The steppers exist because this is a text field,
+                             which has no spinners of its own. They cannot
+                             produce a bad value: each one clamps to the
+                             stock ceiling and to one, and disables itself at
+                             the end it would push past. --}}
+                        <div class="mt-2 flex items-stretch overflow-hidden rounded-xl border border-[var(--line)] {{ $soldOut ? 'bg-slate-100' : 'bg-white' }}">
+                            <button type="button" id="quantityDown" onclick="stepQuantity(-1)" aria-label="One fewer"
+                                    class="flex w-9 items-center justify-center text-lg font-bold text-[var(--muted)] transition hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--muted)]"
+                                    @disabled($soldOut)>&minus;</button>
+
+                            <input id="quantity" type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]*" maxlength="3" data-max="{{ max(optional($product->inventory)->quantity ?? 1, 1) }}" value="1"
+                                   class="w-12 border-x border-[var(--line)] px-2 py-2.5 text-center text-sm outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] {{ $soldOut ? 'bg-slate-100 text-slate-400' : 'bg-white' }}" @disabled($soldOut)>
+
+                            <button type="button" id="quantityUp" onclick="stepQuantity(1)" aria-label="One more"
+                                    class="flex w-9 items-center justify-center text-lg font-bold text-[var(--muted)] transition hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--muted)]"
+                                    @disabled($soldOut)>+</button>
+                        </div>
                     </div>
 
                     @auth
@@ -361,11 +378,13 @@
             } else {
                 document.getElementById('quantityLabel').textContent = 'Quantity';
                 input.dataset.max = Math.max(pack.quantity, 1);
-                if (Number(input.value) > pack.quantity) input.value = pack.quantity;
+                if (Number(input.value) > pack.quantity) input.value = Math.max(pack.quantity, 1);
                 document.getElementById('packPrice').textContent = money(pack.price);
                 document.getElementById('buyModeNote').textContent =
                     canBox ? `Buying ${BOX_QUANTITY} or more? A box is ${BOX_QUANTITY} x ${pack.unit}.` : '';
             }
+
+            refreshSteppers();
         }
 
         function selectPack(productId) {
@@ -385,7 +404,7 @@
             const quantityInput = document.getElementById('quantity');
             if (quantityInput) {
                 quantityInput.dataset.max = Math.max(pack.quantity, 1);
-                if (Number(quantityInput.value) > pack.quantity) quantityInput.value = pack.quantity;
+                if (Number(quantityInput.value) > pack.quantity) quantityInput.value = Math.max(pack.quantity, 1);
             }
 
             document.querySelectorAll('.pack-option').forEach((button) => {
@@ -474,7 +493,48 @@
                     }
                 }
             });
+
+            input.addEventListener('input', refreshSteppers);
         })();
+
+        /** The ceiling for whatever pack and buying mode is selected. */
+        function quantityCeiling() {
+            return Number(document.getElementById('quantity').dataset.max) || 1;
+        }
+
+        /**
+         * Moves the quantity by one, and cannot land anywhere invalid: the
+         * result is clamped to between 1 and the stock ceiling, and a box
+         * holding something unreadable is treated as 1 rather than as NaN.
+         */
+        function stepQuantity(by) {
+            const input = document.getElementById('quantity');
+            if (input.disabled) return;
+
+            const current = parseInt(input.value, 10);
+            const usable = Number.isInteger(current) && current >= 1;
+
+            // From an empty or unreadable box the first press lands on 1,
+            // rather than on 2 because it counted up from an imagined 1.
+            const next = usable ? current + by : 1;
+
+            input.value = Math.min(Math.max(next, 1), quantityCeiling());
+            refreshSteppers();
+        }
+
+        /** Greys out whichever end the quantity is already sitting on. */
+        function refreshSteppers() {
+            const input = document.getElementById('quantity');
+            const down = document.getElementById('quantityDown');
+            const up = document.getElementById('quantityUp');
+            if (!down || !up) return;
+
+            const value = parseInt(input.value, 10);
+            const ceiling = quantityCeiling();
+
+            down.disabled = input.disabled || !Number.isInteger(value) || value <= 1;
+            up.disabled = input.disabled || (Number.isInteger(value) && value >= ceiling);
+        }
 
         async function addToCart(productId) {
             const quantityInput = document.getElementById('quantity');
@@ -539,5 +599,6 @@
         // The page opens on a pack, so the box option has to be worked out
         // for it before anyone touches the size buttons.
         refreshBuyMode();
+        refreshSteppers();
 </script>
 @endpush
