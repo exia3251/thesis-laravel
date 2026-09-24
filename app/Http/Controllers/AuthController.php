@@ -282,7 +282,7 @@ class AuthController extends Controller
         // The session is shared by both guards, so tearing it down is only
         // safe once nobody is left in it. Otherwise logging out of one role
         // would silently end the other.
-        $othersStillSignedIn = collect(self::GUARDS)
+        $othersStillSignedIn = collect(config('auth.session_guards'))
             ->reject(fn (string $name) => $name === $guard)
             ->contains(fn (string $name) => Auth::guard($name)->check());
 

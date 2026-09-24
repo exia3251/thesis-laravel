@@ -18,9 +18,6 @@ use Illuminate\Support\Facades\Auth;
  */
 trait StartsUserSessions
 {
-    /** The guards that can hold a signed-in account at the same time. */
-    public const GUARDS = ['web', 'staff'];
-
     protected function startSession(
         Request $request,
         User $user,
@@ -49,7 +46,7 @@ trait StartsUserSessions
          * read that as "signed in somewhere else" and throw them out on
          * their very next click.
          */
-        foreach (self::GUARDS as $name) {
+        foreach (config('auth.session_guards') as $name) {
             $signedIn = Auth::guard($name)->user();
 
             if ($signedIn) {

@@ -62,6 +62,17 @@ return [
     ],
 
     /*
+     * The guards that can hold a signed-in account at the same time.
+     *
+     * Read by the code that has to sweep all of them: moving every account to
+     * the new session id on login, and working out whether anyone is left in
+     * the session before tearing it down. It lives here rather than as a
+     * constant on the trait, because PHP will not let a class that does not
+     * use the trait read one.
+     */
+    'session_guards' => ['web', 'staff'],
+
+    /*
     |--------------------------------------------------------------------------
     | User Providers
     |--------------------------------------------------------------------------
