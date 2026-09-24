@@ -5,36 +5,47 @@
 @section('content')
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-            <h1 class="text-2xl font-black text-[var(--ink)] sm:text-3xl">User Management</h1>
-            <p class="text-[var(--muted)]">Create and manage admin and customer accounts.</p>
+            <h1 class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">Users</h1>
+            <p class="mt-1 text-sm text-[var(--muted)]">Staff accounts, customer accounts, and what everyone has been doing.</p>
         </div>
-        <button id="addUserBtn" onclick="openUserModal()" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)] transition shadow-sm">+ Add User</button>
+        <button id="addUserBtn" onclick="openUserModal()" class="rounded-xl bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110">Add account</button>
     </div>
 
     <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
     <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-6 py-4">
-            <h2 class="text-xl font-bold text-[var(--ink)]">Accounts</h2>
-            <div class="inline-flex rounded-xl border border-[var(--line)] p-1">
-                <button type="button" id="tabActiveUsers" onclick="setArchivedUsers(false)"
-                        class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Active</button>
-                <button type="button" id="tabArchivedUsers" onclick="setArchivedUsers(true)"
-                        class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Archived</button>
+        <div class="space-y-3 border-b border-[var(--line)] px-5 py-4 sm:px-6">
+            <div class="flex flex-wrap items-center gap-3">
+                <input type="text" id="userSearch" oninput="renderUsers()" placeholder="Search name or email..."
+                       class="w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] sm:w-72">
+
+                <div class="inline-flex rounded-xl border border-[var(--line)] p-1">
+                    <button type="button" id="tabActiveUsers" onclick="setArchivedUsers(false)"
+                            class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Active</button>
+                    <button type="button" id="tabArchivedUsers" onclick="setArchivedUsers(true)"
+                            class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Archived</button>
+                </div>
+
+                <span id="userCount" class="ml-auto text-xs font-semibold text-[var(--muted)]"></span>
             </div>
+
+            {{-- Staff and customers share one table, and there are far more
+                 customers, so the roles are a filter rather than a scroll. --}}
+            <div id="roleFilters" class="flex flex-wrap gap-2"></div>
         </div>
+
         <div class="admin-table-wrap">
             <table class="min-w-full">
                 <thead class="bg-[var(--surface)]">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Staff</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Email</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)]                     <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">Account</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Email</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Status</th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="usersBody">
-                    <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>
+                <tbody id="usersBody" class="divide-y divide-[var(--line)]">
+                    <tr><td colspan="4" class="px-6 py-10 text-center text-sm text-[var(--muted)]">Loading accounts...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -42,19 +53,23 @@
 
     <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
         <div class="px-6 py-4 border-b border-[var(--line)] flex flex-wrap items-center justify-between gap-3">
-            <h2 class="text-xl font-bold text-[var(--ink)]">Recent Activity Logs</h2>
-            <div class="flex flex-wrap gap-2 text-sm items-center">
-                <button onclick="loadLogs('all')" id="tab-all" class="log-tab px-3 py-1 rounded-full border font-medium bg-gray-900 text-white border-gray-900">All</button>
-                <button onclick="loadLogs('admin')" id="tab-admin" class="log-tab px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Admin</button>
-                <button onclick="loadLogs('customer')" id="tab-customer" class="log-tab px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Customer</button>
-                <div class="w-px h-5 bg-gray-200 mx-1"></div>
-                <button onclick="toggleDateSort()" id="dateSortBtn" class="px-3 py-1 rounded-full border font-medium text-gray-600 border-gray-300 hover:bg-gray-100 flex items-center gap-1">
-                    <span id="dateSortLabel">Newest First</span>
+            <div>
+                <h2 class="text-base font-bold text-[var(--ink)]">Activity log</h2>
+                <p class="mt-0.5 text-xs text-[var(--muted)]">Who did what, and when</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 text-sm">
+                <button onclick="loadLogs('all')" id="tab-all" class="log-tab rounded-xl border px-3 py-1.5 text-xs font-semibold transition">All</button>
+                <button onclick="loadLogs('admin')" id="tab-admin" class="log-tab rounded-xl border px-3 py-1.5 text-xs font-semibold transition">Staff</button>
+                <button onclick="loadLogs('customer')" id="tab-customer" class="log-tab rounded-xl border px-3 py-1.5 text-xs font-semibold transition">Customers</button>
+                <div class="mx-1 h-5 w-px bg-[var(--line)]"></div>
+                <button onclick="toggleDateSort()" id="dateSortBtn"
+                        class="rounded-xl border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)] transition hover:text-[var(--ink)]">
+                    <span id="dateSortLabel">Newest first</span>
                 </button>
             </div>
         </div>
         <div class="px-6 py-3 border-b border-[var(--line)] bg-[var(--surface)] flex flex-wrap items-center gap-4">
-            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Filter by Date</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Between</span>
             <div class="flex items-center gap-2">
                 <label class="text-xs text-[var(--muted)]">From</label>
                 <input id="logDateFrom" type="date" class="rounded-xl border border-[var(--line)] bg-white px-3 py-1.5 text-sm focus:outline-none">
@@ -309,44 +324,94 @@
 
         let showArchivedUsers = false;
 
-        async function loadUsers() {
-            const query = showArchivedUsers ? '?archived=1' : '';
-            const response = await fetch(`/admin-api/users${query}`, { headers: { Accept: 'application/json' } });
-            const data = await response.json();
-            users = data.data || [];
-            const tbody = document.getElementById('usersBody');
+        let roleFilter = 'all';
 
-            tbody.innerHTML = users.length
-                ? users.map((user) => `
-                    <tr>
-                        <td class="px-6 py-4">
+        const ROLE_FILTERS = [
+            ['all', 'Everyone'],
+            ['admin', 'Administrators'],
+            ['inventory_staff', 'Inventory'],
+            ['accounting', 'Accounting'],
+            ['customer', 'Customers'],
+        ];
+
+        function renderRoleFilters() {
+            const counts = users.reduce((tally, user) => {
+                tally[user.role] = (tally[user.role] || 0) + 1;
+                return tally;
+            }, {});
+
+            document.getElementById('roleFilters').innerHTML = ROLE_FILTERS.map(([key, label]) => {
+                const on = key === roleFilter;
+                const count = key === 'all' ? users.length : (counts[key] || 0);
+
+                return `
+                    <button type="button" onclick="setRoleFilter('${key}')"
+                            class="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${on
+                                ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
+                                : 'border-[var(--line)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--ink)]'}">
+                        ${escapeHtml(label)}
+                        <span class="${on ? 'text-white/80' : 'text-[var(--ink)]'} font-black">${count}</span>
+                    </button>`;
+            }).join('');
+        }
+
+        function setRoleFilter(role) {
+            roleFilter = role;
+            renderUsers();
+        }
+
+        function renderUsers() {
+            const tbody = document.getElementById('usersBody');
+            const search = document.getElementById('userSearch').value.toLowerCase();
+
+            const rows = users.filter(user =>
+                (roleFilter === 'all' || user.role === roleFilter)
+                && (user.full_name.toLowerCase().includes(search) || user.email.toLowerCase().includes(search)));
+
+            renderRoleFilters();
+            document.getElementById('userCount').textContent = `${rows.length} of ${users.length} accounts`;
+
+            tbody.innerHTML = rows.length
+                ? rows.map((user) => `
+                    <tr class="transition hover:bg-[var(--surface)]">
+                        <td class="px-5 py-3 sm:px-6">
                             <div class="flex items-center gap-3">
                                 ${user.avatar_url
                                     ? `<img src="${user.avatar_url}" alt="" class="h-9 w-9 shrink-0 rounded-full object-cover">`
                                     : `<span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${user.avatar_tone}">${escapeHtml(user.initials)}</span>`}
                                 <div class="min-w-0">
-                                    <div class="truncate font-semibold text-[var(--ink)]">${escapeHtml(user.full_name)}</div>
+                                    <div class="truncate text-sm font-semibold text-[var(--ink)]">${escapeHtml(user.full_name)}</div>
                                     <div class="text-xs text-[var(--muted)]">${escapeHtml(user.role_label)}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4">${escapeHtml(user.email)}</td>
-                        <td class="px-6 py-4">
+                        <td class="px-5 py-3 text-sm text-[var(--muted)]">${escapeHtml(user.email)}</td>
+                        <td class="px-5 py-3">
                             ${user.archived
                                 ? '<span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Archived</span>'
                                 : (user.is_active
                                     ? '<span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Active</span>'
                                     : '<span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">Inactive</span>')}
                         </td>
-                        <td class="px-6 py-4 space-x-3 whitespace-nowrap">
-                            ${user.archived
-                                ? `<button onclick="restoreUser(${user.user_id})" class="font-semibold text-[var(--primary)] hover:text-[var(--primary-dark)]">Restore</button>`
-                                : `<button onclick="editUser(${user.user_id})" class="text-blue-600 hover:text-blue-900">Edit</button>
-                                   <button onclick="archiveUser(${user.user_id})" class="text-red-600 hover:text-red-900">Archive</button>`}
+                        <td class="px-5 py-3 text-right sm:px-6">
+                            <div class="inline-flex gap-2">
+                                ${user.archived
+                                    ? `<button onclick="restoreUser(${user.user_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Restore</button>`
+                                    : `<button onclick="editUser(${user.user_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Edit</button>
+                                       <button onclick="archiveUser(${user.user_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:border-red-300">Archive</button>`}
+                            </div>
                         </td>
-                    </tr>
-                `).join('')
-                : `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">${showArchivedUsers ? 'Nothing archived.' : 'No users found.'}</td></tr>`;
+                    </tr>`).join('')
+                : `<tr><td colspan="4" class="px-6 py-10 text-center text-sm text-[var(--muted)]">${showArchivedUsers ? 'Nothing archived.' : 'Nothing matches that.'}</td></tr>`;
+        }
+
+        async function loadUsers() {
+            const query = showArchivedUsers ? '?archived=1' : '';
+            const response = await fetch(`/admin-api/users${query}`, { headers: { Accept: 'application/json' } });
+            const data = await response.json();
+            users = data.data || [];
+
+            renderUsers();
         }
 
         function setArchivedUsers(archived) {
@@ -517,18 +582,16 @@
 
         async function loadLogs(type = 'all', page = 1) {
             activeLogType = type;
+
             document.querySelectorAll('.log-tab').forEach(btn => {
-                btn.classList.remove('bg-gray-900', 'text-white', 'border-gray-900');
-                btn.classList.add('text-gray-600', 'border-gray-300');
+                const on = btn.id === 'tab-' + type;
+                btn.className = 'log-tab rounded-xl border px-3 py-1.5 text-xs font-semibold transition '
+                    + (on ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
+                          : 'border-[var(--line)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--ink)]');
             });
-            const activeTab = document.getElementById('tab-' + type);
-            if (activeTab) {
-                activeTab.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
-                activeTab.classList.remove('text-gray-600', 'border-gray-300');
-            }
 
             const container = document.getElementById('logsList');
-            container.innerHTML = '<p class="text-gray-500">Loading logs...</p>';
+            container.innerHTML = '<p class="text-sm text-[var(--muted)]">Loading logs...</p>';
 
             const response = await fetch(`/admin-api/logs?type=${type}&page=${page}`, { headers: { Accept: 'application/json' } });
             const data = await response.json();
