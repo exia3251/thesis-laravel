@@ -21,7 +21,7 @@
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1.05fr_0.95fr]">
             <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
                 @if ($product->image_path)
-                    <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}" class="h-[420px] w-full object-cover">
+                    <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}" class="h-[420px] w-full bg-white object-contain p-6">
                 @else
                     <div class="flex h-[420px] items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))]">
                         <span class="rounded-full bg-white/90 px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Product Image</span>

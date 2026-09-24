@@ -179,7 +179,7 @@
                     <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group flex flex-col cursor-pointer overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
                         <div class="relative flex-shrink-0">
                             ${product.image_url
-                                ? `<img src="${product.image_url}" alt="${escapeHtml(product.product_name)}" class="h-64 w-full object-cover">`
+                                ? `<img src="${product.image_url}" alt="${escapeHtml(product.product_name)}" class="h-64 w-full bg-white object-contain p-3">`
                                 : `<div class="flex h-64 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))]"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
                             <div class="absolute left-4 top-4 rounded-full bg-[rgba(22,32,42,0.82)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">Pick ${index + 1}</div>
                         </div>
@@ -271,7 +271,7 @@
                         ` : ''}
                         <article onclick="window.location.href='/shop/products/${product.product_id}'" class="group flex flex-col cursor-pointer overflow-hidden rounded-[1.5rem] border border-[var(--line)] ${unavailable ? 'bg-slate-100 opacity-80' : 'bg-white'} shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
                             ${product.image_url
-                                ? `<div class="flex-shrink-0"><img src="${product.image_url}" alt="${escapeHtml(product.product_name)}" class="h-60 w-full object-cover ${unavailable ? 'grayscale' : ''}"></div>`
+                                ? `<div class="flex-shrink-0"><img src="${product.image_url}" alt="${escapeHtml(product.product_name)}" class="h-60 w-full bg-white object-contain p-3 ${unavailable ? 'grayscale' : ''}"></div>`
                                 : `<div class="flex-shrink-0 flex h-60 items-center justify-center bg-[linear-gradient(135deg,_rgba(20,138,103,0.12),_rgba(255,255,255,0.95)_45%,_rgba(217,177,74,0.18))] ${unavailable ? 'grayscale' : ''}"><span class="rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">No Image</span></div>`}
                             <div class="flex flex-1 flex-col p-5">
                                 <div class="mb-2 flex items-start justify-between gap-2">
