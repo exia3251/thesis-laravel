@@ -3,72 +3,108 @@
 @section('title', 'RANEY LUBRICANTS TRADING — Admin')
 
 @section('content')
-    <div class="mb-6">
-        <h1 class="text-2xl font-black text-[var(--ink)] sm:text-3xl">Inventory Management</h1>
-        <p class="text-[var(--muted)]">Monitor stock levels and record stock-in or stock-out transactions.</p>
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">Inventory</h1>
+            <p class="mt-1 text-sm text-[var(--muted)]">What is on the shelf, and what needs ordering.</p>
+        </div>
+        <button type="button" onclick="window.location.href='/admin-api/reports/inventory/export'"
+                class="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Export CSV
+        </button>
     </div>
 
     <div id="message" class="fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur"></div>
 
+    {{-- The three counts the shelf is judged by, and each one filters the
+         table below it, so the number and the rows cannot disagree. --}}
+    <div id="stockSummary" class="mb-5 grid gap-4 sm:grid-cols-3"></div>
+
     <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
-        <div class="flex flex-wrap items-center gap-3 border-b border-[var(--line)] px-4 py-4 sm:px-6">
-            <input type="text" id="inventorySearch" oninput="renderInventory()" placeholder="Search product or brand..." class="rounded border border-gray-300 px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:border-blue-400">
-            <div class="flex flex-wrap gap-2 text-sm">
-                <button onclick="setStockFilter('all')" id="stockFilter-all" class="stock-filter-btn px-3 py-1.5 rounded border font-medium bg-gray-900 text-white border-gray-900">All</button>
-                <button onclick="setStockFilter('in_stock')" id="stockFilter-in_stock" class="stock-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">In Stock</button>
-                <button onclick="setStockFilter('low_stock')" id="stockFilter-low_stock" class="stock-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Low Stock</button>
-                <button onclick="setStockFilter('out_of_stock')" id="stockFilter-out_of_stock" class="stock-filter-btn px-3 py-1.5 rounded border font-medium text-gray-600 border-gray-300 hover:bg-gray-100">Out of Stock</button>
+        <div class="flex flex-wrap items-center gap-3 border-b border-[var(--line)] px-5 py-4 sm:px-6">
+            <input type="text" id="inventorySearch" oninput="renderInventory()" placeholder="Search product or brand..."
+                   class="w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] sm:w-72">
+
+            <div class="inline-flex flex-wrap gap-1 rounded-xl border border-[var(--line)] p-1 text-sm">
+                <button onclick="setStockFilter('all')" id="stockFilter-all" class="stock-filter-btn rounded-lg px-3 py-1.5 font-semibold transition">All</button>
+                <button onclick="setStockFilter('in_stock')" id="stockFilter-in_stock" class="stock-filter-btn rounded-lg px-3 py-1.5 font-semibold transition">In stock</button>
+                <button onclick="setStockFilter('low_stock')" id="stockFilter-low_stock" class="stock-filter-btn rounded-lg px-3 py-1.5 font-semibold transition">Running low</button>
+                <button onclick="setStockFilter('out_of_stock')" id="stockFilter-out_of_stock" class="stock-filter-btn rounded-lg px-3 py-1.5 font-semibold transition">Out of stock</button>
             </div>
+
+            <span id="inventoryCount" class="ml-auto text-xs font-semibold text-[var(--muted)]"></span>
         </div>
+
         <div class="admin-table-wrap">
             <table class="min-w-full">
                 <thead class="bg-[var(--surface)]">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Product Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Brand</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Current Stock</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Reorder Level</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Actions</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">Product</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">On hand</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Reorder at</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Value</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Status</th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">Movement</th>
                     </tr>
                 </thead>
-                <tbody id="inventoryBody" class="bg-[var(--card)] divide-y divide-[var(--line)]">
-                    <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading inventory...</td>
-                    </tr>
+                <tbody id="inventoryBody" class="divide-y divide-[var(--line)] bg-[var(--card)]">
+                    <tr><td colspan="6" class="px-6 py-10 text-center text-sm text-[var(--muted)]">Loading inventory...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
-</div>
+
+    {{-- Stock in and stock out, with the shelf it is moving shown beside the
+         number so the wrong pack size is harder to reach for. --}}
+    <div id="stockModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+        <div class="w-full max-w-md overflow-hidden rounded-[1.5rem] bg-white shadow-2xl">
+            <div class="flex items-start justify-between gap-3 border-b border-[var(--line)] px-6 py-5">
+                <div>
+                    <h2 id="stockModalTitle" class="text-base font-bold text-[var(--ink)]">Stock adjustment</h2>
+                    <p id="stockModalSubtitle" class="mt-0.5 text-xs text-[var(--muted)]">Record inventory movement.</p>
+                </div>
+                <button type="button" onclick="closeStockModal()" aria-label="Close"
+                        class="rounded-lg p-1.5 text-[var(--muted)] transition hover:bg-[var(--surface)]">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <form id="stockForm" class="space-y-5 px-6 py-6">
+                <input type="hidden" id="stock_action" value="stock-in">
+                <input type="hidden" id="stock_product_id">
+
+                <div id="stockProductCard" class="flex items-center gap-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3"></div>
+
+                <div>
+                    <label for="stock_quantity" class="block text-sm font-medium text-[var(--ink)]">Quantity</label>
+
+                    {{-- Digits only, with steppers that cannot produce a bad
+                         value -- the same handling as the shop's quantity
+                         box, for the same reason: a number field reports an
+                         empty string for anything it cannot parse. --}}
+                    <div class="mt-1.5 flex w-full max-w-[12rem] items-center rounded-xl border border-[var(--line)]">
+                        <button type="button" onclick="stepStock(-1)" aria-label="One fewer"
+                                class="px-3.5 py-2.5 text-lg font-bold leading-none text-[var(--muted)] transition hover:text-[var(--primary)]">&minus;</button>
+                        <input type="text" id="stock_quantity" inputmode="numeric" autocomplete="off" value="1"
+                               class="w-full border-x border-[var(--line)] px-2 py-2.5 text-center text-sm font-semibold outline-none">
+                        <button type="button" onclick="stepStock(1)" aria-label="One more"
+                                class="px-3.5 py-2.5 text-lg font-bold leading-none text-[var(--muted)] transition hover:text-[var(--primary)]">+</button>
+                    </div>
+
+                    <p id="stockHint" class="mt-1.5 text-xs text-[var(--muted)]"></p>
+                </div>
+
+                <div class="flex justify-end gap-2 border-t border-[var(--line)] pt-5">
+                    <button type="button" onclick="closeStockModal()"
+                            class="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--surface)]">Cancel</button>
+                    <button type="submit" id="stockSubmit"
+                            class="rounded-xl bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110">Save</button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div id="stockModal" class="hidden fixed inset-0 bg-gray-900/60 p-4">
-<div class="mx-auto mt-8 max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl sm:mt-16 sm:p-6">
-    <div class="flex items-center justify-between">
-        <div>
-            <h2 id="stockModalTitle" class="text-xl font-bold text-slate-900">Stock Adjustment</h2>
-            <p id="stockModalSubtitle" class="text-sm text-slate-500">Record inventory movement.</p>
-        </div>
-        <button type="button" onclick="closeStockModal()" class="text-slate-500 hover:text-slate-700">Close</button>
-    </div>
-
-    <form id="stockForm" class="mt-6 space-y-4">
-        <input type="hidden" id="stock_action" value="stock-in">
-        <input type="hidden" id="stock_product_id">
-        <div>
-            <label class="block text-sm font-medium text-slate-700">Product</label>
-            <input type="text" id="stock_product_name" class="mt-1 block w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-slate-700" readonly>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-slate-700">Quantity</label>
-            <input type="number" id="stock_quantity" min="1" step="1" required class="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-3" value="1">
-        </div>
-        <div class="flex justify-end gap-3">
-            <button type="button" onclick="closeStockModal()" class="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Cancel</button>
-            <button type="submit" class="rounded-full bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-black">Save Adjustment</button>
-        </div>
-    </form>
 @endsection
 
 @push('scripts')
@@ -107,54 +143,104 @@
 
         function setStockFilter(filter) {
             activeStockFilter = filter;
+
             document.querySelectorAll('.stock-filter-btn').forEach(btn => {
-                btn.classList.remove('bg-gray-900', 'text-white', 'border-gray-900');
-                btn.classList.add('text-gray-600', 'border-gray-300');
+                const on = btn.id === 'stockFilter-' + filter;
+                btn.className = 'stock-filter-btn rounded-lg px-3 py-1.5 font-semibold transition '
+                    + (on ? 'bg-[var(--primary)] text-white' : 'text-[var(--muted)] hover:text-[var(--ink)]');
             });
-            const active = document.getElementById('stockFilter-' + filter);
-            if (active) {
-                active.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
-                active.classList.remove('text-gray-600', 'border-gray-300');
-            }
+
             renderInventory();
+        }
+
+        const STOCK_TONES = {
+            out: { chip: 'bg-red-100 text-red-800', label: 'Out of stock', dot: '#dc2626' },
+            low: { chip: 'bg-amber-100 text-amber-800', label: 'Running low', dot: '#d97706' },
+            ok:  { chip: 'bg-emerald-100 text-emerald-800', label: 'In stock', dot: '#148a67' },
+        };
+
+        const peso = (n) => 'PHP ' + Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        function matchesFilter(item) {
+            if (activeStockFilter === 'all') return true;
+            if (activeStockFilter === 'out_of_stock') return item.status === 'out';
+            if (activeStockFilter === 'low_stock') return item.status === 'low';
+            return item.status === 'ok';
+        }
+
+        /** The three counts across the top, each one a filter. */
+        function renderSummary() {
+            const counts = {
+                out_of_stock: inventoryItems.filter(i => i.status === 'out').length,
+                low_stock: inventoryItems.filter(i => i.status === 'low').length,
+                in_stock: inventoryItems.filter(i => i.status === 'ok').length,
+            };
+
+            const value = inventoryItems.reduce((total, item) => total + Number(item.stock_value || 0), 0);
+
+            const card = (key, label, count, tone, note) => `
+                <button type="button" onclick="setStockFilter('${key}')"
+                        class="rounded-[1.25rem] border bg-white px-5 py-4 text-left shadow-sm transition hover:border-[var(--primary)] ${activeStockFilter === key ? 'border-[var(--primary)]' : 'border-[var(--line)]'}">
+                    <span class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+                        <span class="h-2.5 w-2.5 rounded-full" style="background:${tone}"></span>${label}
+                    </span>
+                    <span class="mt-2 block text-3xl font-black tracking-tight text-[var(--ink)]">${count}</span>
+                    <span class="mt-1 block text-xs text-[var(--muted)]">${note}</span>
+                </button>`;
+
+            document.getElementById('stockSummary').innerHTML =
+                card('out_of_stock', 'Out of stock', counts.out_of_stock, STOCK_TONES.out.dot, 'nothing left to sell')
+                + card('low_stock', 'Running low', counts.low_stock, STOCK_TONES.low.dot, 'at or under the reorder level')
+                + card('in_stock', 'In stock', counts.in_stock, STOCK_TONES.ok.dot, peso(value) + ' on the shelf');
         }
 
         function renderInventory() {
             const search = document.getElementById('inventorySearch').value.toLowerCase();
             const tbody = document.getElementById('inventoryBody');
 
-            let items = inventoryItems.filter(item => {
-                const matchSearch = item.product_name.toLowerCase().includes(search) || item.brand.toLowerCase().includes(search);
-                const stock = item.quantity || 0;
-                const matchFilter =
-                    activeStockFilter === 'all' ||
-                    (activeStockFilter === 'in_stock' && stock > item.reorder_level / 2) ||
-                    (activeStockFilter === 'low_stock' && stock > 0 && stock <= item.reorder_level / 2) ||
-                    (activeStockFilter === 'out_of_stock' && stock === 0);
-                return matchSearch && matchFilter;
-            });
+            const items = inventoryItems.filter(item =>
+                (item.product_name.toLowerCase().includes(search) || item.brand.toLowerCase().includes(search))
+                && matchesFilter(item));
+
+            document.getElementById('inventoryCount').textContent =
+                `${items.length} of ${inventoryItems.length} products`;
+
+            renderSummary();
 
             tbody.innerHTML = items.length
                 ? items.map((item) => {
-                    const stock = item.quantity || 0;
-                    let statusColor = 'text-green-600';
-                    let statusText = 'In Stock';
-                    if (stock === 0) { statusColor = 'text-red-600'; statusText = 'Out of Stock'; }
-                    else if (stock <= item.reorder_level / 2) { statusColor = 'text-orange-600'; statusText = 'Low Stock'; }
+                    const tone = STOCK_TONES[item.status] || STOCK_TONES.ok;
+
                     return `
-                        <tr>
-                            <td class="px-6 py-4">${escapeHtml(item.product_name)}</td>
-                            <td class="px-6 py-4">${escapeHtml(item.brand)}</td>
-                            <td class="px-6 py-4 font-semibold">${stock}</td>
-                            <td class="px-6 py-4">${item.reorder_level}</td>
-                            <td class="px-6 py-4 ${statusColor}">${statusText}</td>
-                            <td class="px-6 py-4 space-x-3">
-                                <button type="button" onclick="adjustStock(${item.product_id}, 'stock-in')" class="text-blue-600 hover:text-blue-900">Stock In</button>
-                                <button type="button" onclick="adjustStock(${item.product_id}, 'stock-out')" class="text-red-600 hover:text-red-900">Stock Out</button>
+                        <tr class="transition hover:bg-[var(--surface)]">
+                            <td class="px-5 py-3 sm:px-6">
+                                <div class="flex items-center gap-3">
+                                    ${item.image_url
+                                        ? `<img src="${item.image_url}" alt="" class="h-12 w-12 shrink-0 rounded-lg border border-[var(--line)] bg-white object-contain p-1">`
+                                        : '<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)]">No<br>image</div>'}
+                                    <div class="min-w-0">
+                                        <div class="truncate text-sm font-semibold text-[var(--ink)]" title="${escapeHtml(item.product_name)}">${escapeHtml(item.product_name)}</div>
+                                        <div class="text-xs text-[var(--muted)]">${escapeHtml(item.brand)}${item.unit ? ' &middot; ' + escapeHtml(item.unit) : ''}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-5 py-3 text-lg font-black text-[var(--ink)]">${item.quantity}</td>
+                            <td class="px-5 py-3 text-sm text-[var(--muted)]">${item.reorder_level}</td>
+                            <td class="px-5 py-3 text-sm text-[var(--muted)]">${peso(item.stock_value)}</td>
+                            <td class="px-5 py-3">
+                                <span class="inline-block rounded-full px-2.5 py-1 text-xs font-bold ${tone.chip}">${tone.label}</span>
+                            </td>
+                            <td class="px-5 py-3 text-right sm:px-6">
+                                <div class="inline-flex gap-2">
+                                    <button type="button" onclick="adjustStock(${item.product_id}, 'stock-in')"
+                                            class="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Stock in</button>
+                                    <button type="button" onclick="adjustStock(${item.product_id}, 'stock-out')"
+                                            class="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-bold text-red-700 transition hover:border-red-300 ${item.quantity <= 0 ? 'pointer-events-none opacity-40' : ''}">Stock out</button>
+                                </div>
                             </td>
                         </tr>`;
                 }).join('')
-                : '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No matching inventory records.</td></tr>';
+                : `<tr><td colspan="6" class="px-6 py-10 text-center text-sm text-[var(--muted)]">Nothing matches that.</td></tr>`;
         }
 
         async function loadInventory() {
@@ -177,20 +263,71 @@
                 return;
             }
 
+            if (action === 'stock-out' && item.quantity <= 0) {
+                showMessage('There is nothing on the shelf to take out.', 'error');
+                return;
+            }
+
             document.getElementById('stock_action').value = action;
             document.getElementById('stock_product_id').value = productId;
-            document.getElementById('stock_product_name').value = `${escapeHtml(item.product_name)} (${escapeHtml(item.brand)})`;
             document.getElementById('stock_quantity').value = 1;
 
-            document.getElementById('stockModalTitle').textContent = action === 'stock-in' ? 'Stock In' : 'Stock Out';
-            document.getElementById('stockModalSubtitle').textContent = action === 'stock-in'
-                ? 'Add new inventory units to this product.'
-                : 'Record stock removed from this product.';
-            document.getElementById('stockModal').classList.remove('hidden');
+            document.getElementById('stockProductCard').innerHTML = `
+                ${item.image_url
+                    ? `<img src="${item.image_url}" alt="" class="h-14 w-14 shrink-0 rounded-lg border border-[var(--line)] bg-white object-contain p-1">`
+                    : '<div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-white text-[9px] font-semibold uppercase text-[var(--muted)]">No image</div>'}
+                <div class="min-w-0">
+                    <div class="truncate text-sm font-semibold text-[var(--ink)]">${escapeHtml(item.product_name)}</div>
+                    <div class="text-xs text-[var(--muted)]">${escapeHtml(item.brand)}${item.unit ? ' &middot; ' + escapeHtml(item.unit) : ''}</div>
+                    <div class="mt-1 text-xs font-bold text-[var(--ink)]">${item.quantity} on hand</div>
+                </div>`;
+
+            const takingOut = action === 'stock-out';
+
+            document.getElementById('stockModalTitle').textContent = takingOut ? 'Stock out' : 'Stock in';
+            document.getElementById('stockModalSubtitle').textContent = takingOut
+                ? 'Record stock leaving the shelf.'
+                : 'Record stock arriving on the shelf.';
+            document.getElementById('stockHint').textContent = takingOut
+                ? `At most ${item.quantity}, which is everything on the shelf.`
+                : 'Whole units only.';
+
+            const submit = document.getElementById('stockSubmit');
+            submit.textContent = takingOut ? 'Take out' : 'Add in';
+
+            // Taking out cannot go past what is there; putting in has only the
+            // server's own ceiling to respect.
+            document.getElementById('stock_quantity').dataset.max = takingOut ? item.quantity : 100000;
+
+            const modal = document.getElementById('stockModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        /* ------------------------------------------------ the quantity box ---
+
+           A number input reports an empty string for anything it cannot
+           parse, so "a" reads the same as blank and a blur handler turning
+           blank into 1 quietly accepted the letter. It is a text box with
+           digits whitelisted instead. */
+
+        function stockBounds() {
+            const field = document.getElementById('stock_quantity');
+            return { field, max: Math.max(1, parseInt(field.dataset.max || '100000', 10)) };
+        }
+
+        function stepStock(by) {
+            const { field, max } = stockBounds();
+            const current = parseInt(field.value, 10);
+            const next = (Number.isNaN(current) ? 1 : current) + by;
+
+            field.value = Math.min(max, Math.max(1, next));
         }
 
         function closeStockModal() {
-            document.getElementById('stockModal').classList.add('hidden');
+            const modal = document.getElementById('stockModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
 
         document.getElementById('stockForm').addEventListener('submit', async (event) => {
@@ -206,8 +343,13 @@
                 },
                 body: JSON.stringify({
                     product_id: Number(document.getElementById('stock_product_id').value),
-                    quantity: Number(document.getElementById('stock_quantity').value),
-
+                    // Read through the same clamp the steppers use, so a half
+                    // typed number cannot be submitted by pressing return.
+                    quantity: (() => {
+                        const { field, max } = stockBounds();
+                        const value = parseInt(field.value, 10);
+                        return Number.isNaN(value) ? 1 : Math.min(max, Math.max(1, value));
+                    })(),
                 })
             });
 
@@ -219,6 +361,22 @@
                 loadInventory();
             }
         });
+
+        (function bindQuantity() {
+            const field = document.getElementById('stock_quantity');
+
+            field.addEventListener('input', () => {
+                const digits = field.value.replace(/\D+/g, '');
+                field.value = digits.replace(/^0+(?=\d)/, '');
+            });
+
+            field.addEventListener('blur', () => {
+                const { max } = stockBounds();
+                const value = parseInt(field.value, 10);
+
+                field.value = Number.isNaN(value) ? 1 : Math.min(max, Math.max(1, value));
+            });
+        })();
 
         if (activeStockFilter !== 'all') setStockFilter(activeStockFilter);
 

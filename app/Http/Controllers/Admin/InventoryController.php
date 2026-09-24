@@ -23,15 +23,33 @@ class InventoryController extends Controller
     {
         $inventory = Product::with('inventory')
             ->orderBy('product_name')
+            ->orderBy('price')
             ->get()
             ->map(function ($product) {
+                $quantity = (int) ($product->inventory->quantity ?? 0);
+                $reorder = (int) $product->reorder_level;
+
                 return [
                     'product_id' => $product->product_id,
                     'product_name' => $product->product_name,
                     'brand' => $product->brand,
+                    // The three Patrol 5W30 rows are one name and three pack
+                    // sizes, so without this they are the same line thrice.
                     'unit' => $product->unit,
-                    'quantity' => $product->inventory->quantity ?? 0,
-                    'reorder_level' => $product->reorder_level,
+                    'image_url' => $product->image_path ? asset('storage/' . $product->image_path) : null,
+                    'price' => (float) $product->price,
+                    'stock_value' => round($quantity * (float) $product->price, 2),
+                    'quantity' => $quantity,
+                    'reorder_level' => $reorder,
+                    /*
+                     * Worked out here rather than in the browser, because the
+                     * dashboard counts "running low" as at or under the
+                     * reorder level and this screen used to count it as half
+                     * of that. The dashboard's action list links straight
+                     * here, so the two saying different things meant clicking
+                     * "7 products running low" could land on four.
+                     */
+                    'status' => $quantity <= 0 ? 'out' : ($quantity <= $reorder ? 'low' : 'ok'),
                 ];
             });
 
