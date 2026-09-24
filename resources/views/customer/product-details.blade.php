@@ -18,8 +18,17 @@
             </div>
         </section>
 
-        <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div>
+        {{-- Stacked on a phone the source order would put the whole
+             write-up between the picture and the price, so the buy panel is
+             ordered above it. At lg the explicit row and column placement
+             takes over and the order classes stop mattering.
+
+             items-start stops the buy panel stretching to match the column
+             beside it. Without it the grid makes both cells the height of the
+             tallest, so once the description moved under the image the panel
+             grew a long tail of white space under Add to Cart. --}}
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+            <div class="order-1 lg:col-start-1 lg:row-start-1">
                 <div class="overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
                     @if ($product->image_path)
                         <img id="productImage" src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}" class="h-[420px] w-full bg-white object-contain p-6">
@@ -58,7 +67,7 @@
                  right column is for deciding a pack and a quantity; this is
                  the reading, and it is far too long to sit between the price
                  and the Add to Cart button. --}}
-            <div class="lg:col-start-1">
+            <div class="order-3 lg:col-start-1 lg:row-start-2">
                 @php $spec = $product->specifications ?? []; @endphp
 
                 <section class="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-7">
@@ -145,7 +154,7 @@
                 </section>
             </div>
 
-            <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-8">
+            <div class="order-2 rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-8 lg:col-start-2 lg:row-start-1">
                 <div class="flex flex-wrap items-center gap-3">
                     <span class="rounded-full bg-[var(--primary-soft)] px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[var(--primary)]">{{ $product->oil_type }}</span>
                     <span class="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#9d7b20]">{{ $product->brand }}</span>
