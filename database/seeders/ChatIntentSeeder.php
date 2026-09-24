@@ -252,8 +252,26 @@ class ChatIntentSeeder extends Seeder
                 'category' => 'delivery',
                 'label' => 'What is your returns policy?',
                 'keywords' => 'return returns refund exchange wrong damaged faulty leaking replace policy warranty',
-                'answer' => "[Replace this in Admin → Assistant.] Describe what a customer should do if an item arrives wrong or damaged, "
-                    . "and the window they have to tell you.",
+                // The business's own wording, the same as the Returns page.
+                // Deliberately not a policy window: returns here are agreed
+                // per transaction, and inventing a "7 days" would be a promise
+                // nobody made.
+                'answer' => "Returns are arranged directly with your Sales Executive, because what can be done "
+                    . "depends on the product and the terms of the order.
+
+"
+                    . "Three things may be possible:
+
+"
+                    . "- Replacement, with another product, subject to evaluation and availability
+"
+                    . "- Pull-out, where the product is collected, depending on what is agreed
+"
+                    . "- Refund, though these are generally not available on used product or completed bulk orders
+
+"
+                    . "Have your order number to hand and speak to your assigned Sales Executive. "
+                    . "The Returns and Refunds page sets all of this out in full.",
                 'is_suggested' => false,
                 'sort_order' => 170,
             ],

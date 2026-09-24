@@ -10,7 +10,7 @@
                 <div class="inline-flex rounded-full border border-[var(--primary-soft)] bg-[var(--primary-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--primary)]">About Us</div>
                 <h1 class="mt-4 text-2xl font-black leading-tight text-[var(--ink)] sm:text-4xl">Imported lubricants, chosen for what is actually in them.</h1>
                 <p class="mt-3 text-sm leading-7 text-[var(--muted)]">
-                    RANEY LUBRICANTS TRADING is the Philippine distributor of Canroyal Lubricants and Patrol Oil,
+                    RANEY LUBRICANTS TRADING carries Canroyal Lubricants, Solar Lubricants and Patrol Oil,
                     blended in the Middle East from 100% virgin base oil and premium additives.
                 </p>
             </div>
@@ -30,10 +30,11 @@
                 </p>
 
                 <p class="mt-4 text-sm leading-7 text-[var(--muted)]">
-                    As the Philippine distributor of Canroyal Lubricants and Patrol Oil, which come from the
-                    Middle East, RLT offers 100% virgin-based oil and premium additives. Our commitment is to
-                    offer lubricant products of the highest quality conforming to internationally recognised
-                    standards, at a competitive price, with uncompromising customer service.
+                    The range today is built on Canroyal Lubricants and Solar Lubricants, both blended in the
+                    United Arab Emirates, alongside Patrol Oil. All are 100% virgin-based oil with premium
+                    additives. Our commitment is to offer lubricant products of the highest quality conforming
+                    to internationally recognised standards, at a competitive price, with uncompromising
+                    customer service.
                 </p>
 
                 {{-- Dates the business gave for itself; kept as a sequence
@@ -57,6 +58,12 @@
                         <div class="mt-1 text-sm font-semibold text-[var(--ink)]">Industrial and agricultural</div>
                         <p class="mt-1 text-sm leading-6 text-[var(--muted)]">Expanded beyond automotive into industrial and agricultural applications.</p>
                     </li>
+                    <li class="relative">
+                        <span class="absolute -left-[1.9rem] mt-1 block h-3 w-3 rounded-full bg-[var(--primary)] ring-4 ring-white"></span>
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--primary)]">Today</div>
+                        <div class="mt-1 text-sm font-semibold text-[var(--ink)]">Solar Lubricants</div>
+                        <p class="mt-1 text-sm leading-6 text-[var(--muted)]">Added to the range, and now the widest part of it: motor and diesel oils, transmission fluids, coolants and motorcycle oil.</p>
+                    </li>
                 </ol>
             </section>
 
@@ -71,7 +78,11 @@
                         ['API Certified', 'American Petroleum Institute certification.'],
                         ['ACEA standards', 'Conforms to the European sequences.'],
                         ['OEM approvals', 'Approved by original equipment manufacturers.'],
-                        ['ISO 9001:2015', 'Both blending companies are certified for Quality Management System.'],
+                        // "Both" was written when the range was two brands. Solar
+                        // publish themselves as ISO-certified without naming the
+                        // standard, so they are stated separately rather than
+                        // folded into a 9001:2015 claim nobody made for them.
+                        ['ISO 9001:2015', 'Held by the Canroyal and Patrol blending companies. Solar publish themselves as an ISO-certified manufacturer.'],
                         ['100% virgin base oil', 'No reclaimed stock, with premium additives.'],
                     ];
                 @endphp
