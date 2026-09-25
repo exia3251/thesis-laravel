@@ -168,6 +168,7 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
         Route::get('/backups', [BackupController::class, 'list']);
         Route::post('/backups', [BackupController::class, 'store']);
         Route::get('/backups/{filename}/download', [BackupController::class, 'download']);
+        Route::post('/backups/restore', [BackupController::class, 'restore']);
         Route::delete('/backups/{filename}', [BackupController::class, 'destroy']);
     });
 });

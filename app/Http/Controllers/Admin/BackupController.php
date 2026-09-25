@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Models\User;
 use App\Services\DatabaseBackup;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -58,6 +59,93 @@ class BackupController extends Controller
             'success' => true,
             'message' => 'Backup created.',
             'data' => $this->present([$result])[0],
+        ]);
+    }
+
+    /**
+     * Put the database back to how a backup found it.
+     *
+     * The page used to end with a mysql command line and the words "done
+     * deliberately from the command line rather than from this page", which
+     * is only true for somebody who has a command line and knows what to
+     * type. For everybody else it meant the backups were unusable: taking
+     * them was a button, and using one was somebody else's job.
+     *
+     * Three things make the button safe enough to offer. Only a file this
+     * system wrote can be chosen, so there is nothing to upload and nothing
+     * to smuggle in. A copy of the database as it stands is taken first, so
+     * the restore itself can be undone. And the word RESTORE has to be typed,
+     * because this is the one control here that destroys work.
+     */
+    public function restore(Request $request)
+    {
+        $request->validate([
+            'filename' => 'required|string|max:120',
+            'confirm' => 'required|string',
+        ]);
+
+        if (strtoupper(trim($request->input('confirm'))) !== 'RESTORE') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Type RESTORE to confirm.',
+            ], 422);
+        }
+
+        $backup = DatabaseBackup::forDefaultConnection();
+        $filename = $request->input('filename');
+
+        if ($backup->pathFor($filename) === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'That backup could not be found.',
+            ], 404);
+        }
+
+        $user = auth()->user();
+
+        // Before anything is dropped. If the restore goes wrong, or restores
+        // the wrong night, this is the way back.
+        try {
+            $safety = $backup->create();
+        } catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nothing was changed: a safety copy could not be taken first. ' . $e->getMessage(),
+            ], 500);
+        }
+
+        try {
+            $backup->restore($filename);
+        } catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The restore failed. ' . $e->getMessage()
+                    . ' Your data is as it was, and a copy of it is saved as ' . $safety['filename'] . '.',
+            ], 500);
+        }
+
+        /*
+         * The users table has just been replaced, so the session id stored
+         * against this account is whatever it was on the night of the backup
+         * and no longer matches the browser that pressed the button. Without
+         * this, restoring signs the administrator out on their next click.
+         */
+        $restored = User::where('email', $user->email)->first();
+
+        if ($restored && $request->hasSession()) {
+            $restored->forceFill(['current_session_id' => $request->session()->getId()])->save();
+        }
+
+        ActivityLog::logAction(
+            $restored?->user_id ?? $user->user_id,
+            'database_restored',
+            $user->full_name . " restored the database from {$filename}, after saving the previous state as {$safety['filename']}"
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Restored from ' . $filename . '. The database as it was a moment ago is saved as ' . $safety['filename'] . '.',
+            'data' => ['safety_copy' => $safety['filename']],
         ]);
     }
 

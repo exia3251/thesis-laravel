@@ -57,7 +57,7 @@ class DatabaseBackup
 
         try {
             $process = new Process([
-                $this->binary(),
+                $this->binary('mysqldump'),
                 '--defaults-extra-file=' . $optionFile,
                 '--default-character-set=utf8mb4',
                 '--single-transaction',
@@ -109,6 +109,57 @@ class DatabaseBackup
             'bytes' => filesize($target),
             'created_at' => Carbon::createFromTimestamp(filemtime($target)),
         ];
+    }
+
+    /**
+     * Read a backup back into the database.
+     *
+     * This is destructive by design: the dump carries DROP TABLE before each
+     * CREATE, so the database ends up as it was when the file was written and
+     * everything since is gone. A safety copy is taken first by the caller,
+     * which is the only thing that makes the button a safe one to press.
+     *
+     * The file is streamed into the client's standard input rather than read
+     * into memory, for the same reason the dump is streamed out.
+     */
+    public function restore(string $filename): void
+    {
+        $path = $this->pathFor($filename);
+
+        if ($path === null) {
+            throw new RuntimeException('That backup file could not be found.');
+        }
+
+        $input = fopen($path, 'rb');
+
+        if ($input === false) {
+            throw new RuntimeException('Could not open the backup file for reading.');
+        }
+
+        $optionFile = $this->writeOptionFile();
+
+        try {
+            $process = new Process([
+                $this->binary('mysql'),
+                '--defaults-extra-file=' . $optionFile,
+                '--default-character-set=utf8mb4',
+                $this->connection['database'],
+            ], null, $this->systemEnvironment());
+
+            $process->setTimeout(config('backup.timeout', 300));
+            $process->setInput($input);
+            $process->run();
+
+            if (!$process->isSuccessful()) {
+                throw new RuntimeException($this->readableError($process->getErrorOutput()));
+            }
+        } finally {
+            if (is_resource($input)) {
+                fclose($input);
+            }
+
+            @unlink($optionFile);
+        }
     }
 
     /**
@@ -178,19 +229,19 @@ class DatabaseBackup
         return $directory;
     }
 
-    private function binary(): string
+    private function binary(string $name = 'mysqldump'): string
     {
-        $configured = config('backup.mysqldump');
+        $configured = config("backup.{$name}");
 
         if (filled($configured)) {
             if (!is_file($configured)) {
-                throw new RuntimeException('MYSQLDUMP_PATH points at a file that does not exist.');
+                throw new RuntimeException(strtoupper($name) . '_PATH points at a file that does not exist.');
             }
 
             return $configured;
         }
 
-        foreach (config('backup.mysqldump_candidates', []) as $candidate) {
+        foreach (config("backup.{$name}_candidates", []) as $candidate) {
             if (is_file($candidate)) {
                 return $candidate;
             }
@@ -198,7 +249,7 @@ class DatabaseBackup
 
         // Last resort: trust PATH. If it is not there either, the process
         // fails and the error output explains why.
-        return 'mysqldump';
+        return $name;
     }
 
     /**

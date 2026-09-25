@@ -42,14 +42,56 @@
         <div id="backupList" class="divide-y divide-[var(--line)]"></div>
     </section>
 
-    <section class="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 p-6">
-        <h2 class="text-sm font-bold text-amber-900">Restoring a backup</h2>
-        <p class="mt-1.5 text-sm leading-6 text-amber-900/80">
-            Restoring overwrites everything currently in the database, so it is done deliberately from the
-            command line rather than from this page. With the downloaded file to hand, run:
+    <section class="mt-5 rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
+        <h2 class="text-base font-bold text-[var(--ink)]">What restoring does</h2>
+        <p class="mt-1.5 text-sm leading-6 text-[var(--muted)]">
+            It puts the database back to exactly how it was when that backup was taken. Everything recorded since
+            &mdash; orders, payments, stock movements, accounts &mdash; is gone, because the backup does not know
+            about any of it.
         </p>
-        <code class="mt-3 block overflow-x-auto rounded-xl bg-amber-900/10 px-4 py-3 text-xs text-amber-950">mysql -u {{ config('database.connections.' . config('database.default') . '.username') }} -p {{ config('database.connections.' . config('database.default') . '.database') }} &lt; raney-YYYY-MM-DD-HHMMSS.sql</code>
+        <p class="mt-3 text-sm leading-6 text-[var(--muted)]">
+            A copy of the database as it stands is taken automatically first, so restoring the wrong night can itself
+            be undone. Uploaded pictures and receipts are files on disk and are not touched either way.
+        </p>
     </section>
+
+    {{-- Typed confirmation rather than a yes/no: this is the one control in
+         the back office that destroys work somebody did. --}}
+    <div id="restoreModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/60 p-4">
+        <div class="w-full max-w-md overflow-hidden rounded-[1.5rem] bg-white shadow-2xl">
+            <div class="flex items-start gap-4 px-6 pt-6">
+                <span class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                </span>
+                <div class="min-w-0">
+                    <h3 class="text-base font-bold text-[var(--ink)]">Restore this backup?</h3>
+                    <p class="mt-1.5 text-sm leading-6 text-[var(--muted)]">
+                        The database goes back to <span id="restoreWhen" class="font-semibold text-[var(--ink)]"></span>.
+                        Everything recorded since then is lost.
+                    </p>
+                    <p id="restoreFile" class="mt-2 break-all font-mono text-xs text-[var(--muted)]"></p>
+                </div>
+            </div>
+
+            <div class="px-6 pt-5">
+                <label for="restoreConfirm" class="block text-sm font-medium text-[var(--ink)]">Type RESTORE to continue</label>
+                <input type="text" id="restoreConfirm" autocomplete="off" placeholder="RESTORE"
+                       class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm uppercase tracking-widest outline-none transition focus:border-[var(--primary)]">
+                <p id="restoreError" class="mt-1.5 hidden text-xs text-red-600"></p>
+                <p class="mt-2 text-xs leading-5 text-[var(--muted)]">
+                    A copy of the database as it is right now is saved first, so this can be undone.
+                </p>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2 border-t border-[var(--line)] px-6 py-4">
+                <button type="button" onclick="closeRestore()"
+                        class="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--surface)]">Cancel</button>
+                <button type="button" id="restoreGo" onclick="confirmRestore()"
+                        class="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50">Restore it</button>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
@@ -79,7 +121,12 @@
 
     /* The filename goes into a data attribute rather than the onclick string,
        so nothing from the server is ever parsed as code. */
+    /* Kept so the restore dialog can name the night it would go back to. */
+    let loadedBackups = [];
+
     function renderBackups(backups) {
+        loadedBackups = backups;
+
         const list = document.getElementById('backupList');
 
         if (!backups.length) {
@@ -98,7 +145,11 @@
                         ${escapeHtml(backup.created_label)} &middot; ${escapeHtml(backup.age)} &middot; ${escapeHtml(backup.size)}
                     </div>
                 </div>
-                <div class="flex shrink-0 gap-2">
+                <div class="flex shrink-0 flex-wrap gap-2">
+                    <button type="button" data-filename="${escapeHtml(backup.filename)}" onclick="openRestore(this.dataset.filename)"
+                            class="rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">
+                        Restore
+                    </button>
                     <button type="button" data-filename="${escapeHtml(backup.filename)}" onclick="downloadBackup(this.dataset.filename)"
                             class="rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">
                         Download
@@ -163,6 +214,71 @@
         } finally {
             button.disabled = false;
             label.textContent = 'Back up now';
+        }
+    }
+
+    let restoreTarget = null;
+
+    function openRestore(filename) {
+        const backup = loadedBackups.find((b) => b.filename === filename);
+
+        restoreTarget = filename;
+        document.getElementById('restoreFile').textContent = filename;
+        document.getElementById('restoreWhen').textContent = backup ? backup.created_label : 'when that backup was taken';
+        document.getElementById('restoreConfirm').value = '';
+        document.getElementById('restoreError').classList.add('hidden');
+
+        const modal = document.getElementById('restoreModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.getElementById('restoreConfirm').focus();
+    }
+
+    function closeRestore() {
+        const modal = document.getElementById('restoreModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        restoreTarget = null;
+    }
+
+    async function confirmRestore() {
+        const typed = document.getElementById('restoreConfirm').value.trim().toUpperCase();
+        const error = document.getElementById('restoreError');
+
+        if (typed !== 'RESTORE') {
+            error.textContent = 'Type RESTORE exactly, to show this is deliberate.';
+            error.classList.remove('hidden');
+            return;
+        }
+
+        const button = document.getElementById('restoreGo');
+        button.disabled = true;
+        button.textContent = 'Restoring...';
+
+        try {
+            const response = await fetch('/admin-api/backups/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+                body: JSON.stringify({ filename: restoreTarget, confirm: 'RESTORE' }),
+            });
+
+            const payload = await response.json();
+
+            if (!response.ok || !payload.success) {
+                error.textContent = payload.message || 'The restore could not be completed.';
+                error.classList.remove('hidden');
+                return;
+            }
+
+            closeRestore();
+            showMessage(payload.message);
+            loadBackups();
+        } catch (e) {
+            error.textContent = 'The restore could not be completed. Nothing has been changed.';
+            error.classList.remove('hidden');
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Restore it';
         }
     }
 
