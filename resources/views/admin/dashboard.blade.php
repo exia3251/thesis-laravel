@@ -48,13 +48,14 @@
                         <h2 class="text-base font-bold text-[var(--ink)]">Collections</h2>
                         <p id="collectionsNote" class="mt-1 text-xs text-[var(--muted)]">Money received and orders placed</p>
                     </div>
-                    <div class="flex shrink-0 items-center gap-3 text-xs font-medium text-[var(--muted)]">
-                        <span class="inline-flex items-center gap-1.5">
-                            <span class="h-2.5 w-2.5 rounded-sm bg-[var(--primary)]"></span>Money
-                        </span>
-                        <span class="inline-flex items-center gap-1.5">
-                            <span class="h-2.5 w-2.5 rounded-sm bg-[var(--accent)]"></span>Orders
-                        </span>
+                    {{-- One series at a time. Two of them side by side had to
+                         be scaled separately, because pesos and a count of
+                         orders share no axis, and two bars whose heights
+                         cannot be compared sat next to each other inviting
+                         exactly that. --}}
+                    <div class="inline-flex shrink-0 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1 text-xs font-semibold">
+                        <button type="button" id="metricMoney" onclick="setMetric('money')" class="metric-tab rounded-lg px-3 py-1.5 transition">Money</button>
+                        <button type="button" id="metricOrders" onclick="setMetric('orders')" class="metric-tab rounded-lg px-3 py-1.5 transition">Orders</button>
                     </div>
                 </div>
                 <div id="collectionsChart" class="mt-6"></div>
@@ -143,22 +144,62 @@
      * so past a dozen it becomes columns, and the figures move to the
      * tooltip and the caption underneath.
      */
+    let dashboardData = null;
+
+    /* Money by default: it is the question the rest of the row answers. */
+    let collectionsMetric = 'money';
+
+    const METRICS = {
+        money: {
+            label: 'Money received',
+            colour: 'var(--primary)',
+            value: (bucket) => bucket.collected,
+            format: (value) => peso(value),
+        },
+        orders: {
+            label: 'Orders placed',
+            colour: 'var(--accent)',
+            value: (bucket) => bucket.orders,
+            format: (value) => value + (value === 1 ? ' order' : ' orders'),
+        },
+    };
+
+    function setMetric(metric) {
+        collectionsMetric = metric;
+
+        document.querySelectorAll('.metric-tab').forEach((tab) => {
+            const on = tab.id === (metric === 'money' ? 'metricMoney' : 'metricOrders');
+            tab.className = 'metric-tab rounded-lg px-3 py-1.5 transition '
+                + (on ? 'bg-white text-[var(--ink)] shadow-sm' : 'text-[var(--muted)]');
+        });
+
+        if (dashboardData) renderCollections(dashboardData.collections, dashboardData.range);
+    }
+
     function renderCollections(series, range) {
+        const metric = METRICS[collectionsMetric];
         const note = document.getElementById('collectionsNote');
-        note.textContent = 'Money received and orders placed, ' + (range.description || '');
+        note.textContent = metric.label + ', ' + (range.description || '');
 
         const holder = document.getElementById('collectionsChart');
 
-        if (!series.length) {
-            holder.innerHTML = '<p class="rounded-xl border border-[var(--line)] p-6 text-center text-xs text-[var(--muted)]">No trade in this period.</p>';
+        /* Nothing at all, rather than nothing yet: a window with no trade in
+           it comes back as a full set of empty buckets, because a quiet day
+           inside a busy month has to keep its place. Drawn, that was a row of
+           flat bars under "Best: 1 January 2020, 0 orders". */
+        const anything = series.some((bucket) => metric.value(bucket) > 0);
+
+        if (!series.length || !anything) {
+            holder.innerHTML = '<p class="rounded-xl border border-[var(--line)] p-6 text-center text-xs text-[var(--muted)]">'
+                + (collectionsMetric === 'money' ? 'No money came in during this period.' : 'No orders were placed in this period.')
+                + '</p>';
             return;
         }
 
-        const peak = Math.max(...series.map(m => m.collected), 1);
-        const peakOrders = Math.max(...series.map(m => m.orders), 1);
-        const busiest = series.reduce((best, m) => (m.collected > best.collected ? m : best), series[0]);
+        const peak = Math.max(...series.map(metric.value), 1);
+        const busiest = series.reduce((best, m) => (metric.value(m) > metric.value(best) ? m : best), series[0]);
 
-        holder.innerHTML = columns(series, peak, peakOrders, busiest);
+        holder.innerHTML = columns(series, peak, busiest, metric);
     }
 
     /** A bar that is still visible when the period was quiet but not empty. */
@@ -166,7 +207,7 @@
         return Math.max(value > 0 ? 3 : 1, (value / peak) * 100);
     }
 
-    function columns(series, peak, peakOrders, busiest) {
+    function columns(series, peak, busiest, metric) {
         // Every label will not fit on a long span, so roughly a dozen of them
         // are kept and the rest left blank rather than overlapped into mush.
         const every = Math.ceil(series.length / 12);
@@ -174,17 +215,11 @@
         // Capped, or three days of trade would be three enormous slabs.
         const width = 'flex-1 max-w-[74px]';
 
-        /* Money and orders are counted in different things, so each is drawn
-           against its own peak. That is the only way both fit in one panel,
-           and it is why the caption says the heights do not compare. */
         const bars = series.map(m => `
-            <div class="${width} flex h-full items-end gap-px">
-                <div class="flex-1 rounded-t bg-[var(--primary)] transition hover:brightness-110"
-                     style="height:${barHeight(m.collected, peak)}%"
-                     title="${escapeHtml(m.full_label)}: ${peso(m.collected)} collected"></div>
-                <div class="flex-1 rounded-t bg-[var(--accent)] transition hover:brightness-110"
-                     style="height:${barHeight(m.orders, peakOrders)}%"
-                     title="${escapeHtml(m.full_label)}: ${m.orders} ${m.orders === 1 ? 'order' : 'orders'}"></div>
+            <div class="${width} flex h-full flex-col justify-end">
+                <div class="rounded-t transition hover:brightness-110"
+                     style="height:${barHeight(metric.value(m), peak)}%; background:${metric.colour}"
+                     title="${escapeHtml(m.full_label)}: ${peso(m.collected)} over ${m.orders} ${m.orders === 1 ? 'order' : 'orders'}"></div>
             </div>`).join('');
 
         const labels = series.map((m, i) => `
@@ -196,10 +231,8 @@
             <div class="flex h-56 items-stretch gap-[3px]">${bars}</div>
             <div class="mt-2 flex gap-[3px]">${labels}</div>
             <p class="mt-4 border-t border-[var(--line)] pt-3 text-xs leading-5 text-[var(--muted)]">
-                Best period: ${escapeHtml(busiest.full_label)}, ${peso(busiest.collected)} over ${busiest.orders} orders.
-                Busiest: ${escapeHtml(series.reduce((best, m) => (m.orders > best.orders ? m : best), series[0]).full_label)},
-                ${Math.max(...series.map(m => m.orders))} orders.
-                <span class="block">Each colour is scaled to its own peak, so heights compare within a colour and not across them.</span>
+                Best: ${escapeHtml(busiest.full_label)}, ${metric.format(metric.value(busiest))}.
+                <span class="text-[var(--muted)]">Hover a bar for both figures.</span>
             </p>`;
     }
 
@@ -317,6 +350,9 @@
             if (!payload.success) throw new Error('Failed to load.');
 
             const d = payload.data;
+            // Held so the Money/Orders switch can redraw without asking the
+            // server for the same period again.
+            dashboardData = d;
             renderCards(d.cards);
             renderCollections(d.collections, d.range);
             renderActions(d.actions);
@@ -328,6 +364,7 @@
         }
     }
 
+    setMetric('money');
     loadDashboard();
 </script>
 @endpush
