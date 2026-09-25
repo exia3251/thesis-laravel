@@ -474,13 +474,24 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-[var(--ink)]">Amount</label>
+                                {{-- Editable even when there is a down payment due. It
+                                     was locked to the whole committed amount, which no
+                                     GCash wallet can send past PHP 100,000. --}}
+                                <input id="request_amount" type="number" step="0.01"
+                                       min="{{ $extraFloor }}" max="{{ (float) $sale->balance_due }}"
+                                       value="{{ $gcashDue > 0 ? $gcashDue : (float) $sale->balance_due }}"
+                                       class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3 font-semibold outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)]">
                                 @if ($gcashDue > 0)
-                                    <input id="request_amount" type="number" value="{{ $gcashDue }}" step="0.01" readonly
-                                           class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-slate-100 px-4 py-3 font-semibold text-slate-700">
-                                    <p class="mt-2 text-xs text-[var(--muted)]">Fixed by the payment option you chose at checkout.</p>
+                                    <p class="mt-2 text-xs leading-5 text-[var(--muted)]">
+                                        PHP {{ number_format($gcashDue, 2) }} is due online before delivery.
+                                        @if ($extraFloor < $gcashDue)
+                                            Send it in one go, or in parts of at least PHP {{ number_format($extraFloor, 2) }}
+                                            &mdash; each part needs its own reference number and screenshot.
+                                        @else
+                                            Send it in one transfer.
+                                        @endif
+                                    </p>
                                 @else
-                                    <input id="request_amount" type="number" min="{{ $extraFloor }}" step="0.01" max="{{ (float) $sale->balance_due }}" value="{{ (float) $sale->balance_due }}"
-                                           class="mt-2 block w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-soft)]">
                                     <p class="mt-2 text-xs text-[var(--muted)]">At least PHP {{ number_format($extraFloor, 2) }}, up to PHP {{ number_format((float) $sale->balance_due, 2) }}.</p>
                                 @endif
                             </div>

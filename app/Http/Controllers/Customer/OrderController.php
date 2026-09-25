@@ -46,24 +46,31 @@ class OrderController extends Controller
      * paying the delivery balance down early is optional, so it carries a floor
      * instead - except when the customer is clearing the balance outright.
      */
+    /**
+     * What a customer is allowed to send at this point in the order.
+     *
+     * Anything from the floor up to what is still owed. The down payment used
+     * to have to arrive as one transfer of exactly the committed amount,
+     * which was a dead end rather than a rule: a GCash wallet holds PHP
+     * 100,000 when fully verified, so the online half of a large order could
+     * not be sent at all, in one go or otherwise. Paying it in parts is now
+     * the same arrangement as paying a delivery balance down early, and each
+     * part is reviewed as its own receipt.
+     *
+     * The order still waits on the whole committed amount before it is
+     * treated as paid; this only changes how many transfers it may arrive in.
+     */
     protected function amountRuleViolation(Sale $sale, float $amount): ?string
     {
-        $outstanding = $sale->gcashOutstanding();
-
-        if ($outstanding > 0) {
-            if (abs($amount - $outstanding) > 0.01) {
-                return 'This order has a GCash payment of PHP ' . number_format($outstanding, 2)
-                    . ' due. Send that exact amount in a single transfer.';
-            }
-
-            return null;
-        }
-
         $balance = (float) $sale->balance_due;
         $floor = min((float) config('payments.minimum_extra_payment', 500), $balance);
 
-        if ($amount < $floor) {
-            return 'Early payments must be at least PHP ' . number_format($floor, 2)
+        if ($amount > $balance + 0.01) {
+            return 'That is more than the PHP ' . number_format($balance, 2) . ' still owed on this order.';
+        }
+
+        if ($amount + 0.01 < $floor) {
+            return 'Payments must be at least PHP ' . number_format($floor, 2)
                 . ', or you can settle the remaining PHP ' . number_format($balance, 2) . ' in full.';
         }
 
