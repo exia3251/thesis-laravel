@@ -229,8 +229,25 @@ class ChatIntentSeeder extends Seeder
                 'label' => 'Where do you deliver?',
                 // Timing words are deliberately absent. They belong to
                 // delivery_timing below, which answers them without a figure.
-                'keywords' => 'deliver delivery area areas ship shipping location where region province fee charge cover serve',
-                'answer' => "[Replace this in Admin → Assistant.] Describe the areas you deliver to and any delivery charge.",
+                'keywords' => 'deliver delivery area areas ship shipping location where region province fee charge cover serve '
+                    . 'philippines nationwide countrywide abroad international overseas luzon visayas mindanao provincial',
+                /*
+                 * The business's own answer: the whole country and nothing
+                 * outside it.
+                 *
+                 * The line about the total is a statement about this system
+                 * rather than a promise on their behalf -- there is no
+                 * delivery charge anywhere in the schema, so an order total
+                 * is the goods and nothing else. Whatever is arranged with
+                 * the courier afterwards is between the customer and the
+                 * staff, which is what the last line leaves room for.
+                 */
+                'answer' => "We deliver anywhere in the Philippines.\n\n"
+                    . "That is the whole of it. We do not ship outside the country, so an address abroad "
+                    . "cannot be served.\n\n"
+                    . "Nothing is added to your total for delivery: the price at checkout is what the order comes to. "
+                    . "Our staff confirm the arrangements with you once the order is placed, and you can follow its "
+                    . "progress from your orders page.",
                 'is_suggested' => true,
                 'sort_order' => 160,
             ],

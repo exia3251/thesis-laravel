@@ -43,7 +43,7 @@
             [
                 'title' => 'Delivery',
                 'body'  => [
-                    'We deliver to the address on your order. We do not quote a delivery date or an estimated delivery time. Our staff confirm the schedule with you after your order is placed, and you can follow its progress from your orders page.',
+                    'We deliver to the address on your order, anywhere in the Philippines. We do not ship outside the country. We do not quote a delivery date or an estimated delivery time. Our staff confirm the schedule with you after your order is placed, and you can follow its progress from your orders page.',
                     'Please check your items on arrival. Once you confirm receipt, the order is recorded as delivered and the goods are your responsibility.',
                 ],
             ],
