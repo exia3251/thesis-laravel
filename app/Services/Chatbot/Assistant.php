@@ -17,10 +17,30 @@ class Assistant
     /** How much of the history the widget reloads on each page view. */
     private const HISTORY_LIMIT = 30;
 
+    /**
+     * The handlers that answer from this shop's own rows, and are therefore
+     * never handed to a model.
+     *
+     * Two kinds. An order, a balance, a payment: facts about one customer
+     * that exist nowhere else. And stock, brands and the product finder:
+     * these draw cards with a live price and a live quantity on them, which
+     * is a better answer than a sentence about the same thing.
+     *
+     * vehicleOil is deliberately absent. A car the shop has looked up is
+     * still answered from the table, by the confident match further up --
+     * but a car it has not is the whole reason a model was wanted here, and
+     * the old reply to those was that we could not help.
+     */
+    private const READS_THE_DATABASE = [
+        'orderStatus', 'orderBalance', 'paymentState', 'orderCancel', 'orderList',
+        'productStock', 'productBrands', 'productFinder',
+    ];
+
     public function __construct(
         private readonly IntentMatcher $matcher,
         private readonly Responder $responder,
         private readonly VehicleMatcher $vehicles,
+        private readonly GeminiAssistant $gemini,
     ) {
     }
 
@@ -131,9 +151,40 @@ class Assistant
 
         $userMessage = $this->record($conversation, ChatMessage::ROLE_USER, $message, $intent?->intent_key);
 
-        $reply = $intent
-            ? $this->responder->answer($conversation, $intent, $message, $user)
-            : $this->responder->fallback($result['suggestions'], $user);
+        /*
+         * Who answers, in order.
+         *
+         * A question that needs a figure out of the database -- where is my
+         * order, how much do I owe, what is in stock -- is answered by the
+         * handler that reads it. Those are facts about this customer and this
+         * shelf on this afternoon. No model is told them, and none should
+         * guess at them.
+         *
+         * Everything else goes to Gemini, holding the shop's own answers, the
+         * catalogue and the vehicle table. It reaches questions the keyword
+         * list never could: a car that is not among the sixty-two, a question
+         * phrased sideways, two questions at once.
+         *
+         * When it is switched off, unreachable, or declines, the keyword
+         * assistant answers exactly as it did before. That path is not a
+         * leftover -- it is what runs on a laptop with no internet, which is
+         * how this will be demonstrated.
+         *
+         * The user's message keeps its intent_key either way, so a question
+         * the intent list does not cover still shows in Admin -> Assistant as
+         * one worth writing an answer for. Being handled is not the same as
+         * being anticipated.
+         */
+        $needsLiveData = $intent && in_array($intent->handler, self::READS_THE_DATABASE, true);
+
+        $aiAnswer = $needsLiveData ? null : $this->gemini->answer($message, (bool) $user);
+
+        $reply = match (true) {
+            $needsLiveData => $this->responder->answer($conversation, $intent, $message, $user),
+            $aiAnswer !== null => ['body' => $aiAnswer, 'payload' => ['source' => 'gemini']],
+            (bool) $intent => $this->responder->answer($conversation, $intent, $message, $user),
+            default => $this->responder->fallback($result['suggestions'], $user),
+        };
 
         $botMessage = $this->record(
             $conversation,

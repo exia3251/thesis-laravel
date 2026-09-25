@@ -10,6 +10,34 @@
         <p class="mt-1 text-sm text-[var(--muted)]">What the shop assistant says, and what it could not answer.</p>
     </div>
 
+    @php $gemini = filled(config('chatbot.gemini.key')); @endphp
+
+    {{-- Which of the two is answering. Worth saying plainly: the difference
+         between them is visible in every reply, and an administrator looking
+         at an odd answer should not have to read the code to find out. --}}
+    <section class="mb-5 rounded-[1.5rem] border {{ $gemini ? 'border-[var(--primary-soft)] bg-[var(--primary-soft)]' : 'border-[var(--line)] bg-white' }} px-5 py-4 shadow-sm">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 class="text-sm font-bold {{ $gemini ? 'text-[var(--primary)]' : 'text-[var(--ink)]' }}">
+                    {{ $gemini ? 'Answering with Gemini' : 'Answering from the list below' }}
+                </h2>
+                <p class="mt-1 text-xs leading-5 {{ $gemini ? 'text-[var(--primary)]' : 'text-[var(--muted)]' }}">
+                    @if ($gemini)
+                        Questions are answered by Gemini, holding these answers, the catalogue and the vehicle guide as its facts.
+                        Orders, payments and stock are still read from the database. If it cannot be reached, the list below answers instead.
+                    @else
+                        Every answer comes from this list and from the database, matched on keywords. Set GEMINI_API_KEY in
+                        your .env file and Gemini answers instead, holding these same answers as its facts &mdash; and this
+                        list becomes what runs when it cannot be reached.
+                    @endif
+                </p>
+            </div>
+            <span class="shrink-0 rounded-full px-3 py-1 text-xs font-bold {{ $gemini ? 'bg-white text-[var(--primary)]' : 'bg-[var(--surface)] text-[var(--muted)]' }}">
+                {{ $gemini ? config('chatbot.gemini.model') : 'Offline' }}
+            </span>
+        </div>
+    </section>
+
     <section id="statCards" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"></section>
 
     <section class="mt-5 rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
