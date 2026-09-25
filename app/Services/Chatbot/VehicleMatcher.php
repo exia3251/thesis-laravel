@@ -155,6 +155,33 @@ class VehicleMatcher
         return null;
     }
 
+    /**
+     * Whether the message names a car make at all, stocked for or not.
+     *
+     * The signal that a question is about a vehicle, separate from whether
+     * this system can answer it. "What oil does a Ferrari take" and "what oil
+     * does a Wigo take" both mention one; neither is in the specs table; and
+     * both were being answered by the generic product finder, which asks what
+     * kind of product you are after.
+     */
+    public function mentionsAnyMake(string $message): bool
+    {
+        if ($this->unsupportedMake($message) !== null) {
+            return true;
+        }
+
+        $tokens = explode(' ', $this->normalise($message));
+        $known = $this->makes()->map(fn (string $make) => $this->normalise($make))->all();
+
+        foreach ($tokens as $token) {
+            if ($token !== '' && in_array($token, $known, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** Every make held, for the guided flow. */
     public function makes(): Collection
     {

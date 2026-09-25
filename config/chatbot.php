@@ -31,8 +31,21 @@ return [
         // slow answer is worse than the list of suggestions it replaces.
         'timeout' => (int) env('GEMINI_TIMEOUT', 8),
 
-        // Two or three sentences. Anything longer is not read.
-        'max_output_tokens' => (int) env('GEMINI_MAX_TOKENS', 400),
+        // Two or three sentences of answer. The rest of the budget is for a
+        // reasoning model's own deliberation, which is not shown but is paid
+        // for out of the same allowance -- set too low, the answer is cut off
+        // before it starts.
+        'max_output_tokens' => (int) env('GEMINI_MAX_TOKENS', 800),
+
+        /*
+         * How much deliberating before answering, for a model that takes the
+         * setting. Empty by default because generateContent refuses a field
+         * it does not recognise rather than ignoring it, and the name has
+         * moved between model generations -- a wrong guess here turns every
+         * answer into a 400. With nothing sent, the guard on the way out is
+         * what stops a model's own reasoning reaching a customer.
+         */
+        'thinking_level' => env('GEMINI_THINKING_LEVEL'),
     ],
 
 ];

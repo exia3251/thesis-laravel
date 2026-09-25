@@ -305,13 +305,36 @@ class ChatbotGeminiTest extends TestCase
     public function markdown_the_model_was_asked_not_to_use_is_stripped(): void
     {
         $this->withKey();
-        $this->replying("## Additives\n\n**We do not** stock them:\n\n- only finished oils");
+        $this->replying("## Additives\n\n**We do not** stock them, only finished oils.");
 
         $reply = $this->ask(self::ODD_QUESTION);
 
         $this->assertStringNotContainsString('**', $reply);
         $this->assertStringNotContainsString('##', $reply);
         $this->assertStringContainsString('We do not stock them', $reply);
+    }
+
+    #[Test]
+    public function an_answer_about_its_own_instructions_is_thrown_away(): void
+    {
+        $this->withKey();
+
+        // What it actually said the first time it was asked a real question.
+        $this->replying('Wait, look at Rule 4 very carefully:');
+
+        $this->assertStringContainsString('not sure', strtolower($this->ask(self::ODD_QUESTION)));
+    }
+
+    #[Test]
+    public function an_answer_that_stops_mid_sentence_is_thrown_away(): void
+    {
+        $this->withKey();
+
+        // A reasoning model that spends its budget deliberating hands back
+        // the beginning of an answer. Half an answer is worse than none.
+        $this->replying('The oil you want for that engine is the one that');
+
+        $this->assertStringContainsString('not sure', strtolower($this->ask(self::ODD_QUESTION)));
     }
 
     #[Test]

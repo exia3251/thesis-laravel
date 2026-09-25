@@ -264,7 +264,12 @@ class ChatIntentSeeder extends Seeder
                 // bonus whenever someone says "my order". Without a
                 // possessive the question is general, and a general question
                 // belongs here rather than behind a sign-in prompt.
-                'keywords' => 'long days day duration eta takes take soon fast quick timeframe wait hours week weeks '
+                // "take" and "takes" are gone: "what oil does a Ferrari
+                // take" is the most natural way to ask the one question
+                // this assistant exists for, and it was being answered
+                // with the delivery policy. "How long" carries this
+                // question on its own.
+                'keywords' => 'long days day duration eta soon fast quick timeframe wait hours week weeks '
                     . 'delivery deliver delivered shipping arrive arrives tagal katagal kailan',
                 'answer' => "We cannot give you a delivery time, and we would rather say so than invent one.\n\n"
                     . "Once an order leaves us it is with the courier, and how soon it reaches you is theirs to "

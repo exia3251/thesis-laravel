@@ -175,7 +175,21 @@ class Assistant
          * one worth writing an answer for. Being handled is not the same as
          * being anticipated.
          */
-        $needsLiveData = $intent && in_array($intent->handler, self::READS_THE_DATABASE, true);
+        /*
+         * A car the shop cannot look up still goes to Gemini, even when the
+         * word "oil" in the question pulls it towards the product finder.
+         * "What oil does a Ferrari 488 take" was being answered with "what
+         * kind of product are you after", which is the finder doing its job
+         * on a question that was never about browsing.
+         *
+         * Only reached when the confident match above has already failed, so
+         * a car the shop does know is never diverted here.
+         */
+        $unmatchedVehicle = $this->vehicles->mentionsAnyMake($message);
+
+        $needsLiveData = $intent
+            && ! $unmatchedVehicle
+            && in_array($intent->handler, self::READS_THE_DATABASE, true);
 
         $aiAnswer = $needsLiveData ? null : $this->gemini->answer($message, (bool) $user);
 
