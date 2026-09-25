@@ -790,6 +790,10 @@ If your handbook names a grade, tell me which one and I will check whether we st
             ':minimum_extra_payment' => number_format((float) config('payments.minimum_extra_payment', 500), 0),
             ':grace_days_min' => (string) config('payments.settlement_grace_days.minimum', 30),
             ':grace_days_max' => (string) config('payments.settlement_grace_days.maximum', 60),
+            // Contact details belong in one place too, or the assistant ends
+            // up quoting hours the footer has since changed.
+            ':business_hours' => (string) config('business.hours'),
+            ':business_email' => (string) config('business.email'),
         ]);
     }
 

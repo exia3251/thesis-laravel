@@ -8,10 +8,11 @@ use Illuminate\Database\Seeder;
 /**
  * The assistant's starting knowledge.
  *
- * Rows are matched on intent_key, so running this again refreshes the wording
- * of anything still at its default while leaving keywords and answers that
- * have since been edited in the back office alone -- see updateOrCreate below,
- * which only writes the columns an administrator is not expected to own.
+ * Rows are matched on intent_key, so running this again rewrites the wording
+ * of every answer here. It does not spare one edited in Admin -> Assistant:
+ * updateOrCreate writes the whole row, answer included. Nothing in the table
+ * records which answers a person has touched, so the seeder cannot tell them
+ * apart -- worth knowing before re-running it against a live database.
  *
  * Answers may contain :placeholders, which are filled from configuration when
  * the reply is built, so the payment rules cannot drift from config/payments.php.
@@ -106,7 +107,11 @@ class ChatIntentSeeder extends Seeder
                 'intent_key' => 'product_stock',
                 'category' => 'products',
                 'label' => 'What is in stock?',
-                'keywords' => 'stock available availability supply inventory meron',
+                // "supply" moved to bulk_orders: "do you supply businesses"
+                // is a question about trade quantities, not about whether
+                // a particular oil is on the shelf, and it was pulling
+                // every such question here.
+                'keywords' => 'stock available availability inventory meron',
                 'handler' => 'productStock',
                 'is_suggested' => false,
                 'sort_order' => 70,
@@ -156,6 +161,9 @@ class ChatIntentSeeder extends Seeder
                 'answer' => "If you split payment, the GCash down payment has to be at least :down_payment_percent% of the order total. "
                     . "The rest is paid in cash when the order arrives.\n\n"
                     . "The checkout works out the exact figure for your basket, so you do not have to.\n\n"
+                    . "You can send it in one transfer or in parts of at least PHP :minimum_extra_payment each. "
+                    . "That matters on a large order, because a GCash wallet will not send more than its own limit in one go. "
+                    . "Every part needs its own reference number and screenshot, and we check each one.\n\n"
                     . "Where a balance is left to settle afterwards, the usual window is :grace_days_min to :grace_days_max days, "
                     . "agreed with our staff when you order.",
                 'is_suggested' => false,
@@ -166,9 +174,11 @@ class ChatIntentSeeder extends Seeder
                 'category' => 'payments',
                 'label' => 'Can I pay the balance early?',
                 'keywords' => 'early settle advance extra additional pay off balance before delivery partial again more',
-                'answer' => "Yes. Once your down payment has gone through you can keep paying down the balance by GCash before delivery.\n\n"
-                    . "Each extra payment needs to be at least PHP :minimum_extra_payment, because a member of staff reviews every one. "
-                    . "Paying off the whole remaining balance is always allowed, even if it comes to less than that.",
+                'answer' => "Yes. You can pay down what you owe by GCash at any point before delivery, whether or not the "
+                    . "down payment is settled yet.\n\n"
+                    . "Each payment needs to be at least PHP :minimum_extra_payment, because a member of staff reviews every one. "
+                    . "Paying off the whole remaining balance is always allowed, even if it comes to less than that.\n\n"
+                    . "One at a time: while a payment is waiting to be checked, the form will not take another.",
                 'is_suggested' => false,
                 'sort_order' => 120,
             ],
@@ -280,18 +290,40 @@ class ChatIntentSeeder extends Seeder
                 'category' => 'company',
                 'label' => 'What are your opening hours?',
                 'keywords' => 'hours open opening close closing time schedule weekend sunday saturday available contact reach phone email',
-                'answer' => "[Replace this in Admin → Assistant.] Confirm your opening hours and the best number or email to reach you on. "
-                    . "The footer currently says Monday to Saturday, 8am to 6pm.",
+                'answer' => "We are open :business_hours.\n\n"
+                    . "Email us at :business_email and we will come back to you. You can also reach us on Facebook, "
+                    . "and the assistant here answers at any hour.\n\n"
+                    . "Orders placed outside opening hours are picked up the next working day.",
                 'is_suggested' => false,
                 'sort_order' => 180,
+            ],
+            [
+                // Added once the shop could actually do this. Before the
+                // reset existed the honest answer was "ask an administrator",
+                // which is not an answer anybody wants about their own
+                // password.
+                'intent_key' => 'forgot_password',
+                'category' => 'company',
+                'label' => 'I forgot my password',
+                'keywords' => 'forgot forgotten password reset lost cannot sign in login locked out change my password nakalimutan',
+                'answer' => "Use the Forgot password? link on the sign-in page. Put in the email address on your account and "
+                    . "we will send a link for setting a new one.\n\n"
+                    . "The link lasts an hour and works once. Nobody here can read your old password, so there is nothing "
+                    . "for us to tell you -- setting a new one is the only way back in.\n\n"
+                    . "If nothing arrives, check the spam folder and that the address is the one you registered with.",
+                'is_suggested' => false,
+                'sort_order' => 185,
             ],
             [
                 'intent_key' => 'bulk_orders',
                 'category' => 'company',
                 'label' => 'Do you supply businesses?',
-                'keywords' => 'bulk wholesale fleet business drum barrel quote discount trade large quantity 200 liters commercial',
-                'answer' => "[Replace this in Admin → Assistant.] Say whether you quote for fleets and workshops, what the minimum is, "
-                    . "and how someone should get in touch. You already stock 20 and 200 litre drums, which is worth mentioning.",
+                'keywords' => 'bulk wholesale fleet business businesses supply supplier drum barrel quote discount trade large quantity 200 liters commercial workshop',
+                'answer' => "Yes. Two things on the site already suit a workshop or a fleet:\n\n"
+                    . "- 200 litre drums of our 15W-40 diesel oils, from Canroyal and from Solar.\n"
+                    . "- A box of 6 on the smaller packs, which is ordered from the product page like any other size.\n\n"
+                    . "For anything beyond that -- a standing order, a mixed pallet, or a quantity you would rather discuss "
+                    . "than add to a basket -- email :business_email and a Sales Executive will work out a price with you.",
                 'is_suggested' => false,
                 'sort_order' => 190,
             ],
