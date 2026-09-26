@@ -54,6 +54,7 @@ class GeminiAssistant
 
         try {
             $response = Http::timeout((int) config('chatbot.gemini.timeout', 8))
+                ->withHeaders(['x-goog-api-key' => (string) config('chatbot.gemini.key')])
                 ->asJson()
                 ->post($this->url(), [
                     'systemInstruction' => [
@@ -151,10 +152,21 @@ class GeminiAssistant
         return false;
     }
 
+    /**
+     * No key in the query string.
+     *
+     * Google issues two shapes of key. The old one began AIza and went in a
+     * ?key= parameter; keys issued since May 2026 begin "AQ." and are sent in
+     * the x-goog-api-key header, which is what the REST reference documents
+     * now. Passing one of those as a query parameter comes back 401, which
+     * reads exactly like a wrong key and is not.
+     *
+     * The header is the better place for it regardless: a query string ends
+     * up in access logs, and a key does not belong in one.
+     */
     private function url(): string
     {
-        return sprintf(self::ENDPOINT, config('chatbot.gemini.model'))
-            . '?key=' . urlencode((string) config('chatbot.gemini.key'));
+        return sprintf(self::ENDPOINT, config('chatbot.gemini.model'));
     }
 
     /**
