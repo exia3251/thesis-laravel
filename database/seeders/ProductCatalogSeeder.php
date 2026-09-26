@@ -144,11 +144,15 @@ class ProductCatalogSeeder extends Seeder
                 'brand' => 'CANROYAL', 'oil_type' => 'Synthetic', 'viscosity' => '15W40',
                 // List: 15W40 API CI4/SJ at 365, and 15W40 at 1750 the five
                 // litre. No four litre, so 355 the litre -- between the two
-                // rates the list itself charges. The drum is the 208 litre
-                // 10W40 SN/CI-4 at 63,500 wholesale, being the nearest
-                // synthetic drum, scaled to 200 litres and marked up by the
-                // 1.33 this list applies between wholesale and SRP.
-                'prices' => ['1L' => 365, '4L' => 1420, '5L' => 1750, 'DRUM' => 81200],
+                // rates the list itself charges.
+                //
+                // The drum is 281 the litre: the list prices its fully
+                // synthetic 5W30 drum at 77 per cent of that oil's own bottle
+                // rate, and the same 77 per cent of this oil's bottle rate is
+                // 281. Marking the nearest drum's wholesale up instead put it
+                // at 406 a litre -- dearer than the five litre bottle, which
+                // is not how anybody sells a drum.
+                'prices' => ['1L' => 365, '4L' => 1420, '5L' => 1750, 'DRUM' => 56200],
                 'description' => 'Full synthetic heavy duty diesel engine oil meeting API CI-4, for trucks and equipment worked hard.',
             ],
             [
@@ -193,7 +197,7 @@ class ProductCatalogSeeder extends Seeder
                 'name' => 'Solar Premium Series Diesel Engine Oil 15W40 API CK-4',
                 'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => '15W40',
                 // As the Canroyal 15W40, for the same reason.
-                'prices' => ['1L' => 365, '4L' => 1420, '5L' => 1750, 'DRUM' => 81200],
+                'prices' => ['1L' => 365, '4L' => 1420, '5L' => 1750, 'DRUM' => 56200],
                 'description' => 'Premium series heavy duty diesel oil meeting API CK-4, the current heavy duty category.',
             ],
             [
