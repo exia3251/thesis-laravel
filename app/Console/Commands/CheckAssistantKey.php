@@ -65,7 +65,18 @@ class CheckAssistantKey extends Command
             return self::SUCCESS;
         }
 
-        $this->components->error($outcome['detail']);
+        // Line by line: the error component folds a multi-line explanation
+        // into one paragraph, and an explanation with steps in it needs to
+        // keep its shape to be worth reading.
+        $lines = explode("\n", $outcome['detail']);
+
+        $this->components->error(array_shift($lines));
+
+        foreach ($lines as $line) {
+            $this->line($line);
+        }
+
+        $this->newLine();
 
         return self::FAILURE;
     }
@@ -100,31 +111,74 @@ class CheckAssistantKey extends Command
         // secret of ours.
         $message = (string) data_get($response->json(), 'error.message', $response->body());
 
-        return ['ok' => false, 'detail' => match ($response->status()) {
-            400 => 'Refused as a bad request. Usually the model name: ' . $message,
-            /*
-             * Sending the key three different ways -- header, bearer token,
-             * query string -- produced this same answer, so it is not about
-             * how it travels. It is the credential being refused, and the
-             * usual cause is the project rather than the key: a Cloud
-             * project made by hand does not have the Generative Language API
-             * switched on, while the one AI Studio makes for itself does.
-             */
-            401, 403 => "The key was refused, and not because of how it was sent.
+        return ['ok' => false, 'detail' => match (true) {
+            $response->status() === 400 => 'Refused as a bad request. Usually the model name: ' . $message,
+
+            $this->isTheKnownAuthKeyFault($response->status(), $message) => $this->authKeyFault($message),
+
+            $response->status() === 403 => "The key was refused permission rather than rejected outright.
 "
-                . "  The likeliest cause is the project it belongs to: a project you created yourself does not
+                . "  Usually the project it belongs to has never had the Generative Language API switched on.
 "
-                . "  have the Generative Language API enabled until somebody enables it.
-"
-                . "  Either switch it on for that project at console.cloud.google.com/apis/library/generativelanguage.googleapis.com,
-"
-                . "  or make a key on AI Studio's own \"Default Gemini Project\", which comes with it enabled.
+                . "  Turn it on at console.cloud.google.com/apis/library/generativelanguage.googleapis.com
 "
                 . '  Google said: ' . $message,
-            404 => 'No such model as "' . config('chatbot.gemini.model') . '". Set GEMINI_MODEL in .env to one that exists.',
-            429 => 'Out of quota for now. The key works; Google is rate limiting it.',
-            500, 503 => 'Google is busy or down. Nothing wrong at this end. Try again shortly.',
+
+            $response->status() === 401 => 'The key was refused. Google said: ' . $message,
+            $response->status() === 404 => 'No such model as "' . config('chatbot.gemini.model') . '". Set GEMINI_MODEL in .env to one that exists.',
+            $response->status() === 429 => 'Out of quota for now. The key works; Google is rate limiting it.',
+            in_array($response->status(), [500, 503], true) => 'Google is busy or down. Nothing wrong at this end. Try again shortly.',
             default => 'Refused with HTTP ' . $response->status() . '. ' . $message,
         }];
+    }
+
+    /**
+     * The fault that is Google's rather than ours.
+     *
+     * Since mid-2026 AI Studio issues only "authorisation keys", which begin
+     * "AQ." and are bound to a service account rather than being a plain
+     * string the API recognises. On a good many accounts those keys are not
+     * accepted by the Generative Language API at all: the request is treated
+     * as if it carried an OAuth token, and refused as the wrong kind of
+     * credential. It has been reported steadily on Google's own forum since
+     * July 2026 and is not something this project can code around.
+     *
+     * Told apart from an ordinary bad key by its wording. A key that is
+     * merely wrong is reported as invalid; this one is reported as being the
+     * wrong species of credential entirely.
+     */
+    private function isTheKnownAuthKeyFault(int $status, string $message): bool
+    {
+        if ($status !== 401) {
+            return false;
+        }
+
+        return str_contains($message, 'Expected OAuth 2 access token')
+            || str_contains($message, 'ACCESS_TOKEN_TYPE_UNSUPPORTED');
+    }
+
+    private function authKeyFault(string $message): string
+    {
+        $newKey = str_starts_with((string) config('chatbot.gemini.key'), 'AQ.');
+
+        return implode("\n", array_filter([
+            'Google refused the key as the wrong kind of credential, not as a wrong string.',
+            $newKey
+                ? '  Your key is one of the new "AQ." authorisation keys, and this is a known fault on Google\'s side:'
+                : '  This is the fault Google\'s own forum has been reporting since July 2026:',
+            '  on many accounts those keys are rejected by the Generative Language API however they are sent.',
+            '  Header, bearer token and query string were all tried here and all gave this same answer.',
+            '',
+            '  Worth trying, in order:',
+            '   1. Make a fresh key in AI Studio on its own "Default Gemini Project" rather than a project you created.',
+            '   2. Check the Generative Language API is enabled for that project:',
+            '      console.cloud.google.com/apis/library/generativelanguage.googleapis.com',
+            '   3. If it still refuses, it is Google\'s to fix. Report it at discuss.ai.google.dev.',
+            '',
+            '  Nothing is broken meanwhile. The assistant answers from the shop\'s own written answers and',
+            '  its own database, exactly as it did before Gemini was added.',
+            '',
+            '  Google said: ' . $message,
+        ]));
     }
 }
