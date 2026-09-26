@@ -375,13 +375,19 @@ class ChatbotGeminiTest extends TestCase
     }
 
     #[Test]
-    public function the_key_is_sent_but_never_written_to_a_log(): void
+    public function the_key_travels_in_a_header_and_not_in_the_url(): void
     {
         $this->withKey();
         $this->replying('Something helpful.');
 
         $this->ask(self::ODD_QUESTION);
 
-        Http::assertSent(fn (Request $request) => str_contains($request->url(), 'key=test-key-not-a-real-one'));
+        Http::assertSent(function (Request $request) {
+            // In the header because that is what the REST reference documents
+            // for the keys Google issues now, and because a query string ends
+            // up in access logs and a key does not belong in one.
+            return $request->hasHeader('x-goog-api-key', 'test-key-not-a-real-one')
+                && ! str_contains($request->url(), 'test-key-not-a-real-one');
+        });
     }
 }
