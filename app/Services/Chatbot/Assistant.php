@@ -40,7 +40,7 @@ class Assistant
         private readonly IntentMatcher $matcher,
         private readonly Responder $responder,
         private readonly VehicleMatcher $vehicles,
-        private readonly GeminiAssistant $gemini,
+        private readonly GroqAssistant $ai,
     ) {
     }
 
@@ -160,9 +160,10 @@ class Assistant
          * shelf on this afternoon. No model is told them, and none should
          * guess at them.
          *
-         * Everything else goes to Gemini, holding the shop's own answers, the
-         * catalogue and the vehicle table. It reaches questions the keyword
-         * list never could: a car that is not among the sixty-two, a question
+         * Everything else goes to Groq, holding the shop's own answers, the
+         * catalogue arranged by viscosity grade, and the vehicle table. It
+         * reaches questions the keyword list never could: whether a car the
+         * shop has never looked up suits an oil on the shelf, a question
          * phrased sideways, two questions at once.
          *
          * When it is switched off, unreachable, or declines, the keyword
@@ -176,7 +177,7 @@ class Assistant
          * being anticipated.
          */
         /*
-         * A car the shop cannot look up still goes to Gemini, even when the
+         * A car the shop cannot look up still goes to Groq, even when the
          * word "oil" in the question pulls it towards the product finder.
          * "What oil does a Ferrari 488 take" was being answered with "what
          * kind of product are you after", which is the finder doing its job
@@ -191,11 +192,11 @@ class Assistant
             && ! $unmatchedVehicle
             && in_array($intent->handler, self::READS_THE_DATABASE, true);
 
-        $aiAnswer = $needsLiveData ? null : $this->gemini->answer($message, (bool) $user);
+        $aiAnswer = $needsLiveData ? null : $this->ai->answer($message, (bool) $user);
 
         $reply = match (true) {
             $needsLiveData => $this->responder->answer($conversation, $intent, $message, $user),
-            $aiAnswer !== null => ['body' => $aiAnswer, 'payload' => ['source' => 'gemini']],
+            $aiAnswer !== null => ['body' => $aiAnswer, 'payload' => ['source' => 'groq']],
             (bool) $intent => $this->responder->answer($conversation, $intent, $message, $user),
             default => $this->responder->fallback($result['suggestions'], $user),
         };
