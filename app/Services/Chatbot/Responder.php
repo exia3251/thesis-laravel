@@ -794,6 +794,7 @@ If your handbook names a grade, tell me which one and I will check whether we st
             // up quoting hours the footer has since changed.
             ':business_hours' => (string) config('business.hours'),
             ':business_email' => (string) config('business.email'),
+            ':business_address' => (string) config('business.address'),
         ]);
     }
 

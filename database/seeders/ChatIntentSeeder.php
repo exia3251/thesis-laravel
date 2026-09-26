@@ -308,11 +308,29 @@ class ChatIntentSeeder extends Seeder
                 'sort_order' => 170,
             ],
             [
+                /*
+                 * Somebody asking where the shop is wants the address, not
+                 * the delivery areas -- which is what "where" used to reach,
+                 * since delivery_info owns that word. A shop with a street
+                 * address should be able to say it.
+                 */
+                'intent_key' => 'shop_address',
+                'category' => 'company',
+                'label' => 'Where are you located?',
+                'keywords' => 'address located location where shop store office branch pickup pick up visit come over '
+                    . 'directions map saan lugar tindahan bacoor cavite',
+                'answer' => "We are at :business_address.\n\n"
+                    . "Email :business_email before coming over, so somebody is expecting you and what you want is on the shelf. "
+                    . "We are open :business_hours.",
+                'is_suggested' => false,
+                'sort_order' => 175,
+            ],
+            [
                 'intent_key' => 'business_hours',
                 'category' => 'company',
                 'label' => 'What are your opening hours?',
                 'keywords' => 'hours open opening close closing time schedule weekend sunday saturday available contact reach phone email',
-                'answer' => "We are open :business_hours.\n\n"
+                'answer' => "We are open :business_hours, at :business_address.\n\n"
                     . "Email us at :business_email and we will come back to you. You can also reach us on Facebook, "
                     . "and the assistant here answers at any hour.\n\n"
                     . "Orders placed outside opening hours are picked up the next working day.",

@@ -28,10 +28,22 @@ use Illuminate\Database\Seeder;
  *    they are the two Solar has published photographs of; the range also
  *    includes red and pink.
  *
- * PRICES BELOW ARE PLACEHOLDERS. They are generated from a per-litre base
- * and a pack multiplier so that the ladder is at least internally coherent,
- * which the old catalogue was not -- it priced 200L at PHP 5.70 a litre
- * against PHP 470 a litre for 1L. Replace them with the real price list.
+ * PRICES ARE THE BUSINESS'S OWN, taken from the supplier price list supplied
+ * on 26 September 2026 and read off its SRP column, which is the retail
+ * price. They are written out per pack rather than generated from a per-litre
+ * figure, because real prices are not a formula: a litre in a four-litre
+ * bottle costs less than a litre in a one-litre bottle, and by a different
+ * amount at every grade.
+ *
+ * The list is organised by viscosity and API grade rather than by brand, so
+ * two brands meeting the same specification carry the same price here. That
+ * is the list's own arrangement, not an assumption made for it.
+ *
+ * Where the list has no row for a pack this shop sells, the price is worked
+ * out from the nearest row it does have, and the working is written beside
+ * the line. Two products have no near row at all -- the coolants, since a
+ * list of engine oils has nothing resembling one -- and those keep the
+ * prices they had, marked as still needing the business's own figure.
  */
 class ProductCatalogSeeder extends Seeder
 {
@@ -47,10 +59,10 @@ class ProductCatalogSeeder extends Seeder
      * size needs a bank transfer, which this system does not handle.
      */
     private const PACKS = [
-        '1L'   => ['unit' => '1 Liter',    'litres' => 1,   'multiplier' => 1.0],
-        '4L'   => ['unit' => '4 Liters',   'litres' => 4,   'multiplier' => 3.7],
-        '5L'   => ['unit' => '5 Liters',   'litres' => 5,   'multiplier' => 4.5],
-        'DRUM' => ['unit' => '200 Liters', 'litres' => 200, 'multiplier' => 160.0],
+        '1L'   => ['unit' => '1 Liter',    'litres' => 1],
+        '4L'   => ['unit' => '4 Liters',   'litres' => 4],
+        '5L'   => ['unit' => '5 Liters',   'litres' => 5],
+        'DRUM' => ['unit' => '200 Liters', 'litres' => 200],
     ];
 
     public function run(): void
@@ -77,7 +89,7 @@ class ProductCatalogSeeder extends Seeder
                 'source'       => $write['source'] ?? null,
             ]) : null;
 
-            foreach ($line['packs'] as $packKey) {
+            foreach (array_keys($line['prices']) as $packKey) {
                 $pack = self::PACKS[$packKey];
 
                 $product = Product::create([
@@ -90,7 +102,7 @@ class ProductCatalogSeeder extends Seeder
                     'oil_type'        => $line['oil_type'],
                     'viscosity_grade' => $line['viscosity'],
                     'unit'            => $pack['unit'],
-                    'price'           => round($line['per_litre'] * $pack['multiplier'], 2),
+                    'price'           => $line['prices'][$packKey],
                     'reorder_level'   => $packKey === 'DRUM' ? 2 : 10,
                     'description'     => $line['description'],
                     'specifications'  => $specifications,
@@ -120,35 +132,49 @@ class ProductCatalogSeeder extends Seeder
                 'key' => 'canroyal-5w30',
                 'name' => 'Canroyal Full Synthetic Gasoline Engine Oil SAE 5W30 API SN',
                 'brand' => 'CANROYAL', 'oil_type' => 'Synthetic', 'viscosity' => '5W30',
-                'per_litre' => 650, 'packs' => ['1L', '4L', '5L'],
+                // List: 5W30 API SN/CJ-4 at 595 the litre bottle and 2320 the
+                // four. It has no five-litre 5W30; the five-litre 5W40 beside
+                // it carries the same litre price, so its 2820 is used.
+                'prices' => ['1L' => 595, '4L' => 2320, '5L' => 2820],
                 'description' => 'Full synthetic gasoline engine oil meeting API SN. Suits modern petrol engines where the handbook calls for a 5W30.',
             ],
             [
                 'key' => 'canroyal-15w40',
                 'name' => 'Canroyal Full Synthetic Diesel Engine Oil SAE 15W40 API CI-4',
                 'brand' => 'CANROYAL', 'oil_type' => 'Synthetic', 'viscosity' => '15W40',
-                'per_litre' => 480, 'packs' => ['1L', '4L', '5L', 'DRUM'],
+                // List: 15W40 API CI4/SJ at 365, and 15W40 at 1750 the five
+                // litre. No four litre, so 355 the litre -- between the two
+                // rates the list itself charges. The drum is the 208 litre
+                // 10W40 SN/CI-4 at 63,500 wholesale, being the nearest
+                // synthetic drum, scaled to 200 litres and marked up by the
+                // 1.33 this list applies between wholesale and SRP.
+                'prices' => ['1L' => 365, '4L' => 1420, '5L' => 1750, 'DRUM' => 81200],
                 'description' => 'Full synthetic heavy duty diesel engine oil meeting API CI-4, for trucks and equipment worked hard.',
             ],
             [
                 'key' => 'canroyal-10w30',
                 'name' => 'Canroyal Semi Synthetic Engine Oil SAE 10W30 API SM',
                 'brand' => 'CANROYAL', 'oil_type' => 'Semi-Synthetic', 'viscosity' => '10W30',
-                'per_litre' => 420, 'packs' => ['1L', '4L', '5L'],
+                // No 10W30 on the list. Nearest is 10W40 API CJ4/SM at 490,
+                // the same semi-synthetic class. The larger packs follow the
+                // list's own step down from one litre to four and five.
+                'prices' => ['1L' => 490, '4L' => 1910, '5L' => 2320],
                 'description' => 'Semi synthetic engine oil meeting API SM, for older petrol engines and mixed fleets.',
             ],
             [
                 'key' => 'canroyal-atf-dex3',
                 'name' => 'Canroyal Semi Synthetic Automatic Transmission Fluid DEXRON-III',
                 'brand' => 'CANROYAL', 'oil_type' => 'Semi-Synthetic', 'viscosity' => 'ATF',
-                'per_litre' => 380, 'packs' => ['1L', '4L', '5L'],
+                // List: ATF DEXRON III at 500. Larger packs stepped as above.
+                'prices' => ['1L' => 500, '4L' => 1950, '5L' => 2370],
                 'description' => 'Automatic transmission fluid meeting General Motors DEXRON-III. Back-serviceable where DEXRON-II or III is specified, and suitable for power steering units.',
             ],
             [
                 'key' => 'canroyal-atf-dex6',
                 'name' => 'Canroyal Full Synthetic Automatic Transmission Fluid DEXRON-VI',
                 'brand' => 'CANROYAL', 'oil_type' => 'Synthetic', 'viscosity' => 'ATF',
-                'per_litre' => 520, 'packs' => ['1L', '4L', '5L'],
+                // List: MULTI-VEHICLE ATF DEXRON VI at 645.
+                'prices' => ['1L' => 645, '4L' => 2515, '5L' => 3055],
                 'description' => 'Full synthetic automatic transmission fluid meeting DEXRON-VI, for transmissions that call for the later specification.',
             ],
 
@@ -157,21 +183,25 @@ class ProductCatalogSeeder extends Seeder
                 'key' => 'solar-5w30',
                 'name' => 'Solar Premium Series Motor Engine Oil 5W30 API SN/CF',
                 'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => '5W30',
-                'per_litre' => 640, 'packs' => ['1L', '4L', '5L'],
+                // Same specification as the Canroyal 5W30, and the list prices
+                // by specification rather than by brand.
+                'prices' => ['1L' => 595, '4L' => 2320, '5L' => 2820],
                 'description' => 'Premium series 5W30 meeting API SN/CF, for petrol engines and light diesels.',
             ],
             [
                 'key' => 'solar-15w40',
                 'name' => 'Solar Premium Series Diesel Engine Oil 15W40 API CK-4',
                 'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => '15W40',
-                'per_litre' => 500, 'packs' => ['1L', '4L', '5L', 'DRUM'],
+                // As the Canroyal 15W40, for the same reason.
+                'prices' => ['1L' => 365, '4L' => 1420, '5L' => 1750, 'DRUM' => 81200],
                 'description' => 'Premium series heavy duty diesel oil meeting API CK-4, the current heavy duty category.',
             ],
             [
                 'key' => 'solar-10w30',
                 'name' => 'Solar Optima Series Motor Engine Oil 10W30 API SN',
                 'brand' => 'SOLAR', 'oil_type' => 'Semi-Synthetic', 'viscosity' => '10W30',
-                'per_litre' => 410, 'packs' => ['1L', '4L', '5L'],
+                // As the Canroyal 10W30.
+                'prices' => ['1L' => 490, '4L' => 1910, '5L' => 2320],
                 'description' => 'Semi synthetic 10W30 meeting API SN, for everyday petrol engines.',
             ],
             [
@@ -181,21 +211,27 @@ class ProductCatalogSeeder extends Seeder
                 'key' => 'solar-atf-dex3',
                 'name' => 'Solar Premium Series Automatic Transmission Fluid API DEX III',
                 'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => 'ATF',
-                'per_litre' => 370, 'packs' => ['1L', '4L', '5L'],
+                // List: ATF DEXRON III at 500.
+                'prices' => ['1L' => 500, '4L' => 1950, '5L' => 2370],
                 'description' => 'Automatic transmission fluid to the DEXRON-III specification.',
             ],
             [
                 'key' => 'solar-atf-dex6',
                 'name' => 'Solar Premium Series Automatic Transmission Fluid DEXRON VI / MERCON LV',
                 'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => 'ATF',
-                'per_litre' => 510, 'packs' => ['1L', '4L', '5L'],
+                // List: MULTI-VEHICLE ATF DEXRON VI at 645.
+                'prices' => ['1L' => 645, '4L' => 2515, '5L' => 3055],
                 'description' => 'Automatic transmission fluid meeting DEXRON VI and MERCON LV.',
             ],
             [
                 'key' => 'solar-coolant-green',
                 'name' => 'Solar Antifreeze Coolant Green',
                 'brand' => 'SOLAR', 'oil_type' => 'Coolant', 'viscosity' => null,
-                'per_litre' => 220, 'packs' => ['1L', '4L', '5L'],
+                // NOT ON THE LIST. A list of engine oils holds nothing close to
+                // a coolant, so estimating from it would be inventing rather
+                // than estimating. These are the figures the site already
+                // carried and they still need the business's own.
+                'prices' => ['1L' => 220, '4L' => 814, '5L' => 990],
                 'description' => 'Ethylene glycol antifreeze coolant, green. Confirm the concentration you need before ordering; ask our staff if you are unsure.',
             ],
             [
@@ -206,7 +242,8 @@ class ProductCatalogSeeder extends Seeder
                 'key' => 'solar-coolant-blue',
                 'name' => 'Solar Antifreeze Coolant Blue',
                 'brand' => 'SOLAR', 'oil_type' => 'Coolant', 'viscosity' => null,
-                'per_litre' => 240, 'packs' => ['1L', '4L', '5L'],
+                // NOT ON THE LIST, as the green. Still needs a real figure.
+                'prices' => ['1L' => 240, '4L' => 888, '5L' => 1080],
                 'description' => 'Ethylene glycol antifreeze coolant, blue. Confirm the concentration you need before ordering; ask our staff if you are unsure.',
             ],
             [
@@ -219,7 +256,11 @@ class ProductCatalogSeeder extends Seeder
                 'key' => 'solar-moto-10w40',
                 'name' => 'Solar Optima Series Motorcycle Engine Oil 10W40 API SL JASO MA',
                 'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => '10W40',
-                'per_litre' => 320, 'packs' => ['1L'],
+                // No motorcycle oil on the list. Nearest by grade is the 10W40
+                // API CJ4/SM at 490. The weakest of these mappings: a JASO MA
+                // motorcycle oil and a CJ-4 diesel oil are different products
+                // that happen to share a viscosity. Worth confirming.
+                'prices' => ['1L' => 490],
                 'description' => 'Four-stroke motorcycle engine oil meeting API SL and JASO MA, so it suits wet clutches. Not a JASO MB oil; check your handbook if your scooter calls for MB.',
             ],
 
@@ -228,7 +269,8 @@ class ProductCatalogSeeder extends Seeder
                 'key' => 'patrol-5w30',
                 'name' => 'Patrol Fully Synthetic Engine Oil SAE 5W30 API CK-4/SN',
                 'brand' => 'PATROL', 'oil_type' => 'Synthetic', 'viscosity' => '5W30',
-                'per_litre' => 580, 'packs' => ['1L', '4L', '5L'],
+                // As the other 5W30s.
+                'prices' => ['1L' => 595, '4L' => 2320, '5L' => 2820],
                 'discontinued' => true,
                 'description' => 'Fully synthetic 5W30 meeting API CK-4/SN. Patrol is being withdrawn by the manufacturer, so this line is out of stock and is not being replenished.',
             ],
