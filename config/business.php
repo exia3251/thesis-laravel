@@ -11,7 +11,15 @@ return [
     */
     'name' => env('BUSINESS_NAME', 'RANEY LUBRICANTS TRADING'),
     'address' => env('BUSINESS_ADDRESS', '2 Andalucia St., Brgy. Dulong Bayan, Bacoor City, Cavite'),
-    'phone' => env('BUSINESS_PHONE', '+63 2 1234 5678'),
+    /*
+     * No default. "+63 2 1234 5678" sat here and was printed in the footer,
+     * on the returns page, in the legal pages and in one email -- a number
+     * that belongs to nobody, offered to customers as the way to reach this
+     * business. Every place that shows it now checks first, so an unset
+     * number is absent rather than fictional. Set BUSINESS_PHONE when there
+     * is a real one.
+     */
+    'phone' => env('BUSINESS_PHONE'),
     'email' => env('BUSINESS_EMAIL', 'sales.raneylubricants@gmail.com'),
     'hours' => env('BUSINESS_HOURS', 'Mon - Sat: 8AM - 6PM'),
 

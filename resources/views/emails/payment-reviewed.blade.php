@@ -95,7 +95,7 @@
     @if (!$approved)
         <p style="margin:0 0 20px; font-size:13px; line-height:21px; color:#b45309;">
             Check the reference number on your GCash receipt and submit it again from your order page.
-            If you believe this is a mistake, reply to our staff on {{ config('business.phone') }} with the receipt to hand.
+            If you believe this is a mistake, reply to this email with the receipt to hand@if (filled(config('business.phone'))), or call us on {{ config('business.phone') }}@endif.
         </p>
     @elseif ($outstanding <= 0)
         <p style="margin:0 0 20px; font-size:13px; line-height:21px; color:#148a67;">

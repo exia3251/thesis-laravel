@@ -89,7 +89,7 @@
                     </li>
                     <li>
                         <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Phone</div>
-                        <div class="mt-1 text-[var(--ink)]">{{ config('business.phone') }}</div>
+                        <div class="mt-1 text-[var(--ink)]">{{ config('business.phone') ?: config('business.email') }}</div>
                     </li>
                     <li>
                         <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Address</div>

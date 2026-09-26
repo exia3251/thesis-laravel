@@ -463,7 +463,14 @@
                             <div id="gcashQrPanel" class="w-full max-w-xs rounded-[1.5rem] border border-[var(--line)] bg-white/85 p-4 text-center {{ $sale->payment_method === 'gcash' ? '' : 'hidden' }}">
                                 <img src="{{ asset('images/gcash-qr-placeholder.svg') }}" alt="GCash QR" class="mx-auto h-56 w-56 rounded-2xl border border-[var(--line)] object-cover">
                                 <p class="mt-3 text-xs uppercase tracking-[0.22em] text-[var(--muted)]">GCash QR</p>
-                                <p class="mt-2 text-sm text-[var(--muted)]">Replace this placeholder with the real staff QR later.</p>
+                                {{-- A customer was being shown "replace this placeholder with
+                                     the real staff QR later", which is a note to ourselves
+                                     printed on the page somebody is trying to pay from. Until
+                                     a real code is put in place, say the thing that is
+                                     actually true and useful: use the number. --}}
+                                <p class="mt-2 text-sm leading-6 text-[var(--muted)]">
+                                    Send to the GCash number shown above rather than scanning this, then enter your reference number below.
+                                </p>
                             </div>
                         </div>
 
