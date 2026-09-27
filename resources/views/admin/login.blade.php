@@ -49,19 +49,23 @@
                         Sign in
                     </button>
 
-                    {{-- Seeded logins, for this machine only.
+                    {{-- Shown to everybody the link is given to, on purpose, so
+                         somebody reviewing the system can see the staff side
+                         without being issued an account first.
 
-                         Gated on the host rather than only on APP_ENV, because
-                         the environment stays "local" when the port is shared
-                         over a tunnel for a survey -- and printing the
-                         administrator's password on a page handed to strangers
-                         would give every one of them the whole system. --}}
-                    @if (app()->environment('local') && \App\Providers\AppServiceProvider::isLocalRequest())
+                         These are full staff logins and the admin one can do
+                         anything: edit the catalogue, read every customer, take
+                         a backup. Whoever holds the link holds the system, which
+                         is the trade being made for a demonstration that needs
+                         no setup. Take the link down when the survey closes.
+
+                         Still gated on APP_ENV, so a real deployment drops it. --}}
+                    @if (app()->environment('local'))
                         <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-xs text-[var(--muted)]">
-                            <div class="mb-1 font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo accounts</div>
-                            Administrator: <span class="font-semibold text-[var(--ink)]">admin@raney.test / admin123</span><br>
-                            Inventory: <span class="font-semibold text-[var(--ink)]">inventory@raney.test / inventory123</span><br>
-                            Accounting: <span class="font-semibold text-[var(--ink)]">accounting@raney.test / accounting123</span>
+                            <div class="mb-1 font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo accounts &mdash; sign in with any of these</div>
+                            Administrator: <span class="select-all font-semibold text-[var(--ink)]">admin@raney.test</span> / <span class="select-all font-semibold text-[var(--ink)]">admin123</span><br>
+                            Inventory: <span class="select-all font-semibold text-[var(--ink)]">inventory@raney.test</span> / <span class="select-all font-semibold text-[var(--ink)]">inventory123</span><br>
+                            Accounting: <span class="select-all font-semibold text-[var(--ink)]">accounting@raney.test</span> / <span class="select-all font-semibold text-[var(--ink)]">accounting123</span>
                         </div>
                     @endif
                 </form>

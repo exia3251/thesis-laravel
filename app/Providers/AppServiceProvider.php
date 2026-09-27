@@ -88,14 +88,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public static function isLocalRequest(): bool
     {
-        if (app()->runningInConsole()) {
-            return true;
-        }
+        // An artisan command has no visitor to protect from anything.
+        return app()->runningInConsole() || self::isLocalHost(request()->getHost());
+    }
 
-        return in_array(
-            request()->getHost(),
-            ['localhost', '127.0.0.1', '::1', '[::1]'],
-            true
-        );
+    /**
+     * The host rule on its own, so it can be checked without a request.
+     *
+     * Split out because the test suite runs in the console, where the call
+     * above answers true before it ever looks at a host -- which is correct
+     * and makes the rule itself untestable through it.
+     */
+    public static function isLocalHost(?string $host): bool
+    {
+        return in_array((string) $host, ['localhost', '127.0.0.1', '::1', '[::1]'], true);
     }
 }

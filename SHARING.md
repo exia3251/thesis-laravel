@@ -84,12 +84,20 @@ account, and the seeded passwords are not shown to them (see below).
 Two things happen automatically as soon as a request arrives on anything other
 than `localhost`. Both are in the code, so neither depends on remembering.
 
-**The seeded passwords disappear.** The admin sign-in page lists
-`admin@raney.test / admin123` and the other demo logins, which is convenient on
-your own screen and would hand a stranger the entire system. That block is
-drawn only for requests to `localhost`, so it is simply absent on the tunnel
-address. Check it yourself: open the tunnel link, go to `/admin/login`, and the
-box should not be there.
+**The seeded logins are shown on purpose**, so this is the one to be
+deliberate about. Both sign-in pages print an account anybody can copy:
+`john@example.com / customer123` on the shop, and the three staff logins on
+`/admin/login`. A respondent who has to register and confirm an email before
+seeing anything is a respondent who closes the tab, so the accounts are handed
+over instead.
+
+The cost is real and worth stating plainly: **whoever has the link has the
+system.** The administrator account can edit the catalogue, read every
+customer's details and take a backup. Take the link down when the survey
+closes, take a backup before you put it up, and do not leave it running
+overnight. A real deployment drops the whole box automatically, because it is
+still gated on `APP_ENV` -- it is only ever shown while the environment is
+`local`.
 
 **Error pages stop talking.** The project runs with `APP_DEBUG=true`, which is
 right on a laptop. Laravel's error page lists the whole environment, including

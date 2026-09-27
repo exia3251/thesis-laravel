@@ -53,17 +53,21 @@
                     <button type="submit" class="flex w-full justify-center rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110">Sign in</button>
 
                     @include('partials.google-button')
-                    {{-- Seeded login, for this machine only.
+                    {{-- Shown to everybody the link is given to, on purpose.
 
-                         Gated on the host as well as the environment, because
-                         the environment stays "local" while the port is shared
-                         over a tunnel for the survey. This account carries a
-                         real order history, and handing a stranger the password
-                         to it hands them somebody's orders and address. --}}
-                    @if (app()->environment('local') && \App\Providers\AppServiceProvider::isLocalRequest())
+                         The system is demonstrated by sharing the running
+                         server, and a survey respondent who has to register and
+                         confirm an email before seeing anything is a respondent
+                         who closes the tab. This account is seeded with an order
+                         history so there is something to look at.
+
+                         Still gated on APP_ENV, so a real deployment drops it. --}}
+                    @if (app()->environment('local'))
                         <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-xs text-[var(--muted)]">
-                            <div class="mb-1 font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo account</div>
-                            <span class="font-semibold text-[var(--ink)]">john@example.com</span> / <span class="font-semibold text-[var(--ink)]">customer123</span>
+                            <div class="mb-1 font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo account &mdash; sign in with this</div>
+                            <span class="select-all font-semibold text-[var(--ink)]">john@example.com</span>
+                            <span class="mx-1">/</span>
+                            <span class="select-all font-semibold text-[var(--ink)]">customer123</span>
                         </div>
                     @endif
                 </form>
