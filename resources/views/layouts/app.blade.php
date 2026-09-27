@@ -37,6 +37,45 @@
     @yield('body')
 
     <script>
+        /**
+         * How a typed search term is matched, for the lists filtered in the
+         * browser. Deliberately the same rule as App\Support\Search, which
+         * does it for the lists filtered by the database: somebody typing
+         * "5W-30" into the shop and somebody typing it into Inventory should
+         * get the same answer.
+         *
+         * Two rules, and each fixes something that returned nothing at all.
+         * Every word has to appear somewhere among the fields, so "motor oil"
+         * finds "Motor Engine Oil" rather than failing on the word between
+         * them. And a word matches with its punctuation removed as well as
+         * with it, so "5W-30" finds a grade stored as 5W30 -- which is how
+         * every bottle, handbook and chat reply writes it, and how nobody
+         * types it.
+         *
+         * Lives here rather than in the bundle because these pages load the
+         * stylesheet and no script: there is no bundle on the page to put it in.
+         */
+        function searchWords(term) {
+            return String(term ?? '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+        }
+
+        function searchPlain(value) {
+            return String(value ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+        }
+
+        function searchMatches(term, fields) {
+            const words = searchWords(term);
+
+            if (words.length === 0) {
+                return true;
+            }
+
+            const haystack = fields.filter((field) => field != null).join(' ').toLowerCase();
+            const haystackPlain = searchPlain(haystack);
+
+            return words.every((word) => haystack.includes(word) || haystackPlain.includes(searchPlain(word)));
+        }
+
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         const LOGOUT_URL = '@yield('logout-url', '/shop/logout')';
         const LOGIN_URL  = '@yield('login-url', '/shop/login')';

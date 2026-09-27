@@ -259,16 +259,22 @@
         }
 
         function renderProducts() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
+            const search = document.getElementById('searchInput').value;
             const brand = document.getElementById('brandFilter').value;
             const type = document.getElementById('typeFilter').value;
 
             const filtered = products.filter((product) => {
-                const matchesSearch =
-                    product.product_name.toLowerCase().includes(search) ||
-                    product.brand.toLowerCase().includes(search) ||
-                    product.oil_type.toLowerCase().includes(search) ||
-                    (product.viscosity_grade || '').toLowerCase().includes(search);
+                /* Every word has to land somewhere, and a word matches with
+                   its punctuation removed as well as with it -- so "5W-30"
+                   finds a grade stored as 5W30, and "motor oil" finds the
+                   motor engine oils. A plain substring found neither. */
+                const matchesSearch = searchMatches(search, [
+                    product.product_name,
+                    product.brand,
+                    product.oil_type,
+                    product.viscosity_grade,
+                    product.unit,
+                ]);
 
                 const matchesBrand = !brand || product.brand === brand;
                 const matchesType = !type || product.oil_type === type;

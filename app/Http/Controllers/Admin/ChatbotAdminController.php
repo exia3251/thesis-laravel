@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Support\Search;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\ChatIntent;
@@ -108,11 +109,7 @@ class ChatbotAdminController extends Controller
         if ($request->filled('search')) {
             $term = trim($request->input('search'));
 
-            $query->where(function ($q) use ($term) {
-                $q->where('make', 'like', "%{$term}%")
-                    ->orWhere('model', 'like', "%{$term}%")
-                    ->orWhere('aliases', 'like', "%{$term}%");
-            });
+            Search::apply($query, $term, ['make', 'model', 'aliases']);
         }
 
         if ($request->input('only') === 'unverified') {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Support\Search;
 use App\Http\Controllers\Controller;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -57,11 +58,17 @@ class SalesController extends Controller
         if ($request->filled('search')) {
             $term = trim($request->search);
 
+            /*
+             * The order number stays an exact match: typing 683 should find
+             * order 683, not every order whose total happens to contain those
+             * digits. Everything else goes through the shared matcher, so
+             * "dela cruz" finds the name with the space in it and a receipt
+             * number found with or without its dashes.
+             */
             $query->where(function ($q) use ($term) {
-                $q->where('customer_name', 'like', "%{$term}%")
-                    ->orWhere('receipt_no', 'like', "%{$term}%")
+                $q->where(fn ($named) => Search::apply($named, $term, ['customer_name', 'receipt_no']))
                     ->orWhere('sale_id', $term)
-                    ->orWhereHas('user', fn ($u) => $u->where('full_name', 'like', "%{$term}%"));
+                    ->orWhereHas('user', fn ($u) => Search::apply($u, $term, ['full_name']));
             });
         }
 

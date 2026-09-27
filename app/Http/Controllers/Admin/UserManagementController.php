@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Support\Search;
 use App\Support\PasswordPolicy;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
@@ -69,10 +70,7 @@ class UserManagementController extends Controller
         if ($request->filled('search')) {
             $term = trim($request->input('search'));
 
-            $query->where(function ($q) use ($term) {
-                $q->where('full_name', 'like', "%{$term}%")
-                    ->orWhere('email', 'like', "%{$term}%");
-            });
+            Search::apply($query, $term, ['full_name', 'email']);
         }
 
         return $this->paginated(

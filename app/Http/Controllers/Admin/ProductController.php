@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Support\Search;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Inventory;
@@ -187,12 +188,7 @@ class ProductController extends Controller
         if ($request->filled('search')) {
             $term = trim($request->input('search'));
 
-            $query->where(function ($q) use ($term) {
-                $q->where('product_name', 'like', "%{$term}%")
-                    ->orWhere('brand', 'like', "%{$term}%")
-                    ->orWhere('oil_type', 'like', "%{$term}%")
-                    ->orWhere('viscosity_grade', 'like', "%{$term}%");
-            });
+            Search::apply($query, $term, ['product_name', 'brand', 'oil_type', 'viscosity_grade']);
         }
 
         return $this->paginated($query->paginate($this->perPage()), function ($product) {

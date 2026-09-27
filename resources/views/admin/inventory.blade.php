@@ -195,11 +195,11 @@
         }
 
         function renderInventory() {
-            const search = document.getElementById('inventorySearch').value.toLowerCase();
+            const search = document.getElementById('inventorySearch').value;
             const tbody = document.getElementById('inventoryBody');
 
             const items = inventoryItems.filter(item =>
-                (item.product_name.toLowerCase().includes(search) || item.brand.toLowerCase().includes(search))
+                searchMatches(search, [item.product_name, item.brand, item.viscosity_grade, item.unit])
                 && matchesFilter(item));
 
             document.getElementById('inventoryCount').textContent =
