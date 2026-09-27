@@ -137,12 +137,49 @@ class SharedLinkSafetyTest extends TestCase
     }
 
     #[Test]
-    public function each_sign_in_page_points_at_the_other(): void
+    public function the_staff_page_points_back_at_the_shop(): void
     {
         $this->app['env'] = 'local';
 
-        $this->get('http://localhost/shop/login')->assertOk()->assertSee('/admin/login', false);
+        // One way only. A customer who lands on the staff page by accident
+        // should be shown the way out; a customer on the shop page has no use
+        // for a door they cannot open, so that link was taken away again.
         $this->get('http://localhost/admin/login')->assertOk()->assertSee('/shop/login', false);
+        $this->get('http://localhost/shop/login')->assertOk()->assertDontSee('back office', false);
+    }
+
+    #[Test]
+    public function a_signed_in_administrator_lands_on_the_dashboard(): void
+    {
+        /*
+         * Both sign-in pages turn away visitors who are already signed in,
+         * and used to send them to "/" -- the shop front. An administrator
+         * who opened the staff login while still signed in was dropped on the
+         * shop, which reads as the back office refusing them.
+         */
+        $this->app['env'] = 'testing';
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+
+        $admin = \App\Models\User::where('email', 'admin@raney.test')->firstOrFail();
+
+        $this->actingAs($admin, 'staff')
+            ->get('/admin/login')
+            ->assertRedirect('/admin/dashboard');
+    }
+
+    #[Test]
+    public function a_signed_in_customer_lands_on_the_shop(): void
+    {
+        // Its own test, because signing in as one guard in a test leaves that
+        // guard resolved for the next assertion in the same one.
+        $this->app['env'] = 'testing';
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+
+        $customer = \App\Models\User::where('email', 'john@example.com')->firstOrFail();
+
+        $this->actingAs($customer, 'web')
+            ->get('/shop/login')
+            ->assertRedirect('/shop');
     }
 
     #[Test]

@@ -25,6 +25,25 @@ return Application::configure(basePath: dirname(__DIR__))
          */
         $middleware->trustProxies(at: '*');
 
+        /*
+         * Somebody already signed in who opens a sign-in page again belongs
+         * on their own home screen, not the framework's default of "/".
+         *
+         * An administrator who clicked through to the staff login while still
+         * signed in was being dropped on the shop front, which reads as the
+         * back office refusing them. Each guard has a home: staff have the
+         * dashboard, customers have the shop.
+         */
+        $middleware->redirectUsersTo(function () {
+            foreach (['staff', 'web'] as $guard) {
+                if ($user = auth()->guard($guard)->user()) {
+                    return $user->homePath();
+                }
+            }
+
+            return '/shop';
+        });
+
         // Register middleware aliases
         $middleware->alias([
             // Broad access gates

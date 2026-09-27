@@ -63,11 +63,16 @@
 
                          Still gated on APP_ENV, so a real deployment drops it. --}}
                     @if (app()->environment('local'))
-                        <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-xs text-[var(--muted)]">
-                            <div class="mb-1 font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo account &mdash; sign in with this</div>
-                            <span class="select-all font-semibold text-[var(--ink)]">john@example.com</span>
-                            <span class="mx-1">/</span>
-                            <span class="select-all font-semibold text-[var(--ink)]">customer123</span>
+                        <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-xs text-[var(--muted)]">
+                            <div class="mb-2 text-center font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo account &mdash; sign in with this</div>
+                            <div class="flex justify-between gap-3 py-0.5">
+                                <span>Email</span>
+                                <span class="select-all font-semibold text-[var(--ink)]">john@example.com</span>
+                            </div>
+                            <div class="flex justify-between gap-3 py-0.5">
+                                <span>Password</span>
+                                <span class="select-all font-semibold text-[var(--ink)]">customer123</span>
+                            </div>
                         </div>
                     @endif
                 </form>
@@ -77,15 +82,7 @@
                 <div class="mt-3 text-center text-sm text-[var(--muted)]">
                     New customer? <a href="/shop/register" class="font-semibold text-[var(--primary)] hover:underline">Create an account</a>
                 </div>
-                {{-- The way through to the back office, shown only while the
-                     demo logins are. A customer has no use for it, and a real
-                     deployment should not advertise the staff door; somebody
-                     being shown the system has to be able to find it. --}}
-                @if (app()->environment('local'))
-                    <div class="mt-3 text-center text-xs text-[var(--muted)]">
-                        Staff? <a href="/admin/login" class="font-semibold text-[var(--primary)] hover:underline">Sign in to the back office</a>
-                    </div>
-                @endif
+
             </section>
             <p class="mt-6 text-center text-xs text-[var(--muted)]">&copy; {{ now()->year }} RANEY LUBRICANTS TRADING. All rights reserved.</p>
         </div>
