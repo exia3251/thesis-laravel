@@ -142,8 +142,9 @@ class VehicleSpecSeeder extends Seeder
              'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Toyota', 'model' => 'Avanza', 'variant' => '1.3 / 1.5 Gasoline', 'fuel' => 'gasoline',
-             'year_from' => 2012, 'viscosity' => '5W30', 'viscosity_alt' => '10W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.7],
+             'year_from' => 2012, 'viscosity' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 3.7,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Toyota', 'model' => 'Hiace', 'variant' => '2.5 / 3.0 Diesel', 'fuel' => 'diesel',
              'aliases' => 'hi-ace, commuter, grandia', 'year_from' => 2005, 'viscosity' => '15W40', 'viscosity_alt' => '5W30',
@@ -156,11 +157,13 @@ class VehicleSpecSeeder extends Seeder
             // -------------------------------------------------- Mitsubishi
             ['make' => 'Mitsubishi', 'model' => 'Mirage', 'variant' => '1.2 Gasoline', 'fuel' => 'gasoline',
              'year_from' => 2012, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.0],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 3.0,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Mitsubishi', 'model' => 'Mirage G4', 'variant' => '1.2 Gasoline', 'fuel' => 'gasoline',
              'aliases' => 'mirage g4, g4', 'year_from' => 2014, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.0],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 3.0,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Mitsubishi', 'model' => 'Montero Sport', 'variant' => '2.4 Diesel (4N15)', 'fuel' => 'diesel',
              'aliases' => 'montero, monterosport, montero sports', 'year_from' => 2016,
@@ -169,7 +172,8 @@ class VehicleSpecSeeder extends Seeder
 
             ['make' => 'Mitsubishi', 'model' => 'Montero Sport', 'variant' => '2.5 Diesel (4D56)', 'fuel' => 'diesel',
              'aliases' => 'montero, monterosport', 'year_from' => 2009, 'year_to' => 2015,
-             'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 6.5],
+             'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 6.5,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Mitsubishi', 'model' => 'Strada', 'variant' => '2.4 Diesel', 'fuel' => 'diesel',
              'aliases' => 'triton', 'year_from' => 2015, 'viscosity' => '5W30',
@@ -182,10 +186,12 @@ class VehicleSpecSeeder extends Seeder
 
             ['make' => 'Mitsubishi', 'model' => 'L300', 'variant' => '2.2 / 2.5 Diesel', 'fuel' => 'diesel',
              'aliases' => 'l-300, l 300, fb', 'viscosity' => '15W40',
-             'oil_type' => 'Mineral', 'capacity_litres' => 5.5],
+             'oil_type' => 'Mineral', 'capacity_litres' => 5.5,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Mitsubishi', 'model' => 'Adventure', 'variant' => '2.5 Diesel', 'fuel' => 'diesel',
-             'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 6.0],
+             'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 6.0,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             // ------------------------------------------------------- Honda
             ['make' => 'Honda', 'model' => 'City', 'variant' => '1.5 Gasoline', 'fuel' => 'gasoline',
@@ -236,8 +242,9 @@ class VehicleSpecSeeder extends Seeder
              'oil_type' => 'Mineral', 'capacity_litres' => 7.4],
 
             ['make' => 'Nissan', 'model' => 'X-Trail', 'variant' => '2.0 / 2.5 Gasoline', 'fuel' => 'gasoline',
-             'aliases' => 'xtrail, x trail', 'year_from' => 2015, 'viscosity' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 4.3],
+             'aliases' => 'xtrail, x trail', 'year_from' => 2015, 'viscosity' => '5W30', 'viscosity_alt' => '0W20',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 4.3,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             // -------------------------------------------------------- Ford
             ['make' => 'Ford', 'model' => 'Ranger', 'variant' => '2.2 / 3.2 Diesel', 'fuel' => 'diesel',
@@ -264,7 +271,8 @@ class VehicleSpecSeeder extends Seeder
             // ------------------------------------------------------- Isuzu
             ['make' => 'Isuzu', 'model' => 'D-Max', 'variant' => '2.5 / 3.0 Diesel', 'fuel' => 'diesel',
              'aliases' => 'dmax, d max', 'year_from' => 2013, 'year_to' => 2020,
-             'viscosity' => '15W40', 'viscosity_alt' => '5W30', 'oil_type' => 'Mineral', 'capacity_litres' => 7.3],
+             'viscosity' => '5W30', 'oil_type' => 'Mineral', 'capacity_litres' => 7.3,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Isuzu', 'model' => 'D-Max', 'variant' => '1.9 Diesel (RZ4E)', 'fuel' => 'diesel',
              'aliases' => 'dmax, d max', 'year_from' => 2021, 'viscosity' => '5W30',
@@ -272,8 +280,9 @@ class VehicleSpecSeeder extends Seeder
              'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Isuzu', 'model' => 'mu-X', 'variant' => '1.9 / 3.0 Diesel', 'fuel' => 'diesel',
-             'aliases' => 'mux, mu x', 'year_from' => 2015, 'viscosity' => '15W40', 'viscosity_alt' => '5W30',
-             'oil_type' => 'Mineral', 'capacity_litres' => 7.3],
+             'aliases' => 'mux, mu x', 'year_from' => 2015, 'viscosity' => '5W30',
+             'oil_type' => 'Mineral', 'capacity_litres' => 7.3,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             // Checked 27 Sep 2026: 4.5 L with the filter -- Isuzu sold a 4.5 L
             // pack for this engine. It was recorded as 6.0, a litre and a half
@@ -314,10 +323,12 @@ class VehicleSpecSeeder extends Seeder
              'viscosity' => '5W30', 'viscosity_alt' => '0W20', 'oil_type' => 'Synthetic', 'capacity_litres' => 3.1],
 
             ['make' => 'Suzuki', 'model' => 'Jimny', 'variant' => '1.5 Gasoline', 'fuel' => 'gasoline',
-             'year_from' => 2019, 'viscosity' => '5W30', 'oil_type' => 'Synthetic', 'capacity_litres' => 3.1],
+             'year_from' => 2019, 'viscosity' => '5W30', 'oil_type' => 'Synthetic', 'capacity_litres' => 3.2,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Suzuki', 'model' => 'Celerio', 'variant' => '1.0 Gasoline', 'fuel' => 'gasoline',
-             'viscosity' => '5W30', 'viscosity_alt' => '0W20', 'oil_type' => 'Synthetic', 'capacity_litres' => 2.8],
+             'viscosity' => '5W30', 'viscosity_alt' => '0W20', 'oil_type' => 'Synthetic', 'capacity_litres' => 3.0,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             // Checked 27 Sep 2026: the K15B is specified 0W-20 or 5W-30 to API
             // SN/SP. It was recorded as a 10W-40 semi-synthetic, which is two
@@ -358,8 +369,9 @@ class VehicleSpecSeeder extends Seeder
              'year_from' => 2019, 'viscosity' => '5W30', 'oil_type' => 'Synthetic', 'capacity_litres' => 4.0],
 
             ['make' => 'Geely', 'model' => 'Coolray', 'variant' => '1.5 Turbo Gasoline', 'fuel' => 'gasoline',
-             'year_from' => 2020, 'viscosity' => '5W30', 'oil_type' => 'Synthetic', 'capacity_litres' => 4.0,
-             'notes' => 'Turbocharged. A fully synthetic oil is worth the difference here.'],
+             'year_from' => 2020, 'viscosity' => '0W20', 'viscosity_alt' => '5W30', 'oil_type' => 'Synthetic', 'capacity_litres' => 4.0,
+             'notes' => 'Turbocharged. A fully synthetic oil is worth the difference here.',
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             // ------------------------------------------- commercial diesel
             // Checked 27 Sep 2026: about 8 L, not 11. The drum note went with
