@@ -49,9 +49,14 @@
                         Sign in
                     </button>
 
-                    {{-- Seeded logins, for local development only. This block is
-                         absent once APP_ENV is anything other than local. --}}
-                    @if (app()->environment('local'))
+                    {{-- Seeded logins, for this machine only.
+
+                         Gated on the host rather than only on APP_ENV, because
+                         the environment stays "local" when the port is shared
+                         over a tunnel for a survey -- and printing the
+                         administrator's password on a page handed to strangers
+                         would give every one of them the whole system. --}}
+                    @if (app()->environment('local') && \App\Providers\AppServiceProvider::isLocalRequest())
                         <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-xs text-[var(--muted)]">
                             <div class="mb-1 font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo accounts</div>
                             Administrator: <span class="font-semibold text-[var(--ink)]">admin@raney.test / admin123</span><br>

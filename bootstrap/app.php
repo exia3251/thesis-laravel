@@ -11,6 +11,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        /*
+         * Behind a tunnel, believe the tunnel about the scheme.
+         *
+         * The system is demonstrated over an ngrok URL, which terminates
+         * HTTPS at their end and forwards plain HTTP here. Without this,
+         * Laravel builds every link as http:// while the page is served over
+         * https://, and the browser blocks its own stylesheet as mixed
+         * content -- an unstyled site for everybody who follows the link.
+         *
+         * Safe here because nothing else can reach this server: it listens on
+         * localhost and the tunnel agent runs on the same machine.
+         */
+        $middleware->trustProxies(at: '*');
+
         // Register middleware aliases
         $middleware->alias([
             // Broad access gates

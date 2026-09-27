@@ -27,6 +27,22 @@ class AppServiceProvider extends ServiceProvider
     {
         Sale::observe(SaleObserver::class);
 
+        /*
+         * Never show a stack trace to somebody who arrived over a tunnel.
+         *
+         * This runs with APP_DEBUG=true, which is right on a laptop and
+         * dangerous the moment the port is shared: Laravel's error page lists
+         * the whole environment, and the environment holds the database
+         * password and the assistant's API key. The survey link is handed to
+         * strangers, and one unhandled exception would hand them those.
+         *
+         * Local requests keep the detailed page, because that is the one that
+         * makes it worth having.
+         */
+        if (! self::isLocalRequest()) {
+            config(['app.debug' => false]);
+        }
+
         // Laravel's stock verification mail is unbranded markdown. Point it at
         // the same layout the order emails use so a customer sees one sender.
         VerifyEmail::toMailUsing(function ($notifiable, string $url) {
@@ -60,5 +76,26 @@ class AppServiceProvider extends ServiceProvider
                     'minutes' => config('auth.passwords.users.expire'),
                 ]);
         });
+    }
+
+    /**
+     * Whether this request came from the machine the server runs on.
+     *
+     * By host name rather than by IP, because a tunnel agent runs on this
+     * same machine and every request it forwards arrives from 127.0.0.1. What
+     * separates them is what the visitor typed: localhost, or a public
+     * address belonging to the tunnel.
+     */
+    public static function isLocalRequest(): bool
+    {
+        if (app()->runningInConsole()) {
+            return true;
+        }
+
+        return in_array(
+            request()->getHost(),
+            ['localhost', '127.0.0.1', '::1', '[::1]'],
+            true
+        );
     }
 }
