@@ -53,9 +53,14 @@
                     <button type="submit" class="flex w-full justify-center rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110">Sign in</button>
 
                     @include('partials.google-button')
-                    {{-- Seeded login, for local development only. This block is
-                         absent once APP_ENV is anything other than local. --}}
-                    @if (app()->environment('local'))
+                    {{-- Seeded login, for this machine only.
+
+                         Gated on the host as well as the environment, because
+                         the environment stays "local" while the port is shared
+                         over a tunnel for the survey. This account carries a
+                         real order history, and handing a stranger the password
+                         to it hands them somebody's orders and address. --}}
+                    @if (app()->environment('local') && \App\Providers\AppServiceProvider::isLocalRequest())
                         <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-xs text-[var(--muted)]">
                             <div class="mb-1 font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo account</div>
                             <span class="font-semibold text-[var(--ink)]">john@example.com</span> / <span class="font-semibold text-[var(--ink)]">customer123</span>
