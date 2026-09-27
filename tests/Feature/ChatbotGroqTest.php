@@ -450,6 +450,28 @@ class ChatbotGroqTest extends TestCase
     }
 
     #[Test]
+    public function it_is_told_to_ask_rather_than_send_someone_away(): void
+    {
+        $this->withKey();
+        $this->replying('Something helpful.');
+
+        $this->ask('what oil does my car take');
+
+        /*
+         * Two kinds of not knowing were being answered the same way. Asked
+         * what oil "my car" takes, it named what it needed -- make, model,
+         * year -- and then told the customer to email those in. In a chat
+         * window that could have received them, that is a dead end.
+         */
+        Http::assertSent(function (Request $request) {
+            $instructions = (string) data_get($request->data(), 'messages.0.content');
+
+            return str_contains($instructions, 'ask them for it in your reply')
+                && str_contains($instructions, 'Never ask anybody to email a detail they could type');
+        });
+    }
+
+    #[Test]
     public function it_is_told_the_shop_facts_and_told_not_to_guess(): void
     {
         $this->withKey();
