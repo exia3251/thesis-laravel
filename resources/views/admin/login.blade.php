@@ -147,8 +147,15 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            /* Signing in is the slowest thing on this page, and the button
+               said nothing while it happened -- so people pressed it again.
+               It stays busy until either the page navigates away or an error
+               is shown, which are the only two ways this ends. */
+            const done = startBusy(busyButtonOf(e.target), 'Signing in');
+
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
+
             const errorDiv = document.getElementById('error-message');
 
             errorDiv.classList.add('hidden');
@@ -172,9 +179,11 @@
                     return;
                 }
 
+                done();
                 errorDiv.textContent = data.message || 'Login failed. Please try again.';
                 errorDiv.classList.remove('hidden');
             } catch (error) {
+                done();
                 errorDiv.textContent = 'Login failed. Please try again.';
                 errorDiv.classList.remove('hidden');
             }

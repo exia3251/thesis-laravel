@@ -145,6 +145,78 @@
      * Rows arrive from fetch long after this runs, and are replaced again on
      * every filter and page change, so it watches rather than runs once.
      */
+    /**
+     * Holds a button busy while something is happening behind it.
+     *
+     * Every action here goes to the server and comes back, and in between the
+     * button looked exactly as it had a moment earlier. So people pressed it
+     * again -- sending a second order, a second payment, a second cancel --
+     * or decided nothing had happened and left.
+     *
+     * The button is disabled for the duration, which is the part that
+     * prevents the double press; the spinner is what explains why. Restored
+     * in a finally, so a failed request leaves a usable button rather than a
+     * dead one.
+     */
+    async function withBusy(button, work, busyLabel) {
+        if (!button) return work();
+
+        const original = button.innerHTML;
+        const wasDisabled = button.disabled;
+
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        button.innerHTML = `<span class="inline-flex items-center justify-center gap-2">
+            <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity="0.25"/>
+                <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>${busyLabel ? `<span>${busyLabel}</span>` : ''}</span>`;
+
+        try {
+            return await work();
+        } finally {
+            button.innerHTML = original;
+            button.disabled = wasDisabled;
+            button.removeAttribute('aria-busy');
+        }
+    }
+
+    /**
+     * The same as withBusy, for code that does not wrap a single call.
+     *
+     * Returns the function that puts the button back. Used where the action
+     * ends by navigating away on success and only needs restoring on the
+     * error path.
+     */
+    function startBusy(button, busyLabel) {
+        if (!button) return () => {};
+
+        const original = button.innerHTML;
+        const wasDisabled = button.disabled;
+
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        button.innerHTML = `<span class="inline-flex items-center justify-center gap-2">
+            <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity="0.25"/>
+                <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>${busyLabel ? `<span>${busyLabel}</span>` : ''}</span>`;
+
+        return () => {
+            button.innerHTML = original;
+            button.disabled = wasDisabled;
+            button.removeAttribute('aria-busy');
+        };
+    }
+
+    /**
+     * The same, for a form that submits through fetch: finds its submit
+     * button so each caller does not have to.
+     */
+    function busyButtonOf(form) {
+        return form?.querySelector('button[type="submit"], button:not([type])') ?? null;
+    }
+
     function labelTableCells(root) {
         (root || document).querySelectorAll('.stack-table > table').forEach((table) => {
             const headings = [...table.querySelectorAll('thead th')].map((th) => th.textContent.trim());

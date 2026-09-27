@@ -711,12 +711,9 @@
                 return;
             }
 
-            const button = document.getElementById('amConfirm');
-            const original = button.textContent;
-            button.disabled = true;
-            button.textContent = 'Working...';
-
-            try {
+            // The shared helper, so this button behaves like every other one
+            // that waits on the server.
+            await withBusy(document.getElementById('amConfirm'), async () => {
                 const result = await pendingAction(document.getElementById('amNote').value.trim() || null);
 
                 if (result.ok) {
@@ -728,10 +725,7 @@
                 const error = document.getElementById('amError');
                 error.textContent = result.message;
                 error.classList.remove('hidden');
-            } finally {
-                button.disabled = false;
-                button.textContent = original;
-            }
+            }, 'Working');
         }
 
         document.getElementById('actionModal').addEventListener('click', (event) => {
