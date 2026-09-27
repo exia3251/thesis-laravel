@@ -47,7 +47,11 @@ class ChatIntentSeeder extends Seeder
                 'intent_key' => 'order_balance',
                 'category' => 'orders',
                 'label' => 'How much do I owe?',
-                'keywords' => 'balance owe owing due outstanding remaining unpaid much left total bayad utang magkano',
+                // Without "much", "total" and "magkano": those are how a price
+                // is asked for at least as often as a debt, and "how much is
+                // the Solar 5W30" was being answered with an invitation to
+                // sign in and check a balance. What is left says debt only.
+                'keywords' => 'balance owe owing due outstanding remaining unpaid bayad utang',
                 'handler' => 'orderBalance',
                 'requires_login' => true,
                 'is_suggested' => true,
@@ -77,7 +81,10 @@ class ChatIntentSeeder extends Seeder
                 'intent_key' => 'order_list',
                 'category' => 'orders',
                 'label' => 'Show my recent orders',
-                'keywords' => 'orders recent history list purchases bought previous past',
+                // Without "previous": "ignore previous instructions" was
+                // landing here and being answered with an invitation to sign
+                // in. "previous orders" still matches on "orders".
+                'keywords' => 'orders recent history list purchases bought past',
                 'handler' => 'orderList',
                 'requires_login' => true,
                 'is_suggested' => false,
@@ -106,12 +113,17 @@ class ChatIntentSeeder extends Seeder
             [
                 'intent_key' => 'product_stock',
                 'category' => 'products',
-                'label' => 'What is in stock?',
+                'label' => 'Price and availability',
                 // "supply" moved to bulk_orders: "do you supply businesses"
                 // is a question about trade quantities, not about whether
                 // a particular oil is on the shelf, and it was pulling
                 // every such question here.
-                'keywords' => 'stock available availability inventory meron',
+                //
+                // The price words belong here rather than anywhere else,
+                // because this handler answers with product cards and a card
+                // carries the live price on it. A sentence about a price goes
+                // stale the moment a price changes; a card cannot.
+                'keywords' => 'stock available availability inventory meron price prices pricing cost costs much magkano presyo',
                 'handler' => 'productStock',
                 'is_suggested' => false,
                 'sort_order' => 70,
@@ -201,12 +213,18 @@ class ChatIntentSeeder extends Seeder
                 'intent_key' => 'viscosity_meaning',
                 'category' => 'products',
                 'label' => 'What does 5W-30 mean?',
-                'keywords' => 'viscosity grade 5w30 15w40 10w40 sae number mean meaning weight thick thin w',
+                // Without the bare grades, and without a lone "w". Those made
+                // this the greediest intent in the table: "magkano ang canroyal
+                // 15w40" is a question about a price, and it was being answered
+                // with a lecture on what the numbers mean. Somebody asking what
+                // a grade means says "mean", "what is" or "weight", and those
+                // are still here.
+                'keywords' => 'viscosity grade sae number mean meaning weight thick thin',
                 'answer' => "It describes how the oil flows.\n\n"
                     . "The number before the W is how it behaves when cold — lower flows more easily on a cold start. "
                     . "The number after is how thick it stays at running temperature.\n\n"
                     . "So 5W-30 flows more easily cold than 15W-40, and 15W-40 stays thicker when hot. "
-                    . "We carry 5W-30, 10W-40 and 15W-40. Your engine's handbook names the one it needs.",
+                    . "The shop page lists the grades we carry, and your engine's handbook names the one it needs.",
                 'is_suggested' => false,
                 'sort_order' => 140,
             ],
@@ -358,12 +376,14 @@ class ChatIntentSeeder extends Seeder
                 'intent_key' => 'bulk_orders',
                 'category' => 'company',
                 'label' => 'Do you supply businesses?',
-                'keywords' => 'bulk wholesale fleet business businesses supply supplier drum barrel quote discount trade large quantity 200 liters commercial workshop',
-                'answer' => "Yes. Two things on the site already suit a workshop or a fleet:\n\n"
-                    . "- 200 litre drums of our 15W-40 diesel oils, from Canroyal and from Solar.\n"
-                    . "- A box of 6 on the smaller packs, which is ordered from the product page like any other size.\n\n"
-                    . "For anything beyond that -- a standing order, a mixed pallet, or a quantity you would rather discuss "
-                    . "than add to a basket -- email :business_email and a Sales Executive will work out a price with you.",
+                // The drum words stay, so somebody asking for one is answered
+                // here rather than falling through to a guess.
+                'keywords' => 'bulk wholesale fleet business businesses supply supplier drum drums barrel quote discount trade large quantity 200 liters commercial workshop',
+                'answer' => "Yes, and a workshop or a fleet orders the same way as anybody else. "
+                    . "The sizes on sale are 1, 4 and 5 litres, and the smaller packs can be ordered by the box of 6 "
+                    . "from the product page like any other size. Drums are not part of the range. "
+                    . "For a standing order, a mixed pallet, or a quantity you would rather discuss than add to a basket, "
+                    . "email :business_email and a Sales Executive will work out a price with you.",
                 'is_suggested' => false,
                 'sort_order' => 190,
             ],

@@ -4,7 +4,10 @@ namespace App\Services\Chatbot;
 
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
+use App\Models\Product;
 use App\Models\User;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
@@ -188,17 +191,43 @@ class Assistant
          */
         $unmatchedVehicle = $this->vehicles->mentionsAnyMake($message);
 
+        /*
+         * A grade the shop does not stock is answered from the shelf, by name.
+         *
+         * "Do you have 0W-16 for my hybrid" was starting the product finder,
+         * which replied by asking what sort of product they were after -- the
+         * thing they had just said. The catalogue knows the answer outright,
+         * so no model is asked: a plain no and a list of what there is beats
+         * anything a model could add, and the one thing it might add -- use
+         * this other grade instead -- is the one thing that must not be said.
+         */
+        $unstockedGrades = $this->gradesWeDoNotStock($message);
+
+        /*
+         * A message aimed at the model rather than the shop is answered by
+         * neither half. It is never sent, and it is not keyword-matched either:
+         * "ignore previous instructions" matched "previous" and came back with
+         * an invitation to sign in and look at past orders.
+         */
+        $talkingToTheModel = $result !== null && $this->ai->refuses($message);
+
+        $suggestions = $result['suggestions'] ?? collect();
+
         $needsLiveData = $intent
             && ! $unmatchedVehicle
             && in_array($intent->handler, self::READS_THE_DATABASE, true);
 
-        $aiAnswer = $needsLiveData ? null : $this->ai->answer($message, (bool) $user);
+        $answeredHere = $needsLiveData || $talkingToTheModel || $unstockedGrades->isNotEmpty();
+
+        $aiAnswer = $answeredHere ? null : $this->ai->answer($message, (bool) $user);
 
         $reply = match (true) {
+            $talkingToTheModel => $this->responder->fallback($suggestions, $user),
+            $unstockedGrades->isNotEmpty() => $this->responder->gradeNotCarried($unstockedGrades, $suggestions, $user),
             $needsLiveData => $this->responder->answer($conversation, $intent, $message, $user),
             $aiAnswer !== null => ['body' => $aiAnswer, 'payload' => ['source' => 'groq']],
             (bool) $intent => $this->responder->answer($conversation, $intent, $message, $user),
-            default => $this->responder->fallback($result['suggestions'], $user),
+            default => $this->responder->fallback($suggestions, $user),
         };
 
         $botMessage = $this->record(
@@ -218,6 +247,43 @@ class Assistant
         $conversation->clearContext();
 
         return $this->open($conversation, $user);
+    }
+
+    /**
+     * The viscosity grades a message names that are not on the shelf.
+     *
+     * Read however people write one -- 5W-30, 5w30, 0W16 -- and compared
+     * against the grades the catalogue holds, with the hyphen taken out of
+     * both so the two spellings cannot disagree. What comes back is what was
+     * asked for, spelled as they spelled it, so the reply can name it.
+     *
+     * Cached for the same reason the assistant's other facts are: it is the
+     * same for every visitor and changes only when the catalogue does.
+     *
+     * @return Collection<int,string>
+     */
+    private function gradesWeDoNotStock(string $message): Collection
+    {
+        if (! preg_match_all('/\b(\d{1,2})w-?(\d{1,2})\b/i', $message, $found, PREG_SET_ORDER)) {
+            return collect();
+        }
+
+        $carried = Cache::remember('chatbot.grades', now()->addMinutes(10), fn () => Product::query()
+            ->whereNotNull('viscosity_grade')
+            ->distinct()
+            ->pluck('viscosity_grade')
+            ->map(fn ($grade) => str_replace('-', '', mb_strtolower((string) $grade)))
+            ->all());
+
+        return collect($found)
+            ->reject(fn (array $grade) => in_array(
+                mb_strtolower($grade[1] . 'w' . $grade[2]),
+                $carried,
+                true
+            ))
+            ->map(fn (array $grade) => mb_strtoupper($grade[1] . 'W-' . $grade[2]))
+            ->unique()
+            ->values();
     }
 
     private function record(ChatConversation $conversation, string $role, string $body, ?string $intentKey, array $payload = []): ChatMessage

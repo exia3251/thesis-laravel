@@ -260,6 +260,105 @@ class ChatbotGroqTest extends TestCase
     }
 
     #[Test]
+    public function a_pack_the_business_no_longer_sells_is_never_offered(): void
+    {
+        $this->withKey();
+        $this->replying('Something helpful.');
+
+        // A drum row left over from when drums were listed. It is still in the
+        // table, and it must not reach a customer as something they can buy.
+        foreach (['1 Liter', '200 Liters'] as $unit) {
+            Product::create([
+                'product_name' => 'Canroyal Full Synthetic Diesel Engine Oil SAE 15W40 API CI-4',
+                'brand' => 'CANROYAL',
+                'product_line' => 'canroyal-15w40',
+                'oil_type' => 'Synthetic',
+                'viscosity_grade' => '15W-40',
+                'unit' => $unit,
+                'price' => $unit === '1 Liter' ? 365 : 56200,
+                'reorder_level' => 10,
+            ]);
+        }
+
+        Cache::forget('chatbot.ai.facts');
+        $this->ask(self::ODD_QUESTION);
+
+        $prompt = $this->promptSent();
+
+        $this->assertStringContainsString('packs: 1 Liter', $prompt);
+        $this->assertStringNotContainsString('200 Liters', $prompt);
+        $this->assertStringNotContainsString('56200', $prompt);
+    }
+
+    #[Test]
+    public function a_grade_that_survives_only_as_a_retired_pack_is_not_claimed(): void
+    {
+        $this->withKey();
+        $this->replying('Something helpful.');
+
+        // Nothing buyable in 0W-20: the only row is a drum, which is not sold.
+        // Saying the shelf carries it would send somebody to a page that
+        // offers them nothing.
+        Product::create([
+            'product_name' => 'Some Discontinued 0W20',
+            'brand' => 'SOLAR',
+            'product_line' => 'solar-0w20',
+            'oil_type' => 'Synthetic',
+            'viscosity_grade' => '0W-20',
+            'unit' => '200 Liters',
+            'price' => 90000,
+            'reorder_level' => 2,
+        ]);
+
+        Product::create([
+            'product_name' => 'Solar Premium Series Diesel Engine Oil 15W40 API CK-4',
+            'brand' => 'SOLAR',
+            'product_line' => 'solar-15w40',
+            'oil_type' => 'Mineral',
+            'viscosity_grade' => '15W-40',
+            'unit' => '4 Liters',
+            'price' => 1420,
+            'reorder_level' => 10,
+        ]);
+
+        Cache::forget('chatbot.ai.facts');
+        $this->ask(self::ODD_QUESTION);
+
+        $prompt = $this->promptSent();
+
+        $this->assertStringContainsString('15W-40', $prompt);
+        $this->assertStringNotContainsString('0W-20', $prompt);
+        $this->assertStringNotContainsString('Some Discontinued', $prompt);
+    }
+
+    #[Test]
+    public function pack_sizes_are_listed_smallest_first(): void
+    {
+        $this->withKey();
+        $this->replying('Something helpful.');
+
+        // Inserted out of order on purpose: the rows come back however the
+        // database feels, and "packs: 5 Liters, 1 Liter" reads like a mistake.
+        foreach (['5 Liters', '1 Liter', '4 Liters'] as $unit) {
+            Product::create([
+                'product_name' => 'Solar Premium Series Motor Engine Oil 5W30 API SN/CF',
+                'brand' => 'SOLAR',
+                'product_line' => 'solar-5w30',
+                'oil_type' => 'Synthetic',
+                'viscosity_grade' => '5W-30',
+                'unit' => $unit,
+                'price' => 500,
+                'reorder_level' => 10,
+            ]);
+        }
+
+        Cache::forget('chatbot.ai.facts');
+        $this->ask(self::ODD_QUESTION);
+
+        $this->assertStringContainsString('packs: 1 Liter, 4 Liters, 5 Liters', $this->promptSent());
+    }
+
+    #[Test]
     public function it_is_told_which_grades_the_shop_carries(): void
     {
         $this->withKey();

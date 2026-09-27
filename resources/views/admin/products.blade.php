@@ -145,16 +145,16 @@
 
                     <div class="mt-4 grid gap-4 sm:grid-cols-3">
                         <div>
-                            <label for="unit" class="block text-sm font-medium text-[var(--ink)]">Pack size</label>
-                            <input type="text" id="unit" maxlength="50" value="1 Liter" list="unitOptions"
-                                   class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
-                            <datalist id="unitOptions">
-                                <option value="1 Liter"></option>
-                                <option value="4 Liters"></option>
-                                <option value="5 Liters"></option>
-                                <option value="20 Liters"></option>
-                                <option value="200 Liters"></option>
-                            </datalist>
+                            <label class="block text-sm font-medium text-[var(--ink)]">Pack size</label>
+                            {{-- Three sizes, because three is what the business
+                                 sells. This was a text box with a suggestion
+                                 list, which meant a typo could quietly invent a
+                                 pack: "5 Liter" and "5 Liters" are two separate
+                                 shelves as far as the catalogue is concerned,
+                                 and only one of them matches what is already on
+                                 sale. Nothing to type, nothing to mistype. --}}
+                            <div id="unitChoices" class="mt-1.5 inline-flex rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1"></div>
+                            <input type="hidden" id="unit" value="1 Liter">
                             <p id="error_unit" class="mt-1 hidden text-xs text-red-600"></p>
                         </div>
                         <div>
@@ -326,10 +326,49 @@
             messageTimeout = setTimeout(() => box.classList.add('hidden'), 2800);
         }
 
+        /**
+         * The pack sizes on sale, from config/business.php so that this form
+         * and the shop assistant cannot drift apart about what the business
+         * actually sells. Drums are not among them.
+         */
+        const PACK_SIZES = @json(config('business.pack_sizes'));
+
+        /**
+         * Picks a pack size, and keeps an older one selectable while it is
+         * still on a product.
+         *
+         * Editing a product whose size is not one of the three -- a drum from
+         * before the change -- has to show that size as chosen. Otherwise the
+         * form would open with 1 Liter highlighted and saving it would silently
+         * repack a 200-litre drum into a bottle.
+         */
+        function setUnit(unit) {
+            document.getElementById('unit').value = unit;
+            renderUnitChoices(unit);
+        }
+
+        function renderUnitChoices(selected) {
+            const sizes = PACK_SIZES.includes(selected) ? PACK_SIZES : [...PACK_SIZES, selected];
+
+            document.getElementById('unitChoices').innerHTML = sizes.map((unit) => {
+                const on = unit === selected;
+                const retired = !PACK_SIZES.includes(unit);
+                const label = (unit.match(/^(\d+)\s*Liters?$/) || [null, null])[1];
+
+                return `<button type="button" onclick="setUnit('${escapeHtml(unit)}')"
+                        title="${retired ? escapeHtml(unit) + ' is no longer sold, and is shown because this product still uses it' : escapeHtml(unit)}"
+                        class="rounded-lg px-4 py-2 text-sm font-semibold transition ${on
+                            ? 'bg-white text-[var(--ink)] shadow-sm'
+                            : 'text-[var(--muted)] hover:text-[var(--ink)]'}">
+                        ${label ? label + ' L' : escapeHtml(unit)}${retired ? ' <span class="text-[10px] font-bold uppercase tracking-wider">old</span>' : ''}
+                    </button>`;
+            }).join('');
+        }
+
         function resetForm() {
             document.getElementById('productForm').reset();
             document.getElementById('productId').value = '';
-            document.getElementById('unit').value = '1 Liter';
+            setUnit('1 Liter');
             document.getElementById('reorder_level').value = '10';
 
             pendingImage = null;
@@ -432,7 +471,7 @@
             document.getElementById('brand').value = product.brand;
             document.getElementById('oil_type').value = product.oil_type;
             document.getElementById('viscosity_grade').value = product.viscosity_grade || '';
-            document.getElementById('unit').value = product.unit || '1 Liter';
+            setUnit(product.unit || '1 Liter');
             document.getElementById('price').value = parseInt(product.price);
             document.getElementById('reorder_level').value = product.reorder_level;
             document.getElementById('description').value = product.description || '';

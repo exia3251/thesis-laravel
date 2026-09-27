@@ -23,6 +23,21 @@ return [
     'email' => env('BUSINESS_EMAIL', 'sales.raneylubricants@gmail.com'),
     'hours' => env('BUSINESS_HOURS', 'Mon - Sat: 8AM - 6PM'),
 
+    /*
+     * The pack sizes the business sells, in one place.
+     *
+     * Read by the add-product form, which offers these and nothing else, and
+     * by the shop assistant, which will not mention a pack that is not on
+     * this list. Drums are deliberately absent: they are no longer listed,
+     * and an assistant that offers one is an assistant making a promise the
+     * shop cannot keep.
+     *
+     * Products carrying a size that has since left this list keep it. The
+     * form shows it, marked as retired, so editing an old product cannot
+     * silently repack it.
+     */
+    'pack_sizes' => ['1 Liter', '4 Liters', '5 Liters'],
+
     // The only social account the business actually has. Kept here rather
     // than in the footer markup so it is beside the rest of the contact
     // details, which is where anyone would look for it.

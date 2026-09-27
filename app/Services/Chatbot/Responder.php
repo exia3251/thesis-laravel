@@ -75,6 +75,53 @@ class Responder
         ]);
     }
 
+    /**
+     * A grade the shelf does not hold, answered from the shelf.
+     *
+     * "Do you have 0W-16 for my hybrid" used to start the product finder,
+     * which replied by asking what sort of product they were after -- which
+     * they had just said. The catalogue knows the answer outright, so this
+     * says it: no, and here is what there is instead.
+     *
+     * Deliberately not handed to the model. The right answer is a plain no
+     * from the database, and the one thing a model might add here -- a
+     * suggestion to use a grade the shop does carry instead -- is the one
+     * thing that must never be said, because the wrong viscosity damages an
+     * engine.
+     *
+     * @param  Collection<int,string>  $asked  the grades the message named
+     */
+    public function gradeNotCarried(Collection $asked, Collection $suggestions, ?User $user): array
+    {
+        $carried = Product::query()
+            ->whereNotNull('viscosity_grade')
+            ->where('viscosity_grade', '<>', '')
+            ->distinct()
+            ->pluck('viscosity_grade')
+            ->map(fn ($grade) => $this->grade($grade))
+            // Anything that is not a viscosity grade, ATF for one, is not an
+            // answer to "which grades do you have".
+            ->filter(fn (string $grade) => (bool) preg_match('/^\d+W-\d+$/i', $grade))
+            ->unique()
+            ->sortBy(fn (string $grade) => (int) $grade * 1000 + (int) substr($grade, strpos($grade, '-') + 1))
+            ->values();
+
+        $named = $asked->map(fn (string $grade) => $this->grade($grade))->unique();
+
+        $body = 'We do not carry ' . $named->join(', ', ' or ') . '. ';
+
+        $body .= $carried->isEmpty()
+            ? 'Email ' . config('business.email') . ' and a Sales Executive can tell you what is available.'
+            : 'The grades on the shelf are ' . $carried->join(', ', ' and ') . '. '
+                . 'Your handbook decides which of those will do, if any -- the wrong viscosity harms an engine, '
+                . 'so it is worth checking rather than guessing. If none of them fits, email '
+                . config('business.email') . ' and a Sales Executive can look for it.';
+
+        return $this->reply($body, [
+            'chips' => $this->chips($suggestions),
+        ]);
+    }
+
     public function greeting(?User $user): array
     {
         // A signed-out visitor is not offered order lookups, because they
@@ -254,6 +301,41 @@ class Responder
             return $this->reply("Everything is out of stock at the moment. Please check back shortly.");
         }
 
+        /*
+         * This handler now answers prices as well as stock, because a card
+         * carries both and a sentence about either goes stale. Which means it
+         * has to read the question: "how much is the Solar 5W30" was being
+         * answered with "we have 39 products in stock, here are a few", which
+         * is true and useless.
+         */
+        $asked = $this->narrowToWhatWasNamed($available, $message);
+
+        /*
+         * Named something, and there is none of it. Patrol is the live case:
+         * three products, all at zero, so "presyo ng Patrol" narrowed to
+         * nothing and fell through to a list of what we do have -- which reads
+         * as though the question had not been read.
+         */
+        if ($asked->isEmpty() && $this->namesSomethingWeList($message)) {
+            return $this->reply(
+                'That one is out of stock at the moment. Here is what is on the shelf today.',
+                [
+                    'products' => $this->productCards($available->sortByDesc(fn ($p) => $p->inventory->quantity ?? 0)->take(3)),
+                    'link' => ['label' => 'See the whole catalogue', 'url' => '/shop'],
+                ]
+            );
+        }
+
+        if ($asked->isNotEmpty() && $asked->count() < $available->count()) {
+            return $this->reply(
+                'Here is what we have. The price and the pack sizes are on the card.',
+                [
+                    'products' => $this->productCards($asked->sortBy('price')),
+                    'link' => ['label' => 'See the whole catalogue', 'url' => '/shop'],
+                ]
+            );
+        }
+
         return $this->reply(
             "We have {$available->count()} products in stock right now. Here are a few:",
             [
@@ -261,6 +343,72 @@ class Responder
                 'link' => ['label' => 'See the whole catalogue', 'url' => '/shop'],
             ]
         );
+    }
+
+    /**
+     * Whether the message names a brand or grade the shop lists at all.
+     *
+     * Asked of everything rather than of what is in stock, which is the whole
+     * point: it tells "we have none of that today" apart from "I did not
+     * follow the question", and those deserve different answers.
+     */
+    private function namesSomethingWeList(string $message): bool
+    {
+        $said = mb_strtolower($message);
+        $saidPlain = str_replace('-', '', $said);
+
+        return Product::query()
+            ->select('brand', 'viscosity_grade')
+            ->get()
+            ->contains(function (Product $product) use ($said, $saidPlain) {
+                $brand = mb_strtolower((string) $product->brand);
+                $grade = str_replace('-', '', mb_strtolower((string) $product->viscosity_grade));
+
+                return ($brand !== '' && str_contains($said, $brand))
+                    || ($grade !== '' && preg_match('/(?<!\d)' . preg_quote($grade, '/') . '/', $saidPlain));
+            });
+    }
+
+    /**
+     * Narrows a list to the brand and grade the message actually named.
+     *
+     * In two passes rather than one, so "the Solar 5W30" means that oil and
+     * not every Solar plus every 5W-30. Either half alone still narrows: a
+     * brand on its own gives that brand, a grade on its own gives that grade.
+     *
+     * @param  Collection<int,Product>  $products
+     * @return Collection<int,Product>
+     */
+    private function narrowToWhatWasNamed(Collection $products, string $message): Collection
+    {
+        $said = mb_strtolower($message);
+
+        // Both sides stripped of the hyphen, because "5W-30" and "5W30" are
+        // the same grade and the column and the customer disagree about it.
+        $saidPlain = str_replace('-', '', $said);
+
+        $brands = $products->pluck('brand')->filter()->unique()
+            ->filter(fn (string $brand) => str_contains($said, mb_strtolower($brand)));
+
+        if ($brands->isNotEmpty()) {
+            $products = $products->whereIn('brand', $brands->all());
+        }
+
+        $grades = $products->pluck('viscosity_grade')->filter()->unique()
+            ->filter(function (string $grade) use ($saidPlain) {
+                // Not preceded by a digit, or 5W40 would be found inside
+                // 15W40 and a question about one would answer with the other.
+                return (bool) preg_match(
+                    '/(?<!\d)' . preg_quote(str_replace('-', '', mb_strtolower($grade)), '/') . '/',
+                    $saidPlain
+                );
+            });
+
+        if ($grades->isNotEmpty()) {
+            $products = $products->whereIn('viscosity_grade', $grades->all());
+        }
+
+        return $brands->isEmpty() && $grades->isEmpty() ? collect() : $products->values();
     }
 
     private function productBrands(ChatConversation $conversation, string $message, ?User $user): array
