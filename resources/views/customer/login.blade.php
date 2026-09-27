@@ -73,6 +73,10 @@
                                 <span>Password</span>
                                 <span class="select-all font-semibold text-[var(--ink)]">customer123</span>
                             </div>
+                            <button type="button" onclick="fillDemoAccount('john@example.com', 'customer123')"
+                                    class="mt-3 w-full rounded-lg border border-[var(--primary)] px-3 py-2 text-xs font-bold text-[var(--primary)] transition hover:bg-[var(--primary-soft)]">
+                                Fill this in for me
+                            </button>
                         </div>
                     @endif
                 </form>
@@ -92,6 +96,31 @@
 
 @push('scripts')
 <script>
+
+    {{-- One tap rather than a retype.
+
+         The browser saves a password per origin, and a demonstration is
+         reached from several -- localhost, 127.0.0.1, the tunnel -- so
+         autofill cheerfully puts an old one into a form whose correct
+         password is printed directly underneath it. Somebody then reads the
+         right password off the page, watches the system refuse it, and
+         concludes the system is broken.
+
+         This writes the pair into the fields and fires the events a listener
+         would expect, replacing whatever autofill put there. --}}
+    function fillDemoAccount(email, password) {
+        const fields = { email: document.getElementById('email'), password: document.getElementById('password') };
+
+        for (const [key, field] of Object.entries(fields)) {
+            if (!field) continue;
+            field.value = key === 'email' ? email : password;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        fields.password?.focus();
+    }
+
         const params = new URLSearchParams(window.location.search);
 
         if (params.get('registered') === '1') {

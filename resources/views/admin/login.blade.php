@@ -63,9 +63,20 @@
                     @if (app()->environment('local'))
                         <div class="rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 text-center text-xs text-[var(--muted)]">
                             <div class="mb-1 font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">Demo accounts &mdash; sign in with any of these</div>
-                            Administrator: <span class="select-all font-semibold text-[var(--ink)]">admin@raney.test</span> / <span class="select-all font-semibold text-[var(--ink)]">admin123</span><br>
-                            Inventory: <span class="select-all font-semibold text-[var(--ink)]">inventory@raney.test</span> / <span class="select-all font-semibold text-[var(--ink)]">inventory123</span><br>
-                            Accounting: <span class="select-all font-semibold text-[var(--ink)]">accounting@raney.test</span> / <span class="select-all font-semibold text-[var(--ink)]">accounting123</span>
+                            <div class="space-y-1.5">
+                                @foreach ([
+                                    ['Administrator', 'admin@raney.test', 'admin123'],
+                                    ['Inventory', 'inventory@raney.test', 'inventory123'],
+                                    ['Accounting', 'accounting@raney.test', 'accounting123'],
+                                ] as [$label, $email, $password])
+                                    <button type="button" onclick="fillDemoAccount('{{ $email }}', '{{ $password }}')"
+                                            class="flex w-full items-center justify-between gap-3 rounded-lg border border-[var(--line)] px-3 py-2 text-left transition hover:border-[var(--primary)] hover:bg-[var(--primary-soft)]">
+                                        <span class="font-bold text-[var(--ink)]">{{ $label }}</span>
+                                        <span class="text-[11px] text-[var(--muted)]">{{ $email }} / {{ $password }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                            <p class="mt-2 text-[11px] text-[var(--muted)]">Tap one to fill the form.</p>
                         </div>
                     @endif
                 </form>
@@ -83,6 +94,31 @@
 
 @push('scripts')
 <script>
+
+    {{-- One tap rather than a retype.
+
+         The browser saves a password per origin, and a demonstration is
+         reached from several -- localhost, 127.0.0.1, the tunnel -- so
+         autofill cheerfully puts an old one into a form whose correct
+         password is printed directly underneath it. Somebody then reads the
+         right password off the page, watches the system refuse it, and
+         concludes the system is broken.
+
+         This writes the pair into the fields and fires the events a listener
+         would expect, replacing whatever autofill put there. --}}
+    function fillDemoAccount(email, password) {
+        const fields = { email: document.getElementById('email'), password: document.getElementById('password') };
+
+        for (const [key, field] of Object.entries(fields)) {
+            if (!field) continue;
+            field.value = key === 'email' ? email : password;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        fields.password?.focus();
+    }
+
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();

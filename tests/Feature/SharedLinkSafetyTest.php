@@ -137,6 +137,50 @@ class SharedLinkSafetyTest extends TestCase
     }
 
     #[Test]
+    public function the_demo_logins_can_be_filled_in_with_one_tap(): void
+    {
+        $this->app['env'] = 'local';
+
+        /*
+         * The browser keeps a saved password per origin, and this system is
+         * reached from several -- localhost, 127.0.0.1, the tunnel -- so
+         * autofill puts an old one into a form whose correct password is
+         * printed directly underneath it. Somebody reads the right password
+         * off the page, watches it be refused, and concludes the system is
+         * broken. A button that writes the pair in beats retyping it.
+         */
+        $this->get('http://localhost/shop/login')
+            ->assertOk()
+            ->assertSee("fillDemoAccount('john@example.com', 'customer123')", false);
+
+        $admin = $this->get('http://localhost/admin/login')->assertOk();
+
+        foreach ([
+            'admin@raney.test' => 'admin123',
+            'inventory@raney.test' => 'inventory123',
+            'accounting@raney.test' => 'accounting123',
+        ] as $email => $password) {
+            $admin->assertSee("fillDemoAccount('{$email}', '{$password}')", false);
+        }
+    }
+
+    #[Test]
+    public function the_pages_still_carry_the_script_that_signs_people_in(): void
+    {
+        $this->app['env'] = 'local';
+
+        // The fill helper was once added by cutting the file at @endsection,
+        // which threw away the pushed script below it -- the whole login
+        // handler. Both pages submitted as a plain GET after that, with the
+        // password in the query string, and nothing said so.
+        foreach (['/shop/login', '/admin/login'] as $page) {
+            $this->get('http://localhost' . $page)
+                ->assertOk()
+                ->assertSee("getElementById('loginForm').addEventListener('submit'", false);
+        }
+    }
+
+    #[Test]
     public function the_staff_page_points_back_at_the_shop(): void
     {
         $this->app['env'] = 'local';
