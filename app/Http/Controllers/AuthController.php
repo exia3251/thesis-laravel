@@ -124,9 +124,18 @@ class AuthController extends Controller
 
         RateLimiter::hit($key, 60);
 
+        /*
+         * The hint matters more than it looks. The two doors take different
+         * accounts, and typing a customer's at this one gives exactly the
+         * same "invalid credentials" as a wrong password -- so somebody with
+         * the right details in front of them concludes the details are wrong.
+         *
+         * Worded so it says nothing about whether the account exists: it is
+         * shown on every failure, not only on the ones where it applies.
+         */
         return response()->json([
             'success' => false,
-            'message' => 'Invalid credentials'
+            'message' => 'Invalid credentials. If this is a customer account, sign in at /shop/login instead.',
         ], 401);
     }
 
@@ -184,9 +193,11 @@ class AuthController extends Controller
 
         RateLimiter::hit($key, 60);
 
+        // As above, the other way round. Shown on every failure, so it gives
+        // nothing away about which accounts exist.
         return response()->json([
             'success' => false,
-            'message' => 'Invalid credentials'
+            'message' => 'Invalid credentials. If this is a staff account, sign in at /admin/login instead.',
         ], 401);
     }
 

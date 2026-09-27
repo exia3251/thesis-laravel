@@ -71,6 +71,10 @@
                 </form>
             </section>
 
+            <p class="mt-5 text-center text-sm text-[var(--muted)]">
+                Not staff? <a href="/shop/login" class="font-semibold text-[var(--primary)] hover:underline">Customer sign-in</a>
+            </p>
+
             <p class="mt-6 text-center text-xs text-[var(--muted)]">&copy; {{ now()->year }} RANEY LUBRICANTS TRADING. All rights reserved.</p>
         </div>
     </div>

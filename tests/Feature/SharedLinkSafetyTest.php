@@ -98,6 +98,54 @@ class SharedLinkSafetyTest extends TestCase
     }
 
     #[Test]
+    public function the_wrong_door_says_which_one_is_right(): void
+    {
+        /*
+         * The two sign-in pages take different accounts, and a staff login
+         * typed into the shop one used to come back "Invalid credentials" --
+         * the same answer as a wrong password. Somebody holding correct
+         * details concludes the details are wrong, which is exactly what
+         * happened the first time these pages were used in anger.
+         */
+        /*
+         * CSRF is waived in tests, but only while the app says it is running
+         * them -- and setUp puts it into "local" so the demo box renders.
+         * These two post a form and do not care about the box, so they put
+         * the environment back.
+         */
+        $this->app['env'] = 'testing';
+
+        $this->postJson('/shop/login', ['email' => 'admin@raney.test', 'password' => 'admin123'])
+            ->assertStatus(401)
+            ->assertJsonFragment(['message' => 'Invalid credentials. If this is a staff account, sign in at /admin/login instead.']);
+
+        $this->postJson('/admin/login', ['email' => 'john@example.com', 'password' => 'customer123'])
+            ->assertStatus(401)
+            ->assertJsonFragment(['message' => 'Invalid credentials. If this is a customer account, sign in at /shop/login instead.']);
+    }
+
+    #[Test]
+    public function the_hint_gives_nothing_away_about_who_has_an_account(): void
+    {
+        $this->app['env'] = 'testing';
+
+        // The same sentence for an address nobody has ever registered, so it
+        // cannot be used to find out which accounts exist.
+        $this->postJson('/shop/login', ['email' => 'nobody-at-all@example.org', 'password' => 'whatever'])
+            ->assertStatus(401)
+            ->assertJsonFragment(['message' => 'Invalid credentials. If this is a staff account, sign in at /admin/login instead.']);
+    }
+
+    #[Test]
+    public function each_sign_in_page_points_at_the_other(): void
+    {
+        $this->app['env'] = 'local';
+
+        $this->get('http://localhost/shop/login')->assertOk()->assertSee('/admin/login', false);
+        $this->get('http://localhost/admin/login')->assertOk()->assertSee('/shop/login', false);
+    }
+
+    #[Test]
     public function a_door_that_cannot_open_is_not_shown(): void
     {
         /*

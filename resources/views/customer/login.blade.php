@@ -77,6 +77,15 @@
                 <div class="mt-3 text-center text-sm text-[var(--muted)]">
                     New customer? <a href="/shop/register" class="font-semibold text-[var(--primary)] hover:underline">Create an account</a>
                 </div>
+                {{-- The way through to the back office, shown only while the
+                     demo logins are. A customer has no use for it, and a real
+                     deployment should not advertise the staff door; somebody
+                     being shown the system has to be able to find it. --}}
+                @if (app()->environment('local'))
+                    <div class="mt-3 text-center text-xs text-[var(--muted)]">
+                        Staff? <a href="/admin/login" class="font-semibold text-[var(--primary)] hover:underline">Sign in to the back office</a>
+                    </div>
+                @endif
             </section>
             <p class="mt-6 text-center text-xs text-[var(--muted)]">&copy; {{ now()->year }} RANEY LUBRICANTS TRADING. All rights reserved.</p>
         </div>
