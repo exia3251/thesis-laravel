@@ -36,7 +36,7 @@
             <span id="inventoryCount" class="ml-auto text-xs font-semibold text-[var(--muted)]"></span>
         </div>
 
-        <div class="admin-table-wrap">
+        <div class="admin-table-wrap stack-table">
             <table class="min-w-full">
                 <thead class="bg-[var(--surface)]">
                     <tr>

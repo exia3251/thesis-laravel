@@ -47,6 +47,7 @@
     .admin-table-wrap > table {
         min-width: 44rem;
     }
+
 </style>
 @endpush
 
@@ -87,6 +88,8 @@
 
 @push('scripts')
 <script>
+    });
+
     function toggleAdminNav(open) {
         document.getElementById('adminSidebar').dataset.open = open ? 'true' : 'false';
         document.getElementById('adminScrim').classList.toggle('hidden', !open);

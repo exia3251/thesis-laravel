@@ -225,7 +225,7 @@
                     </div>
                 </div>
 
-                <div class="mt-6 overflow-hidden rounded-[1.25rem] border border-[var(--line)]">
+                <div class="stack-table mt-6 overflow-hidden rounded-[1.25rem] border border-[var(--line)]">
                     <table class="min-w-full">
                         <thead class="bg-[var(--surface)]">
                             <tr>

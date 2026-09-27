@@ -33,7 +33,7 @@
                         class="rounded-lg px-4 py-1.5 text-sm font-semibold transition">Archived</button>
             </div>
         </div>
-        <div class="admin-table-wrap">
+        <div class="admin-table-wrap stack-table">
             <table class="min-w-full">
                 <thead class="bg-[var(--surface)]">
                     <tr>

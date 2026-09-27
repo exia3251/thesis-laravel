@@ -29,7 +29,7 @@
             <div id="salesFilters" class="flex flex-wrap gap-2"></div>
         </div>
 
-        <div class="admin-table-wrap">
+        <div class="admin-table-wrap stack-table">
             <table class="min-w-full">
                 <thead class="bg-[var(--surface)]">
                     <tr>

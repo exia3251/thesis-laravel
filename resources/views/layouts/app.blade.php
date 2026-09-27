@@ -7,6 +7,103 @@
     <title>@yield('title', 'RANEY LUBRICANTS TRADING')</title>
     @vite(['resources/css/app.css'])
     <style>
+    /*
+     * On a phone, a table becomes a list of cards.
+     *
+     * These are eight and ten columns wide. Inside a 375px screen that is a
+     * 928px table in a box you scroll sideways -- and the columns that were
+     * off the right edge were Payment, Delivery and Actions, which are the
+     * ones somebody opens Sales to look at. The order number and the customer
+     * were visible and nothing else.
+     *
+     * Each row becomes a card and each cell a labelled line, with the label
+     * taken from the column heading it belongs to. Nothing is hidden and
+     * nothing has to be scrolled to.
+     */
+    @media (max-width: 767px) {
+        .stack-table {
+            overflow-x: visible;
+        }
+
+        .stack-table > table,
+        .stack-table > table > tbody,
+        .stack-table > table > tbody > tr,
+        .stack-table > table > tbody > tr > td {
+            display: block;
+            width: auto;
+            min-width: 0;
+        }
+
+        .stack-table > table > thead {
+            /* Off-screen rather than display:none, so the headings are still
+               read out and still available to copy into the labels below. */
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+        }
+
+        .stack-table > table > tbody > tr {
+            border: 1px solid var(--line);
+            border-radius: 1rem;
+            background: #fff;
+            padding: 0.25rem 0.9rem 0.6rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .stack-table > table > tbody > tr > td {
+            border: 0;
+            padding: 0.5rem 0;
+            text-align: right !important;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .stack-table > table > tbody > tr > td + td {
+            border-top: 1px dashed var(--line);
+        }
+
+        .stack-table > table > tbody > tr > td::before {
+            content: attr(data-label);
+            /* Narrow, and allowed to shrink. At 8.5rem the label took most of
+               a 375px screen and an order number wrapped to three lines with
+               its status badge pushed off the edge. */
+            flex: 0 1 6rem;
+            min-width: 0;
+            font-size: 0.66rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            padding-top: 0.15rem;
+        }
+
+        /* Everything after the label shares what is left, wraps rather than
+           overflowing, and sits to the right of it. */
+        .stack-table > table > tbody > tr > td > * {
+            min-width: 0;
+        }
+
+        /* A cell with nothing to label -- an empty state spanning the row --
+           keeps the full width rather than being pushed over by a blank. */
+        .stack-table > table > tbody > tr > td[colspan]::before {
+            content: none;
+        }
+
+        .stack-table > table > tbody > tr > td[colspan] {
+            display: block;
+            text-align: center !important;
+        }
+    }
+    </style>
+
+    <style>
         :root {
             --primary:      #148a67;
             --primary-dark: #0f6b50;
@@ -37,6 +134,50 @@
     @yield('body')
 
     <script>
+    /**
+     * Gives every table cell the name of its column.
+     *
+     * The stylesheet turns each row into a card on a phone and prints these
+     * as the label beside each value. Doing it here rather than in the eight
+     * places that build these tables means a new table is handled the moment
+     * it renders, and nobody has to remember.
+     *
+     * Rows arrive from fetch long after this runs, and are replaced again on
+     * every filter and page change, so it watches rather than runs once.
+     */
+    function labelTableCells(root) {
+        (root || document).querySelectorAll('.stack-table > table').forEach((table) => {
+            const headings = [...table.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+
+            if (headings.length === 0) return;
+
+            table.querySelectorAll('tbody > tr').forEach((row) => {
+                [...row.children].forEach((cell, index) => {
+                    if (cell.hasAttribute('colspan')) return;
+                    const label = headings[index];
+                    if (label) cell.setAttribute('data-label', label);
+                });
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        labelTableCells();
+
+        const observer = new MutationObserver((records) => {
+            for (const record of records) {
+                if (record.addedNodes.length) {
+                    labelTableCells();
+                    return;
+                }
+            }
+        });
+
+        document.querySelectorAll('.stack-table').forEach((wrap) => {
+            observer.observe(wrap, { childList: true, subtree: true });
+        });
+    });
+
         /**
          * How a typed search term is matched, for the lists filtered in the
          * browser. Deliberately the same rule as App\Support\Search, which
