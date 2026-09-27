@@ -195,6 +195,32 @@ class VehicleOilLookupTest extends TestCase
     }
 
     #[Test]
+    public function a_modern_diesel_is_never_offered_a_thick_alternative(): void
+    {
+        /*
+         * The mistake that ran through the whole guide. Every diesel from
+         * about 2015 carried 15W-40 as an acceptable alternative to its
+         * 5W-30, and none of them can take it: the Toyota GD engines, the
+         * Mitsubishi 4N15, the Ford Duratorq and EcoBlue and the Nissan YD25
+         * all run a diesel particulate filter, which a conventional 15W-40
+         * clogs within twenty to forty thousand kilometres.
+         *
+         * This shop stocks 15W-40. So the assistant was not only saying the
+         * wrong thing, it was in a position to sell the bottle.
+         */
+        $offenders = VehicleSpec::where('fuel', 'diesel')
+            ->where('year_from', '>=', 2015)
+            ->whereIn('viscosity_alt', ['15W40', '15W-40', '20W50', '20W-50'])
+            ->get();
+
+        $this->assertTrue(
+            $offenders->isEmpty(),
+            'Offered a thick alternative to a diesel that cannot take one: '
+                . $offenders->map(fn (VehicleSpec $s) => trim("{$s->make} {$s->model} {$s->variant}"))->implode(', ')
+        );
+    }
+
+    #[Test]
     public function every_row_carries_a_usable_viscosity_grade(): void
     {
         $bad = VehicleSpec::get()->reject(

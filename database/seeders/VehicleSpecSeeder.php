@@ -22,6 +22,17 @@ use Illuminate\Database\Seeder;
  * a sump overstated by a litre and a half, another by three. Treat an
  * unverified row as a starting point for a check, not as an answer.
  *
+ * One mistake ran through the whole file and is worth naming, because it
+ * would have been sold rather than merely said. Every modern diesel here
+ * carried 15W-40 as an acceptable alternative to its 5W-30. It is not. The
+ * Toyota GD engines, the Mitsubishi 4N15, the Ford Duratorq and EcoBlue and
+ * the Nissan YD25 all run a diesel particulate filter and all require a
+ * low-SAPS oil -- ACEA C2, C3 or C4 -- and a conventional 15W-40 clogs that
+ * filter over twenty to forty thousand kilometres. This shop stocks 15W-40,
+ * so the assistant would have offered the customer a bottle of it for a
+ * Fortuner and taken the money. The alternative has been removed from every
+ * affected row.
+ *
  * Putting the wrong viscosity in an engine causes real damage, so nothing
  * here is presented to a customer as settled: the assistant always says to
  * confirm against the owner's handbook, and Admin -> Assistant shows which
@@ -51,7 +62,18 @@ class VehicleSpecSeeder extends Seeder
                 continue;
             }
 
+            /*
+             * viscosity_alt is defaulted to null rather than left out.
+             *
+             * Omitting a key leaves the column as it was, so removing an
+             * alternative grade from a row here changed nothing in a database
+             * that already had one -- which is how a 15W-40 that had been
+             * deleted from this file for clogging a DPF went on being offered
+             * to customers. A row that does not name a second grade now
+             * actively clears it.
+             */
             VehicleSpec::updateOrCreate($key, $spec + [
+                'viscosity_alt' => null,
                 'source' => self::SOURCE,
                 'is_verified' => false,
             ]);
@@ -82,28 +104,33 @@ class VehicleSpecSeeder extends Seeder
              'oil_type' => 'Synthetic', 'capacity_litres' => 2.7, 'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Toyota', 'model' => 'Innova', 'variant' => '2.8 Diesel', 'fuel' => 'diesel',
-             'year_from' => 2016, 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 7.5],
+             'year_from' => 2016, 'viscosity' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 7.5,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Toyota', 'model' => 'Innova', 'variant' => '2.5 Diesel (2KD)', 'fuel' => 'diesel',
              'year_from' => 2005, 'year_to' => 2015, 'viscosity' => '15W40',
              'oil_type' => 'Mineral', 'capacity_litres' => 6.7],
 
             ['make' => 'Toyota', 'model' => 'Fortuner', 'variant' => '2.4 / 2.8 Diesel', 'fuel' => 'diesel',
-             'year_from' => 2016, 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 7.5],
+             'year_from' => 2016, 'viscosity' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 7.5,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Toyota', 'model' => 'Fortuner', 'variant' => '2.5 / 3.0 Diesel (older)', 'fuel' => 'diesel',
              'year_from' => 2005, 'year_to' => 2015, 'viscosity' => '15W40',
-             'oil_type' => 'Mineral', 'capacity_litres' => 7.4],
+             'oil_type' => 'Mineral', 'capacity_litres' => 7.5,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Toyota', 'model' => 'Hilux', 'variant' => '2.4 / 2.8 Diesel', 'fuel' => 'diesel',
-             'year_from' => 2016, 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 7.5],
+             'year_from' => 2016, 'viscosity' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 7.5,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Toyota', 'model' => 'Hilux', 'variant' => '2.5 / 3.0 Diesel (older)', 'fuel' => 'diesel',
              'year_from' => 2005, 'year_to' => 2015, 'viscosity' => '15W40',
-             'oil_type' => 'Mineral', 'capacity_litres' => 7.4],
+             'oil_type' => 'Mineral', 'capacity_litres' => 7.5,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Toyota', 'model' => 'Corolla Altis', 'variant' => '1.6 / 1.8 Gasoline', 'fuel' => 'gasoline',
              'aliases' => 'altis, corolla', 'year_from' => 2014, 'viscosity' => '5W30', 'viscosity_alt' => '0W20',
@@ -136,15 +163,17 @@ class VehicleSpecSeeder extends Seeder
 
             ['make' => 'Mitsubishi', 'model' => 'Montero Sport', 'variant' => '2.4 Diesel (4N15)', 'fuel' => 'diesel',
              'aliases' => 'montero, monterosport, montero sports', 'year_from' => 2016,
-             'viscosity' => '5W30', 'viscosity_alt' => '15W40', 'oil_type' => 'Synthetic', 'capacity_litres' => 6.0],
+             'viscosity' => '5W30', 'oil_type' => 'Synthetic', 'capacity_litres' => 6.6,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Mitsubishi', 'model' => 'Montero Sport', 'variant' => '2.5 Diesel (4D56)', 'fuel' => 'diesel',
              'aliases' => 'montero, monterosport', 'year_from' => 2009, 'year_to' => 2015,
              'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 6.5],
 
             ['make' => 'Mitsubishi', 'model' => 'Strada', 'variant' => '2.4 Diesel', 'fuel' => 'diesel',
-             'aliases' => 'triton', 'year_from' => 2015, 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 6.0],
+             'aliases' => 'triton', 'year_from' => 2015, 'viscosity' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 6.6,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Mitsubishi', 'model' => 'Xpander', 'variant' => '1.5 Gasoline', 'fuel' => 'gasoline',
              'year_from' => 2018, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
@@ -160,7 +189,8 @@ class VehicleSpecSeeder extends Seeder
             // ------------------------------------------------------- Honda
             ['make' => 'Honda', 'model' => 'City', 'variant' => '1.5 Gasoline', 'fuel' => 'gasoline',
              'year_from' => 2014, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.4],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 3.4,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Honda', 'model' => 'Civic', 'variant' => '1.5 Turbo / 1.8 Gasoline', 'fuel' => 'gasoline',
              'year_from' => 2016, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
@@ -168,7 +198,8 @@ class VehicleSpecSeeder extends Seeder
 
             ['make' => 'Honda', 'model' => 'BR-V', 'variant' => '1.5 Gasoline', 'fuel' => 'gasoline',
              'aliases' => 'brv, br v', 'year_from' => 2016, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.4],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 3.4,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Honda', 'model' => 'CR-V', 'variant' => '2.0 Gasoline', 'fuel' => 'gasoline',
              'aliases' => 'crv, cr v', 'year_from' => 2017, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
@@ -180,16 +211,19 @@ class VehicleSpecSeeder extends Seeder
 
             ['make' => 'Honda', 'model' => 'Jazz', 'variant' => '1.5 Gasoline', 'fuel' => 'gasoline',
              'year_from' => 2015, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.4],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 3.4,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             // ------------------------------------------------------ Nissan
             ['make' => 'Nissan', 'model' => 'Navara', 'variant' => '2.5 Diesel', 'fuel' => 'diesel',
-             'year_from' => 2015, 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 7.0],
+             'year_from' => 2015, 'viscosity' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 7.0,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Nissan', 'model' => 'Terra', 'variant' => '2.5 Diesel', 'fuel' => 'diesel',
-             'year_from' => 2018, 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 7.0],
+             'year_from' => 2018, 'viscosity' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 7.0,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             // Checked 27 Sep 2026: 3.7 L with the filter on the HR10DET, not 3.0.
             ['make' => 'Nissan', 'model' => 'Almera', 'variant' => '1.0 Turbo / 1.5 Gasoline', 'fuel' => 'gasoline',
@@ -206,15 +240,18 @@ class VehicleSpecSeeder extends Seeder
 
             // -------------------------------------------------------- Ford
             ['make' => 'Ford', 'model' => 'Ranger', 'variant' => '2.2 / 3.2 Diesel', 'fuel' => 'diesel',
-             'year_from' => 2015, 'year_to' => 2021, 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 8.0],
+             'year_from' => 2015, 'year_to' => 2021, 'viscosity' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 8.5,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Ford', 'model' => 'Ranger', 'variant' => '2.0 Bi-Turbo Diesel', 'fuel' => 'diesel',
-             'year_from' => 2019, 'viscosity' => '5W30', 'oil_type' => 'Synthetic', 'capacity_litres' => 6.0],
+             'year_from' => 2019, 'viscosity' => '5W30', 'oil_type' => 'Synthetic', 'capacity_litres' => 7.3,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Ford', 'model' => 'Everest', 'variant' => '2.0 / 2.2 Diesel', 'fuel' => 'diesel',
-             'year_from' => 2015, 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 8.0],
+             'year_from' => 2015, 'viscosity' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 7.3,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Ford', 'model' => 'EcoSport', 'variant' => '1.5 Gasoline', 'fuel' => 'gasoline',
              'aliases' => 'eco sport, ecosports', 'viscosity' => '5W30',
@@ -230,7 +267,8 @@ class VehicleSpecSeeder extends Seeder
 
             ['make' => 'Isuzu', 'model' => 'D-Max', 'variant' => '1.9 Diesel (RZ4E)', 'fuel' => 'diesel',
              'aliases' => 'dmax, d max', 'year_from' => 2021, 'viscosity' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 6.0],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 4.5,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Isuzu', 'model' => 'mu-X', 'variant' => '1.9 / 3.0 Diesel', 'fuel' => 'diesel',
              'aliases' => 'mux, mu x', 'year_from' => 2015, 'viscosity' => '15W40', 'viscosity_alt' => '5W30',
@@ -301,15 +339,18 @@ class VehicleSpecSeeder extends Seeder
             // ------------------------------------------------------- Mazda
             ['make' => 'Mazda', 'model' => 'Mazda3', 'variant' => '1.5 / 2.0 Skyactiv-G', 'fuel' => 'gasoline',
              'aliases' => 'mazda 3, 3', 'year_from' => 2014, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 4.2],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 4.2,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Mazda', 'model' => 'CX-5', 'variant' => '2.0 / 2.5 Skyactiv-G', 'fuel' => 'gasoline',
              'aliases' => 'cx5, cx 5', 'year_from' => 2013, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 4.8],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 4.3,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Mazda', 'model' => 'BT-50', 'variant' => '2.2 / 3.2 Diesel', 'fuel' => 'diesel',
-             'aliases' => 'bt50, bt 50', 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 7.9],
+             'aliases' => 'bt50, bt 50', 'viscosity' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 7.9,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             // ------------------------------------------- newer China makes
             ['make' => 'MG', 'model' => 'ZS', 'variant' => '1.5 Gasoline', 'fuel' => 'gasoline',
