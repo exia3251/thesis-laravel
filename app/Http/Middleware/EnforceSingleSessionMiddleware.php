@@ -30,6 +30,24 @@ class EnforceSingleSessionMiddleware
         }
 
         $user = Auth::guard($guard)->user();
+
+        /*
+         * The demonstration accounts are shared on purpose.
+         *
+         * One live session per account is right for a real customer: it is
+         * what stops a password being passed around. But a survey hands the
+         * same login to everybody who follows the link, and with this rule
+         * applied to it the second respondent to sign in throws the first one
+         * out mid-task -- which reads as the system crashing, in the middle of
+         * the thing they were asked to evaluate.
+         *
+         * Only while the environment is local, and only for the accounts the
+         * seeder creates for that purpose. Every real account keeps the rule.
+         */
+        if ($this->isSharedDemoAccount($user)) {
+            return $next($request);
+        }
+
         $currentSessionId = $request->session()->getId();
 
         if ($user->current_session_id && $user->current_session_id !== $currentSessionId) {
@@ -66,5 +84,25 @@ class EnforceSingleSessionMiddleware
         }
 
         return $next($request);
+    }
+
+    /**
+     * Whether this is one of the logins handed out with the survey link.
+     *
+     * Gated on the environment as well as the address, so the exemption
+     * cannot follow the project into a real deployment even if the accounts
+     * somehow do.
+     */
+    private function isSharedDemoAccount($user): bool
+    {
+        if (! app()->environment('local')) {
+            return false;
+        }
+
+        return in_array(
+            mb_strtolower((string) $user->email),
+            array_map('mb_strtolower', (array) config('business.shared_demo_accounts', [])),
+            true
+        );
     }
 }

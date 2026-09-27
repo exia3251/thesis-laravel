@@ -61,10 +61,11 @@
                         </div>
                     </dl>
 
-                    <a href="/shop/login" class="mt-4 flex w-full items-center justify-center rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110">
-                        Open the shop sign-in
+                    <a href="/shop/login" target="_blank" rel="noopener"
+                       class="mt-4 flex w-full items-center justify-center rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110">
+                        Open the shop sign-in &nearr;
                     </a>
-                    <a href="/shop" class="mt-2 block text-center text-xs font-semibold text-[var(--primary)] hover:underline">
+                    <a href="/shop" target="_blank" rel="noopener" class="mt-2 block text-center text-xs font-semibold text-[var(--primary)] hover:underline">
                         or look around without signing in
                     </a>
                 </div>
@@ -85,8 +86,9 @@
                         </div>
                     </dl>
 
-                    <a href="/admin/login" class="mt-4 flex w-full items-center justify-center rounded-xl bg-[var(--ink)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-125">
-                        Open the staff sign-in
+                    <a href="/admin/login" target="_blank" rel="noopener"
+                       class="mt-4 flex w-full items-center justify-center rounded-xl bg-[var(--ink)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-125">
+                        Open the staff sign-in &nearr;
                     </a>
                     <p class="mt-2 text-center text-xs text-[var(--muted)]">
                         Also <span class="select-all">inventory@raney.test</span> / <span class="select-all">inventory123</span>
@@ -97,8 +99,18 @@
             </section>
 
             <div class="mt-5 rounded-2xl border border-[var(--accent-soft)] bg-[rgba(255,252,243,0.92)] px-5 py-4 text-sm leading-6 text-[#715b1d]">
-                The two sign-ins take different accounts. A staff login typed into the shop page will be refused,
-                and the other way round &mdash; the page will tell you which one to use.
+                <p>
+                    Both buttons open in a new tab, so this page stays where it is. Come back to it when you have
+                    finished with one side and open the other.
+                </p>
+                <p class="mt-2">
+                    <span class="font-semibold">You do not need to sign out in between.</span> The shop and the back
+                    office keep separate sessions, so you can be signed into both at once and switch between the tabs.
+                </p>
+                <p class="mt-2">
+                    The two sign-ins do take different accounts, though. A staff login typed into the shop page will be
+                    refused, and the other way round &mdash; the page will tell you which one to use.
+                </p>
             </div>
 
             <section class="mt-8 rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm sm:p-8">

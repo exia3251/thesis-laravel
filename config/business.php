@@ -52,6 +52,23 @@ return [
     'survey_form_url' => env('SURVEY_FORM_URL'),
 
     /*
+     * The logins printed on the sign-in pages and handed out with the survey
+     * link, which everybody testing the system shares.
+     *
+     * Named here because one rule has to know about them: a single live
+     * session per account is right for a real customer and wrong for a login
+     * given to a hundred strangers, where it means each new arrival throws
+     * the last one out mid-task. The exemption applies only while the
+     * environment is local.
+     */
+    'shared_demo_accounts' => [
+        'john@example.com',
+        'admin@raney.test',
+        'inventory@raney.test',
+        'accounting@raney.test',
+    ],
+
+    /*
      * Said on every oil recommendation, without exception and without degree.
      *
      * There used to be two of these. A vehicle in the shop's own guide got

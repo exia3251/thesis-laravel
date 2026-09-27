@@ -101,6 +101,27 @@ class SurveyLandingPageTest extends TestCase
     }
 
     #[Test]
+    public function the_doors_open_in_their_own_tab(): void
+    {
+        // So the respondent still has this page to come back to when they
+        // have finished with one side and want the other.
+        $this->get('/survey')
+            ->assertOk()
+            ->assertSee('target="_blank"', false);
+    }
+
+    #[Test]
+    public function it_says_signing_out_in_between_is_not_needed(): void
+    {
+        // Tested rather than assumed: the shop and the back office hold
+        // separate sessions, so both can be signed in at once. Telling
+        // respondents to sign out would send them round a loop for nothing.
+        $this->get('/survey')
+            ->assertOk()
+            ->assertSee('You do not need to sign out in between', false);
+    }
+
+    #[Test]
     public function a_real_deployment_does_not_carry_it(): void
     {
         // Scaffolding for a survey, not part of the shop.
