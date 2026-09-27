@@ -94,6 +94,9 @@ class SalesController extends Controller
         'paid' => 'Paid',
         'undelivered' => 'Not yet delivered',
         'delivered' => 'Delivered',
+        'cod' => 'Cash on delivery',
+        'gcash' => 'GCash in full',
+        'split' => 'Split payment',
         'refunds' => 'Refunds to process',
         'cancelled' => 'Cancelled',
     ];
@@ -116,6 +119,17 @@ class SalesController extends Controller
             'undelivered' => $active($query)->where('payment_status', 'paid')
                 ->where('delivery_status', '!=', 'delivered'),
             'delivered' => $active($query)->where('delivery_status', 'delivered'),
+            /*
+             * How it is being paid for, which is the question whoever is
+             * handing the goods over actually has: collect the lot at the
+             * door, collect nothing, or collect exactly what was not paid
+             * online. The plan is stored, so this reads it rather than
+             * inferring it from a balance -- an unpaid GCash order has a
+             * balance too, and it is not a split.
+             */
+            'cod' => $query->where('payment_plan', Sale::PLAN_COD),
+            'gcash' => $query->where('payment_plan', Sale::PLAN_GCASH_FULL),
+            'split' => $query->where('payment_plan', Sale::PLAN_SPLIT),
             'refunds' => $query->where('refund_status', Sale::REFUND_PENDING),
             'cancelled' => $query->where('order_status', Sale::STATUS_CANCELLED),
             default => null,

@@ -342,6 +342,12 @@
             ['undelivered', 'Not yet delivered', 'violet'],
             ['delivered', 'Delivered', 'emerald'],
             ['refunds', 'Refunds to process', 'red'],
+            /* How it is paid for, which is a different question from how far
+               along it is -- so these sit after the lifecycle ones rather than
+               mixed in with them. */
+            ['cod', 'Cash on delivery', 'amber'],
+            ['gcash', 'GCash in full', 'sky'],
+            ['split', 'Split payment', 'violet'],
             ['cancelled', 'Cancelled', 'slate'],
         ];
 
