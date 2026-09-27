@@ -393,6 +393,71 @@ class OrderController extends Controller
      * only closed out when nothing is still owed on it, so a cash-on-delivery
      * balance still has to be recorded by staff.
      */
+    /**
+     * A refund asked for on an order that has already arrived.
+     *
+     * Cancelling is for an order that has not been sent. Once it has been
+     * delivered there is nothing to call back, so the customer asks for their
+     * money instead, and the order joins the "Refunds to process" list that
+     * staff already work from. Nothing is returned automatically: somebody
+     * here decides, and records having sent it.
+     */
+    public function requestRefund(Request $request, $saleId)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $sale = Sale::where('sale_id', $saleId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        if ($sale->isCancelled()) {
+            return response()->json(['success' => false, 'message' => 'This order was cancelled.'], 422);
+        }
+
+        if (! $sale->isDelivered()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order has not been delivered yet. You can still cancel it instead.',
+            ], 422);
+        }
+
+        if ($sale->refund_status !== Sale::REFUND_NONE) {
+            return response()->json([
+                'success' => false,
+                'message' => $sale->refund_status === Sale::REFUND_DONE
+                    ? 'A refund has already been sent for this order.'
+                    : 'A refund has already been asked for on this order.',
+            ], 422);
+        }
+
+        $paid = (float) $sale->paid_amount;
+
+        if ($paid <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nothing has been paid on this order, so there is nothing to refund.',
+            ], 422);
+        }
+
+        $sale->refund_status = Sale::REFUND_PENDING;
+        $sale->refund_amount = $paid;
+        $sale->refund_reason = $request->input('reason');
+        $sale->save();
+
+        ActivityLog::logAction(
+            auth()->id(),
+            'refund_requested',
+            'Customer asked for a PHP ' . number_format($paid, 2) . ' refund on order #' . $sale->sale_id . '.'
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Your refund request has been sent. Our staff will be in touch.',
+        ]);
+    }
+
     public function confirmReceipt(Request $request, $saleId)
     {
         $sale = Sale::where('sale_id', $saleId)
@@ -405,6 +470,22 @@ class OrderController extends Controller
 
         if ($sale->received_at) {
             return response()->json(['success' => false, 'message' => 'You have already confirmed this order.'], 422);
+        }
+
+        /*
+         * Nothing can be received while it is still being packed.
+         *
+         * This was missing, and confirming went further than acknowledging:
+         * with nothing owed it also set the order delivered. So a customer
+         * could mark their own order delivered while the goods were still on
+         * the shelf here, and the warehouse would see a completed order for
+         * something nobody had sent.
+         */
+        if ($sale->delivery_status === 'to_deliver') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order has not been sent out yet. You can confirm it once it is with the courier.',
+            ], 422);
         }
 
         $sale->received_at = now();

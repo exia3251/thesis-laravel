@@ -299,6 +299,7 @@ Route::middleware(['customer', 'active_session'])->prefix('shop-api')->group(fun
     Route::post('/orders/{id}/payment-requests', [OrderController::class, 'submitPaymentRequest']);
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']);
     Route::post('/orders/{id}/receipt', [OrderController::class, 'confirmReceipt']);
+    Route::post('/orders/{id}/refund-request', [OrderController::class, 'requestRefund']);
 
     Route::get('/profile', [ProfileController::class, 'getProfile']);
     Route::put('/profile', [ProfileController::class, 'updateProfile']);

@@ -44,6 +44,7 @@ class Sale extends Model
         'cancelled_by',
         'refund_status',
         'refund_amount',
+        'refund_reason',
         'refund_reference',
         'refund_notes',
         'refunded_at',

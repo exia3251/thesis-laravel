@@ -349,7 +349,24 @@
             @php
                 $pendingRequest = $sale->paymentRequests->firstWhere('status', 'processing');
                     $canCancel = $sale->canBeCancelledByCustomer();
-                    $canConfirm = !$sale->isCancelled() && !$sale->received_at && !$sale->isDelivered();
+
+                    /* Nothing can be received while it is still being packed.
+                       The button used to appear the moment the order existed,
+                       and pressing it set the order delivered -- so a customer
+                       could complete an order whose goods had not left the
+                       shelf. It waits for the courier now. */
+                    $canConfirm = !$sale->isCancelled()
+                        && !$sale->received_at
+                        && !$sale->isDelivered()
+                        && $sale->delivery_status !== 'to_deliver';
+
+                    /* Once it has arrived there is nothing left to cancel, so
+                       the same place offers the thing that is still possible:
+                       asking for the money back. */
+                    $canRequestRefund = !$sale->isCancelled()
+                        && $sale->isDelivered()
+                        && $sale->refund_status === \App\Models\Sale::REFUND_NONE
+                        && (float) $sale->paid_amount > 0;
                 @endphp
 
                 @if ($sale->isCancelled())
@@ -372,7 +389,7 @@
                             </div>
                         </div>
                     </div>
-                @elseif ($canCancel || $canConfirm)
+                @elseif ($canCancel || $canConfirm || $canRequestRefund)
                     <div class="mt-8 rounded-[1.5rem] border border-[var(--line)] bg-[var(--card)] p-5 no-print">
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">Manage this order</p>
                         <div class="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -386,6 +403,12 @@
                                 <button type="button" onclick="askCancelOrder()" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-700 transition hover:bg-red-50">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
                                     Cancel
+                                </button>
+                            @endif
+                            @if ($canRequestRefund)
+                                <button type="button" onclick="askRefund()" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-amber-300 bg-white px-4 py-3 text-sm font-bold text-amber-800 transition hover:bg-amber-50">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h11M9 21V3m12 8-4 4-4-4"/></svg>
+                                    Request a refund
                                 </button>
                             @endif
                         </div>
@@ -645,9 +668,14 @@
         };
 
         let pendingAction = null;
+        let requiredNote = false;
 
-        function openActionModal({ title, body, confirmLabel, tone, icon, withNote, onConfirm }) {
+        function openActionModal({ title, body, confirmLabel, tone, icon, withNote, noteRequired, onConfirm }) {
             pendingAction = onConfirm;
+            // A refund has to say what is wrong; the server refuses one that
+            // does not, and being told so after pressing the button is a worse
+            // way to find out than the button simply waiting.
+            requiredNote = Boolean(noteRequired);
             document.getElementById('amTitle').textContent = title;
             document.getElementById('amBody').textContent = body;
             document.getElementById('amIcon').innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="${ACTION_ICONS[icon]}"/>`;
@@ -672,6 +700,16 @@
 
         async function runPendingAction() {
             if (!pendingAction) return;
+
+            const note = document.getElementById('amNote');
+
+            if (requiredNote && note.value.trim() === '') {
+                const error = document.getElementById('amError');
+                error.textContent = 'Please say what is wrong, so staff know what they are looking at.';
+                error.classList.remove('hidden');
+                note.focus();
+                return;
+            }
 
             const button = document.getElementById('amConfirm');
             const original = button.textContent;
@@ -721,6 +759,35 @@
                     });
                     const data = await response.json();
                     return { ok: response.ok, message: data.message || 'Could not confirm this order.' };
+                }
+            });
+        }
+
+        /**
+         * The same place as Cancel, once cancelling is no longer possible.
+         *
+         * A delivered order cannot be called back, so what is offered instead
+         * is the money. It joins the "Refunds to process" list staff already
+         * work from; nothing is returned automatically.
+         */
+        function askRefund() {
+            openActionModal({
+                title: `Request a refund on order #${SALE_ID}?`,
+                body: `Tell us what is wrong and our staff will look into it. `
+                    + `If it is agreed, PHP ${SALE_PAID.toFixed(2)} goes back to your GCash.`,
+                confirmLabel: 'Send the request',
+                icon: 'cross',
+                tone: { wrap: 'bg-amber-100', icon: 'text-amber-700', button: 'bg-amber-600 hover:bg-amber-700' },
+                withNote: true,
+                noteRequired: true,
+                onConfirm: async (reason) => {
+                    const response = await fetch(`/shop-api/orders/${SALE_ID}/refund-request`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                        body: JSON.stringify({ reason })
+                    });
+                    const data = await response.json();
+                    return { ok: response.ok, message: data.message || 'Could not send the request.' };
                 }
             });
         }
