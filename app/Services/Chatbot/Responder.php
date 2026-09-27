@@ -718,8 +718,17 @@ If your handbook names a grade, tell me which one and I will check whether we st
     {
         $conversation->update(['context' => ['flow' => 'vehicle', 'step' => 'make']]);
 
+        /*
+         * "Which make is it?" is how the trade asks it, and a customer has to
+         * work out that "make" means the badge on the bonnet. Asked for the
+         * model and year instead, they answer the way they would answer a
+         * mechanic -- and "2018 Toyota Vios" is understood, because a message
+         * that is not one of the brands below falls straight through this
+         * flow to the matcher, which reads the whole thing.
+         */
         return $this->reply(
-            "I can look that up. Which make is it?",
+            "I can look that up. What model and year is the car? You can type it, like \"2018 Toyota Vios\", "
+                . 'or pick the brand below.',
             ['chips' => $this->vehicles->makes()->map(fn (string $make) => ['label' => $make, 'value' => $make])->all()]
         );
     }

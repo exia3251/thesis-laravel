@@ -195,6 +195,30 @@ class VehicleOilLookupTest extends TestCase
     }
 
     #[Test]
+    public function it_asks_for_the_model_and_year_rather_than_the_make(): void
+    {
+        /*
+         * "Which make is it?" is how the trade asks, and a customer has to
+         * work out that "make" means the badge on the bonnet. Asked for the
+         * model and year they answer the way they would answer a mechanic.
+         */
+        $reply = (new \App\Services\Chatbot\Responder(
+            app(\App\Services\Chatbot\IntentMatcher::class),
+            app(\App\Services\Chatbot\VehicleMatcher::class)
+        ))->vehicleOil(
+            \App\Models\ChatConversation::create(['visitor_token' => 'ask-' . bin2hex(random_bytes(4)), 'last_message_at' => now()]),
+            'what oil does my car take',
+            null
+        );
+
+        $this->assertStringContainsString('What model and year is the car', $reply['body']);
+        $this->assertStringNotContainsString('Which make', $reply['body']);
+
+        // The brands stay as a shortcut for anybody who would rather tap.
+        $this->assertNotEmpty($reply['payload']['chips'] ?? []);
+    }
+
+    #[Test]
     public function a_modern_diesel_is_never_offered_a_thick_alternative(): void
     {
         /*
