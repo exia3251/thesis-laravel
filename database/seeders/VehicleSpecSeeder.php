@@ -137,8 +137,9 @@ class VehicleSpecSeeder extends Seeder
              'oil_type' => 'Synthetic', 'capacity_litres' => 4.2],
 
             ['make' => 'Toyota', 'model' => 'Rush', 'variant' => '1.5 Gasoline', 'fuel' => 'gasoline',
-             'year_from' => 2018, 'viscosity' => '5W30', 'viscosity_alt' => '10W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.7],
+             'year_from' => 2018, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 3.2,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Toyota', 'model' => 'Avanza', 'variant' => '1.3 / 1.5 Gasoline', 'fuel' => 'gasoline',
              'year_from' => 2012, 'viscosity' => '5W30', 'viscosity_alt' => '10W40',
@@ -155,11 +156,11 @@ class VehicleSpecSeeder extends Seeder
             // -------------------------------------------------- Mitsubishi
             ['make' => 'Mitsubishi', 'model' => 'Mirage', 'variant' => '1.2 Gasoline', 'fuel' => 'gasoline',
              'year_from' => 2012, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.3],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 3.0],
 
             ['make' => 'Mitsubishi', 'model' => 'Mirage G4', 'variant' => '1.2 Gasoline', 'fuel' => 'gasoline',
              'aliases' => 'mirage g4, g4', 'year_from' => 2014, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.3],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 3.0],
 
             ['make' => 'Mitsubishi', 'model' => 'Montero Sport', 'variant' => '2.4 Diesel (4N15)', 'fuel' => 'diesel',
              'aliases' => 'montero, monterosport, montero sports', 'year_from' => 2016,
