@@ -45,8 +45,14 @@ account and does not change between runs -- so what goes in the Google Form is
 always:
 
 ```
-https://cognition-prancing-splendid.ngrok-free.dev/shop
+https://cognition-prancing-splendid.ngrok-free.dev/survey
 ```
+
+That is the landing page, not the shop. It hands the respondent both logins,
+links to each sign-in, and lists what is worth trying on either side -- which
+the shop address does not, and a respondent arriving at a sign-in page with no
+account gets no further. Set `SURVEY_FORM_URL` in `.env` and it shows a button
+through to the questionnaire as well.
 
 **Respondents see an ngrok warning page first.** "You are about to visit...",
 with a **Visit Site** button. It appears once per browser and is ngrok's, not

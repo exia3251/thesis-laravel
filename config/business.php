@@ -43,6 +43,15 @@ return [
     'pack_sizes' => ['1 Liter', '4 Liters', '5 Liters'],
 
     /*
+     * The questionnaire this system is being tested for.
+     *
+     * Set it and the landing page at /survey shows a button through to the
+     * form. Left empty the page still works; it simply does not offer one,
+     * which is right before the form exists.
+     */
+    'survey_form_url' => env('SURVEY_FORM_URL'),
+
+    /*
      * Said on every oil recommendation, without exception and without degree.
      *
      * There used to be two of these. A vehicle in the shop's own guide got

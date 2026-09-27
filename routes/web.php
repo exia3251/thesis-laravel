@@ -237,6 +237,22 @@ Route::view('/returns', 'customer.returns')->name('returns');
 Route::view('/privacy', 'customer.privacy')->name('privacy');
 Route::view('/terms', 'customer.terms')->name('terms');
 
+/*
+ * Where a survey respondent lands.
+ *
+ * They arrive from a link in a form knowing nothing about the system, and
+ * what they meet otherwise is a sign-in page wanting an account they do not
+ * have. This hands them both logins and a list of things worth trying.
+ *
+ * Local only, like the demo logins it prints: it is scaffolding for a survey
+ * rather than part of the shop, and a real deployment should not carry it.
+ */
+Route::get('/survey', function () {
+    abort_unless(app()->environment('local'), 404);
+
+    return view('survey.index');
+})->name('survey');
+
 // Customer pages
 Route::get('/shop', [ShopController::class, 'index'])->name('shop');
 Route::get('/shop/products/{id}', [ShopController::class, 'show'])->name('shop.products.show');
