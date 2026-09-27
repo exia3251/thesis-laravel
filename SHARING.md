@@ -103,6 +103,46 @@ stops working.
 
 ---
 
+## Google sign-in over a tunnel
+
+It will not work unless you do something first, and this is the one part of
+the site that breaks silently for respondents.
+
+Google only redirects back to an address registered on the OAuth client, and
+it has to match exactly -- scheme, host, port and path. Right now
+`GOOGLE_REDIRECT_URI` in `.env` says `http://localhost:8000/auth/google/callback`
+while the server runs on **8123**, so it is already wrong locally.
+
+Fix it for whichever address you are using:
+
+1. Open <https://console.cloud.google.com/apis/credentials>, edit the OAuth
+   client, and add the exact callback URL under **Authorised redirect URIs**:
+   - `http://localhost:8123/auth/google/callback` for your own machine
+   - `https://<your-tunnel-address>/auth/google/callback` for the survey
+2. Set the matching value in `.env` as `GOOGLE_REDIRECT_URI`.
+
+A Cloudflare quick tunnel gives a different address every run, so you would be
+re-registering it each session. Two ways round that: leave Google sign-in out
+of the survey and let respondents register with email and password, which
+works on any address; or get a stable subdomain (a free ngrok static domain,
+or a named Cloudflare tunnel) and register it once.
+
+### Publishing the consent screen
+
+While the app is in **Testing**, only accounts you list as test users can sign
+in, up to 100 of them, and sign-ins expire after a week. That is not workable
+for a survey where you do not know who is answering.
+
+Publishing is one button: OAuth consent screen → **Publish app**. This project
+asks only for `openid`, `profile` and `email`, which Google treats as
+non-sensitive, so it does not need the security assessment that sensitive
+scopes trigger. If you have set a logo or an app name on the consent screen
+you may be asked for brand verification, which takes a few business days.
+
+**Rotate the client secret before you publish.** The current one has been
+exposed. Same page: OAuth client → add a new secret, put it in `.env` as
+`GOOGLE_CLIENT_SECRET`, then delete the old one.
+
 ## Worth knowing
 
 - **The assistant costs nothing but is rate limited.** Groq's free tier allows
