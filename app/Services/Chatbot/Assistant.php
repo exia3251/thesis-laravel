@@ -128,7 +128,15 @@ class Assistant
         if (!$intentKey) {
             $vehicle = $this->vehicles->findConfident($message);
 
-            if ($vehicle['matched'] !== null) {
+            /*
+             * Only when the guide actually covers the car. A model it holds
+             * for one generation is not an answer about another: an owner who
+             * says 1995 and is told what the 2014 car takes has been given a
+             * wrong grade with every appearance of a right one. Those fall
+             * through to the model below, which can say what that generation
+             * took and that the shop has not checked it.
+             */
+            if ($vehicle['matched'] !== null && ! $vehicle['outside_years']) {
                 $reply = $this->responder->vehicleOil($conversation, $message, $user);
 
                 $userMessage = $this->record($conversation, ChatMessage::ROLE_USER, $message, 'vehicle_oil');
@@ -226,6 +234,16 @@ class Assistant
             $unstockedGrades->isNotEmpty() => $this->responder->gradeNotCarried($unstockedGrades, $suggestions, $user),
             $needsLiveData => $this->responder->answer($conversation, $intent, $message, $user),
             $aiAnswer !== null => ['body' => $aiAnswer, 'payload' => ['source' => 'groq']],
+
+            /*
+             * A car, and nothing from the model -- no key, no internet, or the
+             * free allowance spent. The vehicle handler says what it can about
+             * a car it does not hold; the product finder, which is what used
+             * to catch these, replies by asking what kind of product they are
+             * after, to somebody who has just named their car.
+             */
+            $unmatchedVehicle => $this->responder->vehicleOil($conversation, $message, $user),
+
             (bool) $intent => $this->responder->answer($conversation, $intent, $message, $user),
             default => $this->responder->fallback($suggestions, $user),
         };

@@ -558,6 +558,13 @@ class Responder
     {
         $found = $this->vehicles->findConfident($message);
 
+        // The model is in the guide, the year is not. Saying what a different
+        // generation takes would be a wrong grade wearing a right one's
+        // clothes, so it says which years it does hold and stops there.
+        if ($found['outside_years'] ?? false) {
+            return $this->vehicleYearNotCovered($conversation, $found['specs'], $found['year']);
+        }
+
         if ($found['matched'] === null) {
             // A make we simply do not cover is a different answer from "no
             // vehicle mentioned". Offering a Ferrari owner a list of makes
@@ -628,6 +635,57 @@ class Responder
      * moment. Better than a flat refusal, and it does not pretend to know a
      * vehicle we have no figures for.
      */
+    /**
+     * The model is held, but not for the year they gave.
+     *
+     * Reached only when the model could not answer either, so this is the
+     * last word rather than the first. It names the years the guide does
+     * cover, because that tells them whether the guide is nearly right or
+     * nothing like it, and it refuses to name a grade rather than quoting one
+     * from a generation that is not theirs.
+     *
+     * @param  Collection<int,VehicleSpec>  $specs
+     */
+    private function vehicleYearNotCovered(ChatConversation $conversation, Collection $specs, ?int $year): array
+    {
+        $conversation->clearContext();
+
+        $first = $specs->first();
+        $name = $first ? trim($first->make . ' ' . $first->model) : 'that model';
+
+        $covered = $specs
+            ->map(fn (VehicleSpec $spec) => $this->yearsCovered($spec))
+            ->filter()
+            ->unique()
+            ->join(', ', ' and ');
+
+        $body = $covered === ''
+            ? "Our guide does not cover a {$year} {$name}."
+            : "Our guide covers the {$name} {$covered}, and yours is a {$year}, so I do not have its grade here.";
+
+        $body .= "\n\nThe wrong viscosity harms an engine, so I will not guess at one from a different generation. "
+            . 'If your handbook names a grade, tell me which one and I will check whether we stock it. '
+            . 'Otherwise email ' . config('business.email') . ' and a Sales Executive can look it up.';
+
+        return $this->reply($body, [
+            'chips' => [
+                ['label' => 'What oils do you sell?', 'value' => 'what oils do you sell'],
+                ['label' => 'Find the right oil', 'value' => 'Find the right oil', 'intent' => 'product_finder'],
+            ],
+        ]);
+    }
+
+    /** "from 2014 onwards", "between 2010 and 2015", or nothing at all. */
+    private function yearsCovered(VehicleSpec $spec): string
+    {
+        return match (true) {
+            $spec->year_from && $spec->year_to => "between {$spec->year_from} and {$spec->year_to}",
+            (bool) $spec->year_from => "from {$spec->year_from} onwards",
+            (bool) $spec->year_to => "up to {$spec->year_to}",
+            default => '',
+        };
+    }
+
     private function unsupportedVehicle(ChatConversation $conversation, string $make): array
     {
         $conversation->clearContext();

@@ -32,7 +32,7 @@ class ChatbotGroqTest extends TestCase
         parent::setUp();
 
         $this->seed(ChatIntentSeeder::class);
-        Cache::forget('chatbot.ai.facts');
+        $this->forgetFacts();
     }
 
     private function ask(string $message): string
@@ -41,6 +41,14 @@ class ChatbotGroqTest extends TestCase
         $messages = $response->json('data.messages');
 
         return (string) end($messages)['body'];
+    }
+
+    /** The facts page is assembled per question from several cached pieces. */
+    private function forgetFacts(): void
+    {
+        foreach (['answers', 'shelf', 'makes', 'makes.list'] as $piece) {
+            Cache::forget('chatbot.ai.' . $piece);
+        }
     }
 
     private function withKey(): void
@@ -218,8 +226,15 @@ class ChatbotGroqTest extends TestCase
             'is_verified' => false,
         ]);
 
-        Cache::forget('chatbot.ai.facts');
-        $this->ask(self::ODD_QUESTION);
+        $this->forgetFacts();
+
+        // Named, so its rows are quoted. The whole table used to go out on
+        // every question, all sixty-two rows of it, against an allowance that
+        // only stretches to a couple of questions a minute.
+        // A Mitsubishi the guide does not hold: names the make, so its rows
+        // are quoted, but does not match a model, so it is not answered from
+        // the table before the model ever sees it.
+        $this->ask('what oil does a mitsubishi pajero take');
 
         $prompt = $this->promptSent();
 
@@ -247,7 +262,7 @@ class ChatbotGroqTest extends TestCase
             ]);
         }
 
-        Cache::forget('chatbot.ai.facts');
+        $this->forgetFacts();
         $this->ask(self::ODD_QUESTION);
 
         $prompt = $this->promptSent();
@@ -280,7 +295,7 @@ class ChatbotGroqTest extends TestCase
             ]);
         }
 
-        Cache::forget('chatbot.ai.facts');
+        $this->forgetFacts();
         $this->ask(self::ODD_QUESTION);
 
         $prompt = $this->promptSent();
@@ -321,7 +336,7 @@ class ChatbotGroqTest extends TestCase
             'reorder_level' => 10,
         ]);
 
-        Cache::forget('chatbot.ai.facts');
+        $this->forgetFacts();
         $this->ask(self::ODD_QUESTION);
 
         $prompt = $this->promptSent();
@@ -352,7 +367,7 @@ class ChatbotGroqTest extends TestCase
             ]);
         }
 
-        Cache::forget('chatbot.ai.facts');
+        $this->forgetFacts();
         $this->ask(self::ODD_QUESTION);
 
         $this->assertStringContainsString('packs: 1 Liter, 4 Liters, 5 Liters', $this->promptSent());
@@ -375,7 +390,7 @@ class ChatbotGroqTest extends TestCase
             'reorder_level' => 10,
         ]);
 
-        Cache::forget('chatbot.ai.facts');
+        $this->forgetFacts();
         $this->ask(self::ODD_QUESTION);
 
         $prompt = $this->promptSent();
@@ -404,7 +419,7 @@ class ChatbotGroqTest extends TestCase
             'reorder_level' => 10,
         ]);
 
-        Cache::forget('chatbot.ai.facts');
+        $this->forgetFacts();
         $this->ask(self::ODD_QUESTION);
 
         $prompt = $this->promptSent();

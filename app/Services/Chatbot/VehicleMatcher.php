@@ -90,18 +90,36 @@ class VehicleMatcher
 
         $specs = $this->all()->filter(fn (VehicleSpec $spec) => in_array($name, $spec->searchNames(), true));
 
-        // A year narrows a model down to one generation. If it matches none,
-        // the year is probably wrong or the car is outside what we hold, so
-        // every generation is offered rather than nothing.
+        /*
+         * A year narrows a model down to one generation. If it matches none,
+         * every generation is still offered -- the guided flow asks which one
+         * is theirs, and a list is a fair answer to that.
+         *
+         * But it is flagged, because it is not a fair answer to a question
+         * asked outright. The guide holds one Corolla, an Altis from 2014, and
+         * "what oil for my 1995 Corolla" was being answered "a 1995 Toyota
+         * Corolla Altis takes 5W-30" -- a generation that did not exist in
+         * 1995, quoted at somebody about to pour it into a car that is now
+         * thirty years old.
+         */
+        $outsideYears = false;
+
         if ($year !== null) {
             $inRange = $specs->filter(fn (VehicleSpec $spec) => $spec->coversYear($year));
 
             if ($inRange->isNotEmpty()) {
                 $specs = $inRange;
+            } else {
+                $outsideYears = true;
             }
         }
 
-        return ['specs' => $specs->values(), 'year' => $year, 'matched' => $name];
+        return [
+            'specs' => $specs->values(),
+            'year' => $year,
+            'matched' => $name,
+            'outside_years' => $outsideYears,
+        ];
     }
 
     /**
@@ -133,7 +151,7 @@ class VehicleMatcher
 
         return $hasContext
             ? $result
-            : ['specs' => collect(), 'year' => null, 'matched' => null];
+            : ['specs' => collect(), 'year' => null, 'matched' => null, 'outside_years' => false];
     }
 
     /**

@@ -220,6 +220,78 @@ class ChatbotShelfAnswersTest extends TestCase
     }
 
     #[Test]
+    public function a_year_the_guide_does_not_cover_is_not_answered_from_a_year_it_does(): void
+    {
+        $this->shelf();
+
+        \App\Models\VehicleSpec::create([
+            'make' => 'Toyota',
+            'model' => 'Corolla Altis',
+            'variant' => '1.6 / 1.8 Gasoline',
+            // As seeded: "corolla" on its own has to find the Altis row.
+            'aliases' => 'altis, corolla',
+            'fuel' => 'gasoline',
+            'viscosity' => '5W30',
+            'oil_type' => 'Synthetic',
+            'year_from' => 2014,
+            'source' => 'Owner handbook',
+            'is_verified' => false,
+        ]);
+
+        $reply = $this->bodyOf('what oil for my 1995 toyota corolla');
+
+        // It used to answer "a 1995 Toyota Corolla Altis takes 5W-30" -- a
+        // generation that did not exist in 1995, quoted with every appearance
+        // of being the right grade, to somebody about to pour it in.
+        $this->assertStringNotContainsString('1995 Toyota Corolla Altis takes', $reply);
+        $this->assertStringContainsString('from 2014 onwards', $reply);
+        $this->assertStringContainsString('1995', $reply);
+    }
+
+    #[Test]
+    public function a_year_the_guide_does_cover_is_still_answered_outright(): void
+    {
+        $this->shelf();
+
+        \App\Models\VehicleSpec::create([
+            'make' => 'Toyota',
+            'model' => 'Corolla Altis',
+            'fuel' => 'gasoline',
+            'viscosity' => '5W30',
+            'oil_type' => 'Synthetic',
+            'capacity_litres' => 4.2,
+            'year_from' => 2014,
+            'source' => 'Owner handbook',
+            'is_verified' => true,
+        ]);
+
+        $this->assertStringContainsString('5W-30', $this->bodyOf('what oil for my 2019 toyota corolla altis'));
+    }
+
+    #[Test]
+    public function a_car_question_the_model_cannot_take_does_not_start_the_product_finder(): void
+    {
+        $this->shelf();
+
+        \App\Models\VehicleSpec::create([
+            'make' => 'Toyota',
+            'model' => 'Vios',
+            'fuel' => 'gasoline',
+            'viscosity' => '5W30',
+            'oil_type' => 'Synthetic',
+            'source' => 'Owner handbook',
+            'is_verified' => true,
+        ]);
+
+        // No key here, so this is the path a demonstration with no internet
+        // takes. It used to be caught by the product finder, which replied by
+        // asking what kind of product they were after.
+        $reply = $this->bodyOf('what oil for a toyota hilux');
+
+        $this->assertStringNotContainsString('what kind of product', strtolower($reply));
+    }
+
+    #[Test]
     public function asking_what_a_grade_means_is_still_answered(): void
     {
         $this->shelf();

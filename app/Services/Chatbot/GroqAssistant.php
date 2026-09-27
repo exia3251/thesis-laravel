@@ -168,6 +168,8 @@ class GroqAssistant
             "An oil suits an engine when its viscosity grade is one that engine's manufacturer specifies.",
             'If the vehicle appears under the vehicles the shop has looked up, use the grade recorded there.',
             "If it does not, you may give the grade its manufacturer normally specifies, but say plainly that this vehicle is not on the shop's own list and should be checked against the handbook first.",
+            'For an older vehicle, give the grade its own handbook called for when it was new, which is often thicker than a modern car takes. '
+                . 'Do not quietly move it towards a grade this shop happens to carry; say what the engine wants first, and then whether it is here.',
             'Either way, say whether this shop sells an oil in that grade and name it from the oils listed by grade, and say the handbook has the last word.',
             'If the shop carries nothing in the grade a vehicle needs, say so plainly and suggest emailing; never offer a different grade as though it would do.',
 
@@ -190,7 +192,7 @@ class GroqAssistant
 
     private function prompt(string $question): string
     {
-        return "SHOP FACTS\n\n" . $this->facts() . "\n\nCUSTOMER QUESTION\n\n" . $question;
+        return "SHOP FACTS\n\n" . $this->facts($question) . "\n\nCUSTOMER QUESTION\n\n" . $question;
     }
 
     /**
@@ -200,26 +202,45 @@ class GroqAssistant
      * somebody edits an answer or the catalogue, and rebuilding it on every
      * question would be three queries for nothing.
      */
-    private function facts(): string
+    private function facts(string $question): string
     {
-        return Cache::remember('chatbot.ai.facts', now()->addMinutes(10), function () {
+        return implode("\n\n", array_filter([
+            'THE BUSINESS: ' . config('business.name') . ', ' . config('business.address') . '. '
+                . 'Open ' . config('business.hours') . '. Email ' . config('business.email') . '.',
+            $this->shopAnswers(),
+            $this->shelf(),
+            $this->vehiclePage($question),
+        ]));
+    }
+
+    /** The business's own answers to the questions it is actually asked. */
+    private function shopAnswers(): string
+    {
+        return Cache::remember('chatbot.ai.answers', now()->addMinutes(10), function () {
             $answers = ChatIntent::whereNotNull('answer')
                 ->orderBy('sort_order')
                 ->get()
                 ->map(fn (ChatIntent $intent) => '- ' . $intent->label . ': ' . preg_replace('/\s+/', ' ', (string) $intent->answer))
                 ->implode("\n");
 
-            /*
-             * Only the packs the business still sells.
-             *
-             * A few oils keep a 200-litre drum row from when drums were
-             * listed. Offering one is a promise the shop cannot keep, so the
-             * rows are narrowed to config('business.pack_sizes') -- the same
-             * list the add-product form offers -- before anything is written
-             * down. Narrowing here rather than further in means the line
-             * naming the grades on the shelf is drawn from the same rows as
-             * the catalogue underneath it, and the two cannot disagree.
-             */
+            return "WHAT THE SHOP ALREADY ANSWERS\n" . $answers;
+        });
+    }
+
+    /**
+     * What is on the shelf: the grades carried, then the oils under each.
+     *
+     * Only the packs the business still sells. A few oils keep a 200-litre
+     * drum row from when drums were listed, and offering one is a promise the
+     * shop cannot keep, so the rows are narrowed to the same list the
+     * add-product form offers before anything is written down. Narrowing here
+     * rather than further in means the line naming the grades is drawn from
+     * the same rows as the catalogue underneath it, and the two cannot
+     * disagree.
+     */
+    private function shelf(): string
+    {
+        return Cache::remember('chatbot.ai.shelf', now()->addMinutes(10), function () {
             $sold = (array) config('business.pack_sizes', []);
 
             $products = Product::query()
@@ -230,12 +251,8 @@ class GroqAssistant
                 ->get();
 
             return implode("\n\n", array_filter([
-                'THE BUSINESS: ' . config('business.name') . ', ' . config('business.address') . '. '
-                    . 'Open ' . config('business.hours') . '. Email ' . config('business.email') . '.',
-                "WHAT THE SHOP ALREADY ANSWERS\n" . $answers,
                 $this->gradesCarried($products),
                 $this->cataloguePage($products),
-                $this->vehiclePage(),
             ]));
         });
     }
@@ -324,9 +341,36 @@ class GroqAssistant
      * the reason this half exists at all: the instructions allow an answer
      * there, marked as not the shop's own.
      */
-    private function vehiclePage(): string
+    private function vehiclePage(string $question): string
     {
+        /*
+         * Only the makes the question names.
+         *
+         * All sixty-two rows came to 1,216 tokens on every question, which on
+         * a free allowance of 8,000 a minute meant two questions a minute and
+         * then a refusal. Somebody asking about returns does not need the
+         * Isuzu column, and somebody asking about a Corolla needs the Toyotas
+         * and nothing else. Naming no make at all leaves a single line saying
+         * which makes exist, which is enough for the model to know that a
+         * list is there and that this car is not on it.
+         */
+        $asked = $this->makesNamedIn($question);
+
+        if ($asked->isEmpty()) {
+            $covered = Cache::remember(
+                'chatbot.ai.makes',
+                now()->addMinutes(10),
+                fn () => VehicleSpec::query()->distinct()->orderBy('make')->pluck('make')->implode(', ')
+            );
+
+            return $covered === ''
+                ? ''
+                : 'VEHICLES THE SHOP HAS LOOKED UP ITSELF: it holds grades for ' . $covered
+                    . '. No make was named in this question, so none of those rows are quoted here.';
+        }
+
         $vehicles = VehicleSpec::query()
+            ->whereIn('make', $asked->all())
             ->orderBy('make')
             ->orderBy('model')
             ->get()
@@ -341,7 +385,27 @@ class GroqAssistant
             })
             ->implode("\n");
 
-        return "VEHICLES THE SHOP HAS LOOKED UP ITSELF\n" . $vehicles;
+        return "VEHICLES THE SHOP HAS LOOKED UP ITSELF (only the makes this question named)\n" . $vehicles;
+    }
+
+    /**
+     * The makes in the guide that this message mentions.
+     *
+     * @return Collection<int,string>
+     */
+    private function makesNamedIn(string $question): Collection
+    {
+        $said = ' ' . preg_replace('/[^a-z0-9]+/', ' ', mb_strtolower($question)) . ' ';
+
+        $makes = Cache::remember(
+            'chatbot.ai.makes.list',
+            now()->addMinutes(10),
+            fn () => VehicleSpec::query()->distinct()->orderBy('make')->pluck('make')->all()
+        );
+
+        return collect($makes)->filter(
+            fn (string $make) => str_contains($said, ' ' . mb_strtolower($make) . ' ')
+        )->values();
     }
 
     /**
