@@ -35,7 +35,7 @@ class GoogleAuthController extends Controller
             return redirect('/shop/login')->with('error', 'Google Sign-In is not set up on this installation.');
         }
 
-        return Socialite::driver('google')->redirect();
+        return Socialite::driver('google')->redirectUrl($this->callbackUrl())->redirect();
     }
 
     public function callback(Request $request)
@@ -48,7 +48,7 @@ class GoogleAuthController extends Controller
 
         try {
             /** @var GoogleUser $googleUser */
-            $googleUser = Socialite::driver('google')->user();
+            $googleUser = Socialite::driver('google')->redirectUrl($this->callbackUrl())->user();
         } catch (Throwable $e) {
             // Covers the visitor pressing cancel as well as a genuine fault,
             // so the message cannot accuse them of something they did on purpose.
@@ -221,5 +221,27 @@ class GoogleAuthController extends Controller
     {
         return filled(config('services.google.client_id'))
             && filled(config('services.google.client_secret'));
+    }
+
+    /**
+     * Point the callback at the address this visitor actually arrived on.
+     *
+     * Google matches the redirect character for character, so a fixed one in
+     * .env is right for exactly one address and wrong everywhere else. It
+     * said port 8000 while the server ran on 8123, which broke sign-in
+     * silently -- nothing complains until somebody clicks the button and
+     * lands on a Google error page.
+     *
+     * Built from the request instead, so localhost works while developing and
+     * the tunnel address works while the system is being demonstrated,
+     * without editing anything in between. Both still have to be registered
+     * on the OAuth client; this only stops the wrong one being sent.
+     *
+     * GOOGLE_REDIRECT_URI still wins when it is set, for an installation that
+     * wants the callback pinned to one address.
+     */
+    private function callbackUrl(): string
+    {
+        return (string) (config('services.google.redirect') ?: url('/auth/google/callback'));
     }
 }
