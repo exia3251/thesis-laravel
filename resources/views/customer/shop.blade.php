@@ -239,12 +239,11 @@
                                     <span class="rounded-full bg-[#f3f6f8] px-3 py-1 text-xs font-semibold text-[var(--muted)]">Stock: ${product.quantity}</span>
                                 </div>
                                 <div class="h-px bg-[var(--line)]"></div>
-                                <div class="mt-3 flex items-center justify-between gap-3">
-                                    <span class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted)] group-hover:text-[var(--primary)]">View Details</span>
+                                <div class="mt-3">
                                     <button onclick="event.stopPropagation(); ${(product.pack_count ?? 1) > 1
                                         ? `window.location.href='/shop/products/${product.product_id}'`
-                                        : `addToCart(${product.product_id})`}" class="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-bold text-white transition hover:brightness-110">
-                                        ${(product.pack_count ?? 1) > 1 ? 'Choose Size' : 'Add to Cart'}
+                                        : `addToCart(${product.product_id})`}" class="w-full rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110">
+                                        Add to Cart
                                     </button>
                                 </div>
                             </div>
@@ -339,16 +338,20 @@
                                         <span class="rounded-full ${unavailable ? 'bg-slate-200 text-slate-600' : 'bg-[#f3f6f8] text-[var(--muted)]'} px-3 py-1 text-xs font-semibold">Stock: ${stock}</span>
                                     </div>
                                     <div class="h-px bg-[var(--line)]"></div>
-                                    <div class="mt-3 flex items-center justify-between gap-3">
-                                        <span class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted)] group-hover:text-[var(--primary)]">View Details</span>
-                                        {{-- With more than one size there is no
-                                             right basket to drop it in, so the
-                                             card sends the customer to choose
-                                             rather than guessing for them. --}}
+                                    {{-- One button, full width. "View Details"
+                                         sat beside it saying what clicking the
+                                         card already does, and "Choose Size"
+                                         named the next screen rather than what
+                                         the customer wants -- which is the oil
+                                         in the basket. With more than one size
+                                         there is still no right basket to drop
+                                         it in, so it opens the sizes; the
+                                         wording just stops announcing that. --}}
+                                    <div class="mt-3">
                                         <button onclick="event.stopPropagation(); ${multiPack
                                             ? `window.location.href='/shop/products/${product.product_id}'`
-                                            : `addToCart(${product.product_id})`}" class="rounded-xl ${unavailable ? 'cursor-not-allowed bg-slate-400' : 'bg-[var(--primary)]'} px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 ${!isCustomer && !multiPack ? 'opacity-60 cursor-not-allowed' : ''}" ${unavailable ? 'disabled' : ''}>
-                                            ${multiPack ? 'Choose Size' : 'Add to Cart'}
+                                            : `addToCart(${product.product_id})`}" class="w-full rounded-xl ${unavailable ? 'cursor-not-allowed bg-slate-400' : 'bg-[var(--primary)]'} px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 ${!isCustomer && !multiPack ? 'opacity-60 cursor-not-allowed' : ''}" ${unavailable ? 'disabled' : ''}>
+                                            ${unavailable ? 'Out of stock' : 'Add to Cart'}
                                         </button>
                                     </div>
                                 </div>
