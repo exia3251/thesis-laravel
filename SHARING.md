@@ -27,6 +27,35 @@ the two below the first time; after that it is one command.
 
 ---
 
+## This project's link
+
+The tunnel is set up already. Three windows, each left open:
+
+```bash
+cd C:\xampp\htdocs\thesis-laravel
+php artisan serve --port=8123
+```
+
+```bash
+ngrok http 8123 --url https://cognition-prancing-splendid.ngrok-free.dev
+```
+
+plus MySQL from the XAMPP panel. The address is permanent -- it belongs to the
+account and does not change between runs -- so what goes in the Google Form is
+always:
+
+```
+https://cognition-prancing-splendid.ngrok-free.dev/shop
+```
+
+**Respondents see an ngrok warning page first.** "You are about to visit...",
+with a **Visit Site** button. It appears once per browser and is ngrok's, not
+ours; the only way to remove it is a paid plan. Worth a line in the form so
+nobody assumes the link is broken: *"Click Visit Site on the first page."*
+
+The two options below are what to do if this setup is ever rebuilt from
+scratch.
+
 ## Option A -- Cloudflare (no account, nothing to sign up for)
 
 Install once:
@@ -117,23 +146,23 @@ It will not work unless you do something first, and this is the one part of
 the site that breaks silently for respondents.
 
 Google only redirects back to an address registered on the OAuth client, and
-it has to match exactly -- scheme, host, port and path. Right now
-`GOOGLE_REDIRECT_URI` in `.env` says `http://localhost:8000/auth/google/callback`
-while the server runs on **8123**, so it is already wrong locally.
+it has to match exactly -- scheme, host, port and path. It used to be pinned in `.env` to port 8000 while the server ran on **8123**,
+which broke sign-in silently.
 
-Fix it for whichever address you are using:
+The callback no longer needs setting per address: it is built from whichever
+address the visitor arrived on, so localhost and the tunnel both produce the
+right one. What is still needed is registering both with Google, once.
 
-1. Open <https://console.cloud.google.com/apis/credentials>, edit the OAuth
-   client, and add the exact callback URL under **Authorised redirect URIs**:
-   - `http://localhost:8123/auth/google/callback` for your own machine
-   - `https://<your-tunnel-address>/auth/google/callback` for the survey
-2. Set the matching value in `.env` as `GOOGLE_REDIRECT_URI`.
+Open <https://console.cloud.google.com/apis/credentials>, edit the OAuth
+client, and add both under **Authorised redirect URIs**, exactly:
 
-A Cloudflare quick tunnel gives a different address every run, so you would be
-re-registering it each session. Two ways round that: leave Google sign-in out
-of the survey and let respondents register with email and password, which
-works on any address; or get a stable subdomain (a free ngrok static domain,
-or a named Cloudflare tunnel) and register it once.
+```
+https://cognition-prancing-splendid.ngrok-free.dev/auth/google/callback
+http://localhost:8123/auth/google/callback
+```
+
+`https` for the tunnel, `http` for localhost, and `.ngrok-free.dev` rather
+than `.app`. Google matches these character for character.
 
 ### Publishing the consent screen
 
