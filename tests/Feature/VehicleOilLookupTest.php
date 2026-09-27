@@ -169,12 +169,22 @@ class VehicleOilLookupTest extends TestCase
     }
 
     #[Test]
-    public function every_seeded_row_starts_unverified_and_names_its_source(): void
+    public function a_row_only_claims_to_be_checked_if_it_says_who_checked_it(): void
     {
-        $this->assertSame(
-            0,
-            VehicleSpec::where('is_verified', true)->count(),
-            'Seeded oil figures must not claim to have been checked against a manual.'
+        // It used to be that no row could be verified at all. Some have been
+        // now, one at a time and against the manufacturer's own figures, and
+        // each of those carries a source saying so and when. What must never
+        // happen is a row marked checked while still carrying the generic
+        // "general reference" line, because that is a claim with nothing
+        // behind it.
+        $unsupported = VehicleSpec::where('is_verified', true)
+            ->where(fn ($query) => $query->whereNull('source')->orWhere('source', 'like', 'General reference%'))
+            ->get();
+
+        $this->assertTrue(
+            $unsupported->isEmpty(),
+            'Marked as checked but with no source saying by what: '
+                . $unsupported->map(fn (VehicleSpec $s) => trim("{$s->make} {$s->model}"))->implode(', ')
         );
 
         $this->assertSame(

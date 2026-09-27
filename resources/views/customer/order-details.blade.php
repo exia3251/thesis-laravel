@@ -461,15 +461,22 @@
                                 @endif
                             </div>
                             <div id="gcashQrPanel" class="w-full max-w-xs rounded-[1.5rem] border border-[var(--line)] bg-white/85 p-4 text-center {{ $sale->payment_method === 'gcash' ? '' : 'hidden' }}">
-                                <img src="{{ asset('images/gcash-qr-placeholder.svg') }}" alt="GCash QR" class="mx-auto h-56 w-56 rounded-2xl border border-[var(--line)] object-cover">
+                                {{-- The real code, at its own shape rather than squared off.
+                                     It was a placeholder in a 224px box with object-cover,
+                                     which on a portrait image crops the sides -- and a
+                                     cropped QR does not scan. Left tall and wide enough that
+                                     a phone reads it off the screen. --}}
+                                {{-- A fixed width, not w-full: this panel sits in a
+                                     container that measures zero until it is laid out,
+                                     and a percentage of nothing is nothing. The old
+                                     placeholder was h-56 w-56 and never noticed. Height
+                                     is left to follow the image, which is taller than it
+                                     is wide, because squaring it crops the code off. --}}
+                                <img src="{{ asset('images/gcash-qr.png') }}" alt="GCash QR code for {{ config('business.name') }}"
+                                     class="mx-auto block h-auto w-64 max-w-full rounded-2xl border border-[var(--line)]">
                                 <p class="mt-3 text-xs uppercase tracking-[0.22em] text-[var(--muted)]">GCash QR</p>
-                                {{-- A customer was being shown "replace this placeholder with
-                                     the real staff QR later", which is a note to ourselves
-                                     printed on the page somebody is trying to pay from. Until
-                                     a real code is put in place, say the thing that is
-                                     actually true and useful: use the number. --}}
                                 <p class="mt-2 text-sm leading-6 text-[var(--muted)]">
-                                    Send to the GCash number shown above rather than scanning this, then enter your reference number below.
+                                    Scan this with GCash, or send to {{ config('business.phone') }} instead. Either way, enter your reference number below.
                                 </p>
                             </div>
                         </div>

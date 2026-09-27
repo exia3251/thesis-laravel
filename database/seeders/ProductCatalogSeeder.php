@@ -50,19 +50,22 @@ class ProductCatalogSeeder extends Seeder
     /**
      * Pack sizes, and what one unit of each costs relative to a litre.
      *
-     * A drum is stocked on 15W40 only, which is where the volume trade is.
+     * Drums are gone entirely, in two steps. The 5W30 pair went first: at
+     * these prices they came to PHP 104,000 and PHP 102,400, and a fully
+     * verified GCash wallet stops at PHP 100,000, so the site was listing
+     * something no customer could pay for through the only online method it
+     * offers. The 15W40 pair followed when the business stopped listing the
+     * size at all.
      *
-     * The 5W30 drums were dropped: at these prices they came to PHP 104,000
-     * and PHP 102,400, and a fully verified GCash wallet stops at PHP
-     * 100,000 -- so the site would have been listing something no customer
-     * could pay for through the only online method it offers. Selling that
-     * size needs a bank transfer, which this system does not handle.
+     * The three that remain are the three config('business.pack_sizes')
+     * offers in the add-product form and the three the shop assistant will
+     * name. A seeder that put back a fourth would have every one of those
+     * disagree with the catalogue on a teammate's fresh install.
      */
     private const PACKS = [
-        '1L'   => ['unit' => '1 Liter',    'litres' => 1],
-        '4L'   => ['unit' => '4 Liters',   'litres' => 4],
-        '5L'   => ['unit' => '5 Liters',   'litres' => 5],
-        'DRUM' => ['unit' => '200 Liters', 'litres' => 200],
+        '1L' => ['unit' => '1 Liter',  'litres' => 1],
+        '4L' => ['unit' => '4 Liters', 'litres' => 4],
+        '5L' => ['unit' => '5 Liters', 'litres' => 5],
     ];
 
     public function run(): void
@@ -103,7 +106,7 @@ class ProductCatalogSeeder extends Seeder
                     'viscosity_grade' => $line['viscosity'],
                     'unit'            => $pack['unit'],
                     'price'           => $line['prices'][$packKey],
-                    'reorder_level'   => $packKey === 'DRUM' ? 2 : 10,
+                    'reorder_level'   => 10,
                     'description'     => $line['description'],
                     'specifications'  => $specifications,
                 ]);
@@ -113,7 +116,7 @@ class ProductCatalogSeeder extends Seeder
                     // Patrol is being withdrawn by its manufacturer, so it is
                     // listed at zero rather than hidden: a customer looking
                     // for it should see that we carried it and it is gone.
-                    'quantity'     => ($line['discontinued'] ?? false) ? 0 : ($packKey === 'DRUM' ? 4 : 40),
+                    'quantity'     => ($line['discontinued'] ?? false) ? 0 : 40,
                     'last_updated' => now(),
                 ]);
             }
@@ -152,7 +155,7 @@ class ProductCatalogSeeder extends Seeder
                 // 281. Marking the nearest drum's wholesale up instead put it
                 // at 406 a litre -- dearer than the five litre bottle, which
                 // is not how anybody sells a drum.
-                'prices' => ['1L' => 365, '4L' => 1420, '5L' => 1750, 'DRUM' => 56200],
+                'prices' => ['1L' => 365, '4L' => 1420, '5L' => 1750],
                 'description' => 'Full synthetic heavy duty diesel engine oil meeting API CI-4, for trucks and equipment worked hard.',
             ],
             [
@@ -197,7 +200,7 @@ class ProductCatalogSeeder extends Seeder
                 'name' => 'Solar Premium Series Diesel Engine Oil 15W40 API CK-4',
                 'brand' => 'SOLAR', 'oil_type' => 'Synthetic', 'viscosity' => '15W40',
                 // As the Canroyal 15W40, for the same reason.
-                'prices' => ['1L' => 365, '4L' => 1420, '5L' => 1750, 'DRUM' => 56200],
+                'prices' => ['1L' => 365, '4L' => 1420, '5L' => 1750],
                 'description' => 'Premium series heavy duty diesel oil meeting API CK-4, the current heavy duty category.',
             ],
             [

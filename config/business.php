@@ -12,14 +12,18 @@ return [
     'name' => env('BUSINESS_NAME', 'RANEY LUBRICANTS TRADING'),
     'address' => env('BUSINESS_ADDRESS', '2 Andalucia St., Brgy. Dulong Bayan, Bacoor City, Cavite'),
     /*
-     * No default. "+63 2 1234 5678" sat here and was printed in the footer,
-     * on the returns page, in the legal pages and in one email -- a number
-     * that belongs to nobody, offered to customers as the way to reach this
-     * business. Every place that shows it now checks first, so an unset
-     * number is absent rather than fictional. Set BUSINESS_PHONE when there
-     * is a real one.
+     * The real number, and the one the GCash account is under.
+     *
+     * A default again, but this time one that belongs to the business rather
+     * than the invented "+63 2 1234 5678" that used to sit here. It is a
+     * default rather than .env-only so a teammate who clones the project gets
+     * a working contact number without being told to set anything, and .env
+     * still wins if the number ever changes.
+     *
+     * Every place that shows it still checks first, so blanking it here
+     * leaves it absent rather than fictional.
      */
-    'phone' => env('BUSINESS_PHONE'),
+    'phone' => env('BUSINESS_PHONE', '0960 239 7797'),
     'email' => env('BUSINESS_EMAIL', 'sales.raneylubricants@gmail.com'),
     'hours' => env('BUSINESS_HOURS', 'Mon - Sat: 8AM - 6PM'),
 

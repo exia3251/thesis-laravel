@@ -8,10 +8,19 @@ use Illuminate\Database\Seeder;
 /**
  * Common vehicles on Philippine roads and the oil grade each takes.
  *
- * EVERY ROW HERE IS UNVERIFIED. The figures are general reference values for
- * these engines, not readings from the manufacturers' own manuals, and
- * specifications vary by model year, market and engine code more than a list
- * this size can capture.
+ * NEARLY EVERY ROW HERE IS UNVERIFIED. The figures are general reference
+ * values for these engines, not readings from the manufacturers' own manuals,
+ * and specifications vary by model year, market and engine code more than a
+ * list this size can capture.
+ *
+ * The handful marked is_verified carry a source saying what they were checked
+ * against and when. They were checked one at a time against the engine
+ * manufacturer's own published figures, which is better than the rest of this
+ * file and still not the same as reading the handbook in the glovebox.
+ *
+ * Of the first six looked at, five were wrong -- a grade two steps too thick,
+ * a sump overstated by a litre and a half, another by three. Treat an
+ * unverified row as a starting point for a check, not as an answer.
  *
  * Putting the wrong viscosity in an engine causes real damage, so nothing
  * here is presented to a customer as settled: the assistant always says to
@@ -65,9 +74,12 @@ class VehicleSpecSeeder extends Seeder
              'year_from' => 2019, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
              'oil_type' => 'Synthetic', 'capacity_litres' => 3.4],
 
+            // Checked 27 Sep 2026: Toyota specifies 0W-20 for the 1KR, with
+            // 5W-30 acceptable. 10W-40 was outside anything Toyota lists, and
+            // the sump is 2.7 L rather than 3.0.
             ['make' => 'Toyota', 'model' => 'Wigo', 'variant' => '1.0 Gasoline', 'fuel' => 'gasoline',
-             'year_from' => 2014, 'viscosity' => '5W30', 'viscosity_alt' => '10W40',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.0],
+             'year_from' => 2014, 'viscosity' => '0W20', 'viscosity_alt' => '5W30',
+             'oil_type' => 'Synthetic', 'capacity_litres' => 2.7, 'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Toyota', 'model' => 'Innova', 'variant' => '2.8 Diesel', 'fuel' => 'diesel',
              'year_from' => 2016, 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
@@ -179,9 +191,10 @@ class VehicleSpecSeeder extends Seeder
              'year_from' => 2018, 'viscosity' => '5W30', 'viscosity_alt' => '15W40',
              'oil_type' => 'Synthetic', 'capacity_litres' => 7.0],
 
+            // Checked 27 Sep 2026: 3.7 L with the filter on the HR10DET, not 3.0.
             ['make' => 'Nissan', 'model' => 'Almera', 'variant' => '1.0 Turbo / 1.5 Gasoline', 'fuel' => 'gasoline',
              'year_from' => 2012, 'viscosity' => '5W30', 'viscosity_alt' => '0W20',
-             'oil_type' => 'Synthetic', 'capacity_litres' => 3.0],
+             'oil_type' => 'Synthetic', 'capacity_litres' => 3.7, 'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Nissan', 'model' => 'Urvan', 'variant' => '2.5 Diesel (NV350)', 'fuel' => 'diesel',
              'aliases' => 'nv350, nv 350', 'viscosity' => '15W40', 'viscosity_alt' => '5W30',
@@ -223,8 +236,11 @@ class VehicleSpecSeeder extends Seeder
              'aliases' => 'mux, mu x', 'year_from' => 2015, 'viscosity' => '15W40', 'viscosity_alt' => '5W30',
              'oil_type' => 'Mineral', 'capacity_litres' => 7.3],
 
+            // Checked 27 Sep 2026: 4.5 L with the filter -- Isuzu sold a 4.5 L
+            // pack for this engine. It was recorded as 6.0, a litre and a half
+            // of overfill for anybody who trusted it.
             ['make' => 'Isuzu', 'model' => 'Crosswind', 'variant' => '2.5 Diesel (4JA1)', 'fuel' => 'diesel',
-             'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 6.0],
+             'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 4.5, 'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             ['make' => 'Isuzu', 'model' => 'Elf', 'variant' => '4HG1 / 4JJ1 Diesel Truck', 'fuel' => 'diesel',
              'aliases' => 'nhr, nkr, npr', 'viscosity' => '15W40',
@@ -264,8 +280,12 @@ class VehicleSpecSeeder extends Seeder
             ['make' => 'Suzuki', 'model' => 'Celerio', 'variant' => '1.0 Gasoline', 'fuel' => 'gasoline',
              'viscosity' => '5W30', 'viscosity_alt' => '0W20', 'oil_type' => 'Synthetic', 'capacity_litres' => 2.8],
 
+            // Checked 27 Sep 2026: the K15B is specified 0W-20 or 5W-30 to API
+            // SN/SP. It was recorded as a 10W-40 semi-synthetic, which is two
+            // grades thicker than Suzuki asks for.
             ['make' => 'Suzuki', 'model' => 'Carry', 'variant' => '1.5 Gasoline', 'fuel' => 'gasoline',
-             'viscosity' => '10W40', 'viscosity_alt' => '5W30', 'oil_type' => 'Semi-Synthetic', 'capacity_litres' => 3.5],
+             'viscosity' => '5W30', 'viscosity_alt' => '0W20', 'oil_type' => 'Synthetic', 'capacity_litres' => 3.2,
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
             // --------------------------------------------------------- Kia
             ['make' => 'Kia', 'model' => 'Picanto', 'variant' => '1.0 / 1.2 Gasoline', 'fuel' => 'gasoline',
@@ -300,9 +320,12 @@ class VehicleSpecSeeder extends Seeder
              'notes' => 'Turbocharged. A fully synthetic oil is worth the difference here.'],
 
             // ------------------------------------------- commercial diesel
+            // Checked 27 Sep 2026: about 8 L, not 11. The drum note went with
+            // the drums -- the shop sells 1, 4 and 5 litre packs only now.
             ['make' => 'Mitsubishi', 'model' => 'Canter', 'variant' => '4D34 Diesel Truck', 'fuel' => 'diesel',
-             'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 11.0,
-             'notes' => 'Light truck. Sold in 20 and 200 litre drums for fleets.'],
+             'viscosity' => '15W40', 'oil_type' => 'Mineral', 'capacity_litres' => 8.0,
+             'notes' => 'Light truck. A fleet order is arranged with a Sales Executive.',
+             'is_verified' => true, 'source' => 'Manufacturer engine specification, checked 27 Sep 2026'],
 
         ];
     }
