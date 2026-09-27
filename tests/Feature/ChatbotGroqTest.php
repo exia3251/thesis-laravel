@@ -441,7 +441,11 @@ class ChatbotGroqTest extends TestCase
 
             return str_contains($instructions, 'viscosity grade is one that engine')
                 && str_contains($instructions, 'never offer a different grade')
-                && str_contains($instructions, 'handbook has the last word');
+                // One disclaimer for every vehicle, added by the caller. It
+                // used to be told to say a car was "not on the shop's list",
+                // which implied the ones on it had been checked.
+                && str_contains($instructions, "Never say whether a vehicle is or is not on the shop's list")
+                && str_contains($instructions, 'One standard line is added to your answer for you');
         });
     }
 

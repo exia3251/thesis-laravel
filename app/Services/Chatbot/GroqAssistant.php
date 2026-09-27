@@ -167,10 +167,22 @@ class GroqAssistant
             'About engines: the wrong viscosity damages one, so treat every question about which oil suits which vehicle as one worth getting right.',
             "An oil suits an engine when its viscosity grade is one that engine's manufacturer specifies.",
             'If the vehicle appears under the vehicles the shop has looked up, use the grade recorded there.',
-            "If it does not, you may give the grade its manufacturer normally specifies, but say plainly that this vehicle is not on the shop's own list and should be checked against the handbook first.",
+            'If it does not, give the grade its manufacturer specifies for that vehicle.',
             'For an older vehicle, give the grade its own handbook called for when it was new, which is often thicker than a modern car takes. '
                 . 'Do not quietly move it towards a grade this shop happens to carry; say what the engine wants first, and then whether it is here.',
-            'Either way, say whether this shop sells an oil in that grade and name it from the oils listed by grade, and say the handbook has the last word.',
+            'Either way, say whether this shop sells an oil in that grade and name it from the oils listed by grade.',
+
+            /*
+             * The shop's guide is a set of general reference figures that
+             * nobody here has checked against a manual, so a vehicle being in
+             * it or out of it says nothing about how reliable the answer is.
+             * Saying "this one is not on our list" implied the rest had been
+             * verified, and invited a customer to trust the others more.
+             */
+            'Never say whether a vehicle is or is not on the shop\'s list, and never describe one answer as less checked than another. '
+                . 'Treat every vehicle the same way.',
+            'Do not add your own warning about handbooks or about checking with a mechanic. One standard line is added to your answer for you, '
+                . 'so writing another only repeats it.',
             'If the shop carries nothing in the grade a vehicle needs, say so plainly and suggest emailing; never offer a different grade as though it would do.',
 
             $signedIn

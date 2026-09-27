@@ -87,8 +87,9 @@
         <div class="border-b border-amber-200 bg-amber-50 px-6 py-4">
             <p class="text-sm leading-relaxed text-amber-900">
                 <span class="font-bold">These figures have not been checked against the manufacturers' manuals.</span>
-                They are general reference values seeded to get the guide working. The assistant tells every customer to
-                confirm against their own handbook, and says plainly when a row has not been checked here.
+                They are general reference values seeded to get the guide working. Every oil answer the assistant gives
+                ends on the same line, telling the customer their own handbook decides &mdash; the same line whether the
+                figure came from this guide or not, because none of it has been verified.
                 Open a row, verify it against the manual, and tick <span class="font-semibold">Checked</span>.
             </p>
             <p id="unstockedNote" class="mt-2 text-xs text-amber-900/80"></p>

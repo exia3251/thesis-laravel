@@ -30,12 +30,18 @@ class Responder
     ];
 
     /**
-     * Said on every oil recommendation without exception. Putting the wrong
-     * viscosity in an engine causes real damage, and this data describes
-     * other manufacturers' engines rather than anything this business
-     * controls, so the handbook always has the last word.
+     * Said on every oil recommendation, without exception and without degree.
+     *
+     * Kept in config/business.php so the written answers, the vehicle guide
+     * and the model all end on the same sentence. There used to be two of
+     * these: a mild one for a car in the shop's own guide, a sterner one for
+     * a car outside it. Read together they said the guide had been checked
+     * and everything else was a guess. The guide has not been checked either.
      */
-    private const HANDBOOK_NOTE = "Always confirm against your owner's handbook before an oil change.";
+    private function handbookNote(): string
+    {
+        return (string) config('business.oil_disclaimer');
+    }
 
     public function __construct(
         private readonly IntentMatcher $matcher,
@@ -112,10 +118,10 @@ class Responder
 
         $body .= $carried->isEmpty()
             ? 'Email ' . config('business.email') . ' and a Sales Executive can tell you what is available.'
-            : 'The grades on the shelf are ' . $carried->join(', ', ' and ') . '. '
-                . 'Your handbook decides which of those will do, if any -- the wrong viscosity harms an engine, '
-                . 'so it is worth checking rather than guessing. If none of them fits, email '
+            : 'The grades on the shelf are ' . $carried->join(', ', ' and ') . '. If none of them fits, email '
                 . config('business.email') . ' and a Sales Executive can look for it.';
+
+        $body .= "\n\n" . $this->handbookNote();
 
         return $this->reply($body, [
             'chips' => $this->chips($suggestions),
@@ -663,9 +669,11 @@ class Responder
             ? "Our guide does not cover a {$year} {$name}."
             : "Our guide covers the {$name} {$covered}, and yours is a {$year}, so I do not have its grade here.";
 
-        $body .= "\n\nThe wrong viscosity harms an engine, so I will not guess at one from a different generation. "
-            . 'If your handbook names a grade, tell me which one and I will check whether we stock it. '
-            . 'Otherwise email ' . config('business.email') . ' and a Sales Executive can look it up.';
+        $body .= "\n\nI will not name a grade from a different generation. If your handbook names one, tell me "
+            . 'which and I will check whether we stock it. Otherwise email ' . config('business.email')
+            . ' and a Sales Executive can look it up.';
+
+        $body .= "\n\n" . $this->handbookNote();
 
         return $this->reply($body, [
             'chips' => [
@@ -791,11 +799,10 @@ If your handbook names a grade, tell me which one and I will check whether we st
             $body .= "\n\n" . $spec->notes;
         }
 
-        $body .= "\n\n" . self::HANDBOOK_NOTE;
-
-        if (!$spec->is_verified) {
-            $body .= ' This figure is a general reference and has not yet been checked against the manual by our staff.';
-        }
+        // No sterner second sentence for an unverified row. Every row is
+        // unverified, and saying so only on some of them told customers the
+        // rest had been checked against a manual. None of them have.
+        $body .= "\n\n" . $this->handbookNote();
 
         $payload['chips'] = [['label' => 'Look up another vehicle', 'value' => 'what oil for my car', 'intent' => 'vehicle_oil']];
 

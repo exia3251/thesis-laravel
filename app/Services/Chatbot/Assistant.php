@@ -233,7 +233,7 @@ class Assistant
             $talkingToTheModel => $this->responder->fallback($suggestions, $user),
             $unstockedGrades->isNotEmpty() => $this->responder->gradeNotCarried($unstockedGrades, $suggestions, $user),
             $needsLiveData => $this->responder->answer($conversation, $intent, $message, $user),
-            $aiAnswer !== null => ['body' => $aiAnswer, 'payload' => ['source' => 'groq']],
+            $aiAnswer !== null => ['body' => $this->withHandbookNote($aiAnswer), 'payload' => ['source' => 'groq']],
 
             /*
              * A car, and nothing from the model -- no key, no internet, or the
@@ -265,6 +265,28 @@ class Assistant
         $conversation->clearContext();
 
         return $this->open($conversation, $user);
+    }
+
+    /**
+     * Ends an oil recommendation on the same line every other one ends on.
+     *
+     * Added here rather than asked for in the instructions, because a model
+     * asked to remember a disclaimer will sometimes forget it, and this is
+     * the sentence that must never be the one it forgets. Only on answers
+     * that actually name a grade: a question about delivery does not need
+     * telling to read a handbook.
+     */
+    private function withHandbookNote(string $answer): string
+    {
+        if (! preg_match('/\b\d{1,2}w-?\d{1,2}\b/i', $answer)) {
+            return $answer;
+        }
+
+        $note = (string) config('business.oil_disclaimer');
+
+        // It is told not to write its own, but it sometimes does anyway, and
+        // two of them in a row reads worse than none.
+        return str_contains($answer, $note) ? $answer : $answer . "\n\n" . $note;
     }
 
     /**

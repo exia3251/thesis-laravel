@@ -110,8 +110,7 @@ class ChatbotShelfAnswersTest extends TestCase
 
         // The wrong viscosity damages an engine, so the handbook decides and
         // the shop does not talk anybody into a near-enough bottle.
-        $this->assertStringContainsString('handbook', strtolower($reply));
-        $this->assertStringContainsString('wrong viscosity harms an engine', $reply);
+        $this->assertStringContainsString((string) config('business.oil_disclaimer'), $reply);
     }
 
     #[Test]
@@ -289,6 +288,63 @@ class ChatbotShelfAnswersTest extends TestCase
         $reply = $this->bodyOf('what oil for a toyota hilux');
 
         $this->assertStringNotContainsString('what kind of product', strtolower($reply));
+    }
+
+    #[Test]
+    public function every_oil_answer_ends_on_the_same_disclaimer(): void
+    {
+        $this->shelf();
+
+        \App\Models\VehicleSpec::create([
+            'make' => 'Toyota',
+            'model' => 'Vios',
+            'fuel' => 'gasoline',
+            'viscosity' => '5W30',
+            'oil_type' => 'Synthetic',
+            'source' => 'Owner handbook',
+            // Verified and unverified rows used to end differently, and the
+            // difference told the customer which figures to trust.
+            'is_verified' => true,
+        ]);
+
+        \App\Models\VehicleSpec::create([
+            'make' => 'Honda',
+            'model' => 'Brio',
+            'fuel' => 'gasoline',
+            'viscosity' => '5W30',
+            'oil_type' => 'Synthetic',
+            'source' => 'Owner handbook',
+            'is_verified' => false,
+        ]);
+
+        $note = (string) config('business.oil_disclaimer');
+
+        foreach (['what oil for my toyota vios', 'what oil for my honda brio', 'do you have 0w16'] as $question) {
+            $this->assertStringContainsString($note, $this->bodyOf($question), $question);
+        }
+    }
+
+    #[Test]
+    public function no_answer_grades_its_own_reliability(): void
+    {
+        $this->shelf();
+
+        \App\Models\VehicleSpec::create([
+            'make' => 'Honda',
+            'model' => 'Brio',
+            'fuel' => 'gasoline',
+            'viscosity' => '5W30',
+            'oil_type' => 'Synthetic',
+            'source' => 'Owner handbook',
+            'is_verified' => false,
+        ]);
+
+        $reply = $this->bodyOf('what oil for my honda brio');
+
+        // "This figure has not yet been checked by our staff" said, by
+        // implication, that the others had been. None of them have.
+        $this->assertStringNotContainsString('has not yet been checked', $reply);
+        $this->assertStringNotContainsString('not on our', strtolower($reply));
     }
 
     #[Test]

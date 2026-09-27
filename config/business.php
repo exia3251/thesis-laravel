@@ -38,6 +38,26 @@ return [
      */
     'pack_sizes' => ['1 Liter', '4 Liters', '5 Liters'],
 
+    /*
+     * Said on every oil recommendation, without exception and without degree.
+     *
+     * There used to be two of these. A vehicle in the shop's own guide got
+     * "always confirm against your handbook"; one that was not got "this
+     * vehicle is not on our list, so check the handbook first". Read together
+     * they say the guide is reliable and everything else is a guess, which is
+     * not true -- every row in that guide is a general reference figure that
+     * nobody here has checked against a manual either.
+     *
+     * So there is one line now and it says the same thing to everybody: the
+     * handbook for your own engine is what decides, whoever suggested what.
+     */
+    'oil_disclaimer' => env(
+        'BUSINESS_OIL_DISCLAIMER',
+        'Your vehicle handbook has the final say, and checking it before an oil change is the owner\'s'
+            . ' responsibility. The wrong viscosity can damage an engine, and only the handbook for your'
+            . ' exact engine and year is authoritative.'
+    ),
+
     // The only social account the business actually has. Kept here rather
     // than in the footer markup so it is beside the rest of the contact
     // details, which is where anyone would look for it.
