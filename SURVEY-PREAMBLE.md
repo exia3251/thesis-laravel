@@ -10,6 +10,23 @@ system is broken rather than that the laptop is off.
 
 ---
 
+## Brief version
+
+The one actually used on the form. Everything the longer versions say, in the
+four sentences a respondent will actually read.
+
+> Below is the link to our system.
+>
+> On the first page you see, click **Visit Site** — it is a notice from the
+> service that puts the system online, and appears only once. The page after it
+> gives you the sign-in details and a short list of things to try, so there is
+> no need to register.
+>
+> Nothing on the system is real, so please explore freely. Kindly return to this
+> form afterwards.
+
+---
+
 ## Full version
 
 **Before you begin**
