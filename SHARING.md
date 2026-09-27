@@ -140,45 +140,33 @@ stops working.
 
 ---
 
-## Google sign-in over a tunnel
+## Google sign-in is off for the survey
 
-It will not work unless you do something first, and this is the one part of
-the site that breaks silently for respondents.
+`GOOGLE_SIGNIN_ENABLED=false`, so the button is not drawn and the route turns
+visitors back. This is not a bug and not laziness.
 
-Google only redirects back to an address registered on the OAuth client, and
-it has to match exactly -- scheme, host, port and path. It used to be pinned in `.env` to port 8000 while the server ran on **8123**,
-which broke sign-in silently.
+Google will not accept an ngrok address as an authorised domain. Those live on
+the Public Suffix List -- anybody can take a subdomain under them -- so Google
+has no way to tell that this one belongs to us. Without an authorised domain
+the consent screen cannot be published, and an unpublished app admits only
+named test users, up to a hundred, added one Gmail address at a time. A survey
+of strangers cannot work that way.
 
-The callback no longer needs setting per address: it is built from whichever
-address the visitor arrived on, so localhost and the tunnel both produce the
-right one. What is still needed is registering both with Google, once.
+The alternatives were a domain of our own plus a paid ngrok plan, or leaving a
+button that sends respondents to a Google error page. Neither is worth it when
+a working login is already printed on the sign-in page.
 
-Open <https://console.cloud.google.com/apis/credentials>, edit the OAuth
-client, and add both under **Authorised redirect URIs**, exactly:
+Nothing was deleted. The credentials are still in `.env`, the code is still
+there, and setting `GOOGLE_SIGNIN_ENABLED=true` brings it back on localhost,
+where the callback is an address Google accepts. Register it once at
+<https://console.cloud.google.com/apis/credentials?project=368877792106>:
 
 ```
-https://cognition-prancing-splendid.ngrok-free.dev/auth/google/callback
 http://localhost:8123/auth/google/callback
 ```
 
-`https` for the tunnel, `http` for localhost, and `.ngrok-free.dev` rather
-than `.app`. Google matches these character for character.
-
-### Publishing the consent screen
-
-While the app is in **Testing**, only accounts you list as test users can sign
-in, up to 100 of them, and sign-ins expire after a week. That is not workable
-for a survey where you do not know who is answering.
-
-Publishing is one button: OAuth consent screen → **Publish app**. This project
-asks only for `openid`, `profile` and `email`, which Google treats as
-non-sensitive, so it does not need the security assessment that sensitive
-scopes trigger. If you have set a logo or an app name on the consent screen
-you may be asked for brand verification, which takes a few business days.
-
-**Rotate the client secret before you publish.** The current one has been
-exposed. Same page: OAuth client → add a new secret, put it in `.env` as
-`GOOGLE_CLIENT_SECRET`, then delete the old one.
+The callback follows whichever address the visitor arrived on, so there is
+nothing to edit when switching between localhost and the tunnel.
 
 ## Worth knowing
 

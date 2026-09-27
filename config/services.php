@@ -37,6 +37,23 @@ return [
     | the callback to one fixed address.
     */
     'google' => [
+        /*
+         * A switch of its own, so the feature can be turned off without
+         * deleting the credentials that make it work.
+         *
+         * It is off while the system is demonstrated over a tunnel. Google
+         * will not accept an ngrok address as an authorised domain -- those
+         * live on the Public Suffix List, where anybody can take a subdomain,
+         * so Google has no way to tell that this one is ours -- and an app
+         * that cannot be published is limited to a hundred named test users,
+         * which a survey of strangers cannot work with.
+         *
+         * Rather than leave a button that sends people to a Google error
+         * page, the button goes. Everything behind it stays, and still works
+         * on localhost, where the callback is an address Google accepts.
+         */
+        'enabled' => filter_var(env('GOOGLE_SIGNIN_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),

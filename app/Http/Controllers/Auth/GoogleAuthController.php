@@ -219,7 +219,8 @@ class GoogleAuthController extends Controller
 
     private function configured(): bool
     {
-        return filled(config('services.google.client_id'))
+        return config('services.google.enabled')
+            && filled(config('services.google.client_id'))
             && filled(config('services.google.client_secret'));
     }
 

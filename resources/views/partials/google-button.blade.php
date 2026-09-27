@@ -1,12 +1,13 @@
 {{-- The Google Sign-In button.
 
-     Hidden entirely when no client is configured, rather than shown and
-     failing, so a fresh clone without credentials does not offer a door that
-     opens onto an error.
+     Hidden entirely when no client is configured, or when sign-in is
+     switched off, rather than shown and failing -- neither a fresh clone
+     without credentials nor a demonstration Google will not let us publish
+     should offer a door that opens onto an error.
 
      @param string|null $from  'admin' to come back to the back office door
      @param string|null $label --}}
-@if (filled(config('services.google.client_id')))
+@if (config('services.google.enabled') && filled(config('services.google.client_id')))
     <div class="flex items-center gap-3">
         <span class="h-px flex-1 bg-[var(--line)]"></span>
         <span class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">or</span>

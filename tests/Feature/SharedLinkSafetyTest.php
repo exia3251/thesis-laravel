@@ -98,6 +98,44 @@ class SharedLinkSafetyTest extends TestCase
     }
 
     #[Test]
+    public function a_door_that_cannot_open_is_not_shown(): void
+    {
+        /*
+         * Google Sign-In is switched off for the demonstration: Google will
+         * not accept an ngrok address as an authorised domain, so the app
+         * cannot be published, so only named test users could have used it.
+         * A button that sends a respondent to a Google error page is worse
+         * than no button, so neither the button nor the route is left open.
+         */
+        config(['services.google.enabled' => false]);
+
+        foreach (self::LOGIN_PAGES as $page) {
+            $body = $this->get(self::SHARED . $page)->assertOk()->getContent();
+
+            $this->assertStringNotContainsString('/auth/google/redirect', $body, $page);
+        }
+
+        $this->get(self::SHARED . '/auth/google/redirect')
+            ->assertRedirect('/shop/login');
+    }
+
+    #[Test]
+    public function the_button_comes_back_when_it_is_switched_on(): void
+    {
+        // Switched off, not removed. It still works on localhost, where the
+        // callback is an address Google is willing to accept.
+        config([
+            'services.google.enabled' => true,
+            'services.google.client_id' => 'test-client-id.apps.googleusercontent.com',
+            'services.google.client_secret' => 'test-secret',
+        ]);
+
+        $this->get('http://localhost/shop/login')
+            ->assertOk()
+            ->assertSee('/auth/google/redirect', false);
+    }
+
+    #[Test]
     public function a_real_deployment_drops_the_whole_box(): void
     {
         // The one gate left. Whatever is decided about a survey link, a
