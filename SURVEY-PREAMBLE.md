@@ -17,13 +17,15 @@ four sentences a respondent will actually read.
 
 > Below is the link to our system.
 >
-> On the first page you see, click **Visit Site** — it is a notice from the
-> service that puts the system online, and appears only once. The page after it
-> gives you the sign-in details and a short list of things to try, so there is
-> no need to register.
+> It opens on a page that gives you the sign-in details and a short list of
+> things to try, so there is no need to register.
 >
 > Nothing on the system is real, so please explore freely. Kindly return to this
 > form afterwards.
+
+The "click Visit Site" line is gone because the Cloudflare address does not
+show one. Put it back only if the link in the form is the ngrok address, which
+does.
 
 ---
 

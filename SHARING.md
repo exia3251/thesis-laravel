@@ -54,10 +54,30 @@ the shop address does not, and a respondent arriving at a sign-in page with no
 account gets no further. Set `SURVEY_FORM_URL` in `.env` and it shows a button
 through to the questionnaire as well.
 
-**Respondents see an ngrok warning page first.** "You are about to visit...",
-with a **Visit Site** button. It appears once per browser and is ngrok's, not
-ours; the only way to remove it is a paid plan. Worth a line in the form so
-nobody assumes the link is broken: *"Click Visit Site on the first page."*
+**Two addresses, and which one to hand out depends on the day.**
+
+The ngrok address is permanent, and that is its whole advantage. Its
+disadvantage was discovered the hard way: `ngrok-free.dev` answers a lookup for
+a domain that does not exist yet with a negative TTL of **86400 seconds**. Any
+resolver asked for the address before the domain was claimed caches "does not
+exist" for a full day, and nothing at this end can clear somebody else's cache.
+A phone on the same wifi as the laptop could not open the link while the laptop
+could. It comes good on its own, a day after each resolver's first miss.
+
+A Cloudflare quick tunnel sidesteps that entirely, because its name is freshly
+minted and nobody has ever looked it up:
+
+```bash
+cloudflared tunnel --url http://localhost:8123
+```
+
+It prints a `https://…trycloudflare.com` address, shows **no warning page** --
+respondents land straight on the survey page -- and gives a different address
+every run, so the form needs the current one pasted in each session.
+
+So: ngrok when it is reachable and the link must stay put; Cloudflare when
+somebody cannot open the ngrok one, or when the survey is going out today.
+Both forward to the same server and can run at once.
 
 The two options below are what to do if this setup is ever rebuilt from
 scratch.
