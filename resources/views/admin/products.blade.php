@@ -415,7 +415,10 @@
             }
 
             const errorBox = document.getElementById('formErrors');
-            errorBox.innerHTML = entries.map(([, messages]) => `<div>${messages[0]}</div>`).join('');
+            // Escaped, for the same reason as the user panel: a message
+            // that quotes the submitted value back would otherwise carry it
+            // into the page as markup.
+            errorBox.innerHTML = entries.map(([, messages]) => `<div>${escapeHtml(messages[0])}</div>`).join('');
             errorBox.classList.remove('hidden');
 
             entries.forEach(([field, messages]) => {

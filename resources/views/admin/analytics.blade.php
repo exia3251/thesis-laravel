@@ -296,7 +296,7 @@
             const arc = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${BRAND_TONES[i % BRAND_TONES.length]}"
                 stroke-width="18" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}"
                 transform="rotate(-90 ${cx} ${cy})" stroke-linecap="round">
-                <title>${b.brand} — ${b.share}% (${peso(b.revenue)})</title></circle>`;
+                <title>${escapeHtml(b.brand)} — ${b.share}% (${peso(b.revenue)})</title></circle>`;
             offset += length;
             return arc;
         }).join('');

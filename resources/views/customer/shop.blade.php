@@ -382,9 +382,14 @@
                 if (data.success && data.data) {
                     products = data.data;
                     const brands = [...new Set(products.map((product) => product.brand))];
+                    /* Escaped on the way in. A brand is typed by staff and
+                       drawn here for every visitor, so markup in one would run
+                       in the browser of everybody who opened the shop -- and
+                       the quotes matter as much as the angle brackets, because
+                       the name also lands inside an attribute. */
                     document.getElementById('brandFilter').innerHTML =
                         '<option value="">All Brands</option>' +
-                        brands.map((brand) => `<option value="${brand}">${brand}</option>`).join('');
+                        brands.map((brand) => `<option value="${escapeHtml(brand)}">${escapeHtml(brand)}</option>`).join('');
                     renderShowcase();
                     loadFeaturedProducts();
                     renderProducts();

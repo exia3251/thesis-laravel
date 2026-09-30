@@ -49,7 +49,7 @@ final class Search
                     $plain = self::plain($word);
 
                     foreach ($columns as $column) {
-                        $any->orWhere($column, 'like', '%' . $word . '%');
+                        $any->orWhere($column, 'like', '%' . self::literal($word) . '%');
 
                         /*
                          * And again with the punctuation taken out of both
@@ -60,7 +60,7 @@ final class Search
                         if ($plain !== '' && self::isPlainColumnName($column)) {
                             $any->orWhereRaw(
                                 "REPLACE(REPLACE(REPLACE(LOWER({$column}), '-', ''), ' ', ''), '/', '') LIKE ?",
-                                ['%' . $plain . '%']
+                                ['%' . self::literal($plain) . '%']
                             );
                         }
                     }
@@ -86,6 +86,23 @@ final class Search
             preg_split('/\s+/', mb_strtolower($term)) ?: [],
             static fn (string $word) => $word !== ''
         ));
+    }
+
+    /**
+     * A word with LIKE's own wildcards turned back into characters.
+     *
+     * The term is a bound parameter, so none of this is about injection -- it
+     * is about the search meaning what was typed. Left alone, a customer
+     * searching "5%" gets every product in the catalogue, because per cent is
+     * LIKE's "anything at all"; "W_30" quietly matches W-30, W030 and Wx30.
+     * Nobody typing those means them as patterns.
+     *
+     * MySQL's default escape character inside a LIKE is the backslash, so the
+     * backslash itself has to go first.
+     */
+    private static function literal(string $word): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $word);
     }
 
     /** A word with its punctuation taken out: "5w-30" becomes "5w30". */

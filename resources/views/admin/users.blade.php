@@ -851,7 +851,10 @@
                 if (data.errors) {
                     const errBox = document.getElementById('userFormErrors');
                     const messages = Object.values(data.errors).flat();
-                    errBox.innerHTML = messages.map(m => `<div>${m}</div>`).join('');
+                    // Escaped: a message may quote back what was just
+                    // typed, which makes this a way to run markup by typing it
+                    // into the form that reports it.
+                    errBox.innerHTML = messages.map(m => `<div>${escapeHtml(m)}</div>`).join('');
                     errBox.classList.remove('hidden');
                     // Also show per-field
                     const fieldMap = { full_name: 'full_name', email: 'email', password: 'password', phone: 'phone' };
