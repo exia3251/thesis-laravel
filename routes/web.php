@@ -19,6 +19,7 @@ use App\Http\Controllers\Customer\ChatbotController;
 use App\Http\Controllers\Customer\OrderController;
 use App\Http\Controllers\Customer\ProfileController;
 use App\Http\Controllers\Customer\ShopController;
+use App\Http\Controllers\PlaceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -273,6 +274,21 @@ Route::middleware('throttle:30,1')->prefix('shop-api/chat')->group(function () {
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/shop-api/products', [ShopController::class, 'getProducts']);
     Route::get('/shop-api/featured-products', [ShopController::class, 'getFeaturedProducts']);
+});
+
+/*
+ * The province, city and barangay lists behind the address dropdowns.
+ *
+ * Open to visitors, because the first form that needs them is registration --
+ * which by definition has nobody signed in. They hold the Philippine
+ * Statistics Authority's place names and nothing belonging to anyone, so the
+ * limit is here to bound the traffic rather than to protect the contents.
+ */
+Route::middleware('throttle:120,1')->prefix('shop-api/places')->group(function () {
+    Route::get('/provinces', [PlaceController::class, 'provinces']);
+    Route::get('/resolve', [PlaceController::class, 'resolve']);
+    // Last, so the two named routes above are not swallowed by it.
+    Route::get('/{code}', [PlaceController::class, 'children']);
 });
 
 Route::middleware(['customer', 'active_session'])->group(function () {

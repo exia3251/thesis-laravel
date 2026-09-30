@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Support\Search;
+use App\Rules\RealPlace;
 use App\Support\PasswordPolicy;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
@@ -102,9 +103,13 @@ class UserManagementController extends Controller
             'is_active' => 'nullable|boolean',
             'phone'     => ['nullable', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
             'house_street' => 'nullable|string|max:160',
-            'barangay'     => 'nullable|string|max:100',
-            'city'         => 'nullable|string|max:100',
-            'province'     => 'nullable|string|max:100',
+            // Optional here -- a staff account has no delivery address -- but
+            // real when given, and each inside the one above it. The same rule
+            // the shop applies, so staff correcting a customer's address
+            // cannot save one the customer could not have chosen.
+            'province'     => ['nullable', 'string', 'max:100', new RealPlace('province')],
+            'city'         => ['nullable', 'string', 'max:100', new RealPlace('city', parentField: 'province')],
+            'barangay'     => ['nullable', 'string', 'max:100', new RealPlace('barangay', parentField: 'city')],
             'postal_code'  => ['nullable', 'string', 'regex:/^\d{4}$/'],
             'avatar'    => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:min_width=200,min_height=200'],
         ];

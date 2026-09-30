@@ -139,27 +139,18 @@
                         </div>
 
                         <div class="grid gap-5 sm:grid-cols-2">
-                            <div>
-                                <label for="barangay" class="block text-sm font-medium text-[var(--ink)]">Barangay</label>
-                                <input type="text" id="barangay" maxlength="100" required
-                                       placeholder="Poblacion"
-                                       class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
-                                <p id="err_barangay" class="mt-1 hidden text-xs text-red-600"></p>
-                            </div>
-                            <div>
-                                <label for="city" class="block text-sm font-medium text-[var(--ink)]">City or municipality</label>
-                                <input type="text" id="city" maxlength="100" required
-                                       placeholder="Makati City"
-                                       class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
-                                <p id="err_city" class="mt-1 hidden text-xs text-red-600"></p>
-                            </div>
-                            <div>
-                                <label for="province" class="block text-sm font-medium text-[var(--ink)]">Province</label>
-                                <input type="text" id="province" maxlength="100" required
-                                       placeholder="Metro Manila"
-                                       class="mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
-                                <p id="err_province" class="mt-1 hidden text-xs text-red-600"></p>
-                            </div>
+                            @include('partials.address-fields', [
+                                'prefix' => 'prof',
+                                'required' => true,
+                                'values' => [
+                                    'province' => $profile->province,
+                                    'city' => $profile->city,
+                                    'barangay' => $profile->barangay,
+                                ],
+                                'labelClass' => 'block text-sm font-medium text-[var(--ink)]',
+                                'inputClass' => 'mt-1.5 block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 pr-9 text-sm outline-none transition focus:border-[var(--primary)] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400',
+                            ])
+
                             <div>
                                 <label for="postal_code" class="block text-sm font-medium text-[var(--ink)]">Postal code <span class="font-normal text-[var(--muted)]">optional</span></label>
                                 <input type="text" id="postal_code" maxlength="4" inputmode="numeric"
@@ -273,6 +264,15 @@
 <script>
     const ADDRESS_FIELDS = ['house_street', 'barangay', 'city', 'province', 'postal_code'];
     const PROFILE_FIELDS = ['full_name', 'email', 'phone'];
+
+    /* The three place boxes belong to the shared address component, so they
+       are named under its group rather than by the bare field name. Everything
+       that reads or writes an address field goes through here, so the rest of
+       this page does not have to know which of them are lists. */
+    const PLACE_FIELDS = ['province', 'city', 'barangay'];
+
+    const addressField = (name) =>
+        document.getElementById(PLACE_FIELDS.includes(name) ? `prof_${name}` : name);
     let messageTimeout;
 
     function showMessage(text, type = 'success') {
@@ -325,12 +325,14 @@
     }
 
     function renderAddressPreview() {
+        const value = (name) => addressField(name).value.trim();
+
         const parts = [
-            document.getElementById('house_street').value.trim(),
-            document.getElementById('barangay').value.trim() ? 'Brgy. ' + document.getElementById('barangay').value.trim() : '',
-            document.getElementById('city').value.trim(),
-            document.getElementById('province').value.trim(),
-            document.getElementById('postal_code').value.trim(),
+            value('house_street'),
+            value('barangay') ? 'Brgy. ' + value('barangay') : '',
+            value('city'),
+            value('province'),
+            value('postal_code'),
         ].filter(Boolean);
 
         document.getElementById('addressPreview').textContent = parts.length ? parts.join(', ') : '—';
@@ -346,7 +348,11 @@
         document.getElementById('full_name').value = data.user?.full_name || '';
         document.getElementById('email').value = data.user?.email || '';
         document.getElementById('phone').value = data.phone || '';
-        ADDRESS_FIELDS.forEach((field) => {
+        /* The three lists are filled in by the server, which resolved their
+           names to codes so they could narrow each other. Writing the names
+           back over them here would leave the codes behind and break the
+           cascade, so only the free-text fields are refreshed. */
+        ADDRESS_FIELDS.filter((field) => !PLACE_FIELDS.includes(field)).forEach((field) => {
             document.getElementById(field).value = data[field] || '';
         });
 
@@ -363,7 +369,13 @@
 
         const body = { full_name: document.getElementById('full_name').value.trim() };
         PROFILE_FIELDS.concat(ADDRESS_FIELDS).forEach((field) => {
-            body[field] = document.getElementById(field).value.trim();
+            body[field] = addressField(field).value.trim();
+        });
+
+        // The codes travel with the names so the server can check the three
+        // belong together without having to match names back to the list.
+        PLACE_FIELDS.forEach((field) => {
+            body[`${field}_code`] = document.getElementById(`prof_${field}_code`).value;
         });
 
         await withBusy(busyButtonOf(event.target), async () => {
@@ -417,7 +429,10 @@
     }
 
     ADDRESS_FIELDS.forEach((field) => {
-        document.getElementById(field).addEventListener('input', renderAddressPreview);
+        // A list fires change when something is picked from it; a text box
+        // fires input as it is typed into. Listening for both covers either.
+        addressField(field).addEventListener('input', renderAddressPreview);
+        addressField(field).addEventListener('change', renderAddressPreview);
     });
 
     showSection((location.hash || '#profile').slice(1));

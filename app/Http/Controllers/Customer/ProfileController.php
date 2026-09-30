@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Rules\RealPlace;
 use App\Support\PasswordPolicy;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
@@ -18,7 +19,17 @@ class ProfileController extends Controller
      */
     public function index()
     {
-        return view('customer.profile');
+        /*
+         * The saved address goes in with the page rather than being fetched
+         * after it. The three place boxes have to resolve their names to codes
+         * before they can narrow each other, and doing that on the server
+         * means the form arrives already showing Cavite, Imus and the
+         * barangay -- instead of drawing three empty boxes and filling them a
+         * moment later.
+         */
+        return view('customer.profile', [
+            'profile' => CustomerProfile::firstOrCreate(['user_id' => auth()->id()]),
+        ]);
     }
 
     /**
@@ -62,9 +73,11 @@ class ProfileController extends Controller
                 'unique:users,email,' . $user->user_id . ',user_id',
             ],
             'house_street' => ['required', 'string', 'min:5', 'max:160'],
-            'barangay'     => ['required', 'string', 'max:100'],
-            'city'         => ['required', 'string', 'max:100'],
-            'province'     => ['required', 'string', 'max:100'],
+            // Real places, and each inside the one above it. The browser
+            // narrows the lists; this is what makes it true.
+            'province'     => ['required', 'string', 'max:100', new RealPlace('province')],
+            'city'         => ['required', 'string', 'max:100', new RealPlace('city', parentField: 'province')],
+            'barangay'     => ['required', 'string', 'max:100', new RealPlace('barangay', parentField: 'city')],
             'postal_code'  => ['nullable', 'string', 'regex:/^\d{4}$/'],
         ], [
             'full_name.required' => 'Your name is required. It appears on your receipts.',

@@ -16,16 +16,16 @@ done about the quality characteristics that model asks after.
 | Type | Localhost web application, served from the researchers' machine |
 | Language | PHP 8.2 |
 | Framework | Laravel 12.54 |
-| Database | MySQL (XAMPP), 16 domain tables |
-| Views | Blade server-side templates, 45 files |
+| Database | MySQL (XAMPP), 17 domain tables |
+| Views | Blade server-side templates, 46 files |
 | Styling | Tailwind CSS 3.4, compiled by Vite 7 |
 | Client-side | Plain JavaScript. No React, Vue or Alpine. |
 | AI assistant | Groq API (`openai/gpt-oss-120b`), with a non-AI fallback |
 | Third-party PHP packages | 2 (Laravel Socialite, Tinker) |
-| Automated tests | 291 passing, 894 assertions, 25 test files |
+| Automated tests | 361 passing, 1,160 assertions, 31 test files |
 
-Roughly 14,000 lines of PHP and 12,000 of Blade, across 22 controllers, 14
-models, 9 services, 4 middleware, 30 migrations.
+Roughly 11,000 lines of PHP and 13,000 of Blade, across 23 controllers, 15
+models, 9 services, 4 middleware, 31 migrations.
 
 ---
 
@@ -54,17 +54,19 @@ years without a dependency audit.
 
 ```
 app/
-  Http/Controllers/      22  — request handling, split Admin/ and Customer/
+  Http/Controllers/      23  — request handling, split Admin/ and Customer/
   Http/Middleware/        4  — role gates, single-session enforcement
-  Models/                14  — Eloquent models
+  Models/                15  — Eloquent models
+  Rules/                  1  — an address has to name places that exist
   Services/               9  — logic too big for a controller
     Chatbot/                  the assistant: matcher, responder, Groq layer
   Support/                    shared helpers (search matching)
 database/
-  migrations/            30  — every schema change, in order
-  seeders/                6  — catalogue, vehicle guide, demo data
-resources/views/         45  — Blade, one layout family
-tests/Feature/           25  — behaviour tests against a real database
+  data/                       the PSA place-name list, committed
+  migrations/            31  — every schema change, in order
+  seeders/                7  — catalogue, vehicle guide, places, demo data
+resources/views/         46  — Blade, one layout family
+tests/Feature/           31  — behaviour tests against a real database
 ```
 
 Business rules that outgrew a controller live in `app/Services`: order
@@ -75,7 +77,7 @@ input and delegate.
 
 ## 4. The database
 
-16 domain tables. The ones worth knowing:
+17 domain tables. The ones worth knowing:
 
 - **`sales` / `sale_items`** — an order and its lines. Line items store their
   own `unit_price` and `subtotal` rather than reading today's price, so an old
@@ -89,6 +91,12 @@ input and delegate.
   written answers, and every exchange.
 - **`vehicle_specs`** — 62 vehicles with the oil grade each takes, each row
   carrying its source and whether it has been checked.
+- **`psgc_locations`** — the Philippine Statistics Authority's place names:
+  84 provinces, 1,634 cities and municipalities, 42,046 barangays, each
+  pointing at the one it sits inside. Reference data rather than this
+  business's, so it is seeded from a committed file and never edited here. It
+  is what makes the three address boxes narrow each other, and what stops a
+  barangay being saved under a city it does not sit in.
 - **`activity_logs`** — who did what.
 - **`document_sequences`** — gapless order, receipt and delivery numbers.
 
@@ -147,7 +155,7 @@ mid-sentence, are discarded and the keyword half answers instead.
 ## 7. Against ISO/IEC 25010
 
 **Functional suitability.** Sales, inventory, POS, deliveries, payments
-including split, and the assistant. Behaviour is pinned by 291 automated tests
+including split, and the assistant. Behaviour is pinned by 361 automated tests
 rather than by manual checking.
 
 **Performance efficiency.** Pages are server-rendered and paginated. Lists that

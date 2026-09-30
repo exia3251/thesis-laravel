@@ -190,18 +190,15 @@
                 <label class="block text-sm font-medium text-[var(--ink)] mb-1">House or building number and street</label>
                 <input type="text" id="house_street" maxlength="160" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="123 Rizal Street">
             </div>
-            <div>
-                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Barangay</label>
-                <input type="text" id="barangay" maxlength="100" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Poblacion">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-[var(--ink)] mb-1">City or municipality</label>
-                <input type="text" id="city" maxlength="100" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Makati City">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-[var(--ink)] mb-1">Province</label>
-                <input type="text" id="province" maxlength="100" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="Metro Manila">
-            </div>
+            {{-- The same three lists the shop asks for an address with, so
+                 staff correcting a customer's address cannot save a barangay
+                 the customer could not have chosen. --}}
+            @include('partials.address-fields', [
+                'prefix' => 'usr',
+                'required' => false,
+                'labelClass' => 'block text-sm font-medium text-[var(--ink)] mb-1',
+                'inputClass' => 'block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 pr-9 text-sm focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400',
+            ])
             <div>
                 <label class="block text-sm font-medium text-[var(--ink)] mb-1">Postal code</label>
                 <input type="text" id="postal_code" maxlength="4" class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none" placeholder="1200">
@@ -291,6 +288,10 @@
             document.getElementById('userForm').reset();
             document.getElementById('userId').value = '';
             document.getElementById('is_active').checked = true;
+
+            // reset() returns inputs to their HTML defaults, which leaves the
+            // three lists holding whichever row was open last.
+            clearAddressFields('usr');
         }
 
         function openUserModal(user = null) {
@@ -324,9 +325,49 @@
             document.getElementById('email').value = user.email ?? '';
 
             document.getElementById('phone').value = profile.phone ?? '';
-            ['house_street', 'barangay', 'city', 'province', 'postal_code'].forEach((field) => {
+            ['house_street', 'postal_code'].forEach((field) => {
                 document.getElementById(field).value = profile[field] ?? '';
             });
+
+            fillAddressLists(profile);
+        }
+
+        /**
+         * Puts a saved address into the three lists.
+         *
+         * They are keyed by code and an address is stored as names, so the
+         * names are resolved first. Shown straight away under their saved
+         * names, then corrected to the list's own spelling once the answer
+         * arrives -- so opening a row never shows three empty boxes, even for
+         * a moment, and never silently drops an address the lists disagree
+         * with.
+         */
+        async function fillAddressLists(profile) {
+            const saved = {
+                province_name: profile.province ?? '',
+                city_name: profile.city ?? '',
+                barangay_name: profile.barangay ?? '',
+            };
+
+            setAddressFields('usr', saved);
+
+            if (!saved.province_name) return;
+
+            try {
+                const query = new URLSearchParams({
+                    province: saved.province_name,
+                    city: saved.city_name,
+                    barangay: saved.barangay_name,
+                });
+
+                const response = await fetch(`/shop-api/places/resolve?${query}`, { headers: { Accept: 'application/json' } });
+                const payload = await response.json();
+
+                setAddressFields('usr', { ...saved, ...(payload.data || {}) });
+            } catch (error) {
+                // The names are already on screen. Leaving them there beats
+                // blanking an address because a lookup did not answer.
+            }
         }
 
         function closeUserModal() {
@@ -744,8 +785,15 @@
             // a multipart body on PUT, so an update posts with _method instead.
             const body = new FormData();
             body.append('full_name', document.getElementById('full_name').value.trim());
-            ['house_street', 'barangay', 'city', 'province', 'postal_code'].forEach((field) => {
+            ['house_street', 'postal_code'].forEach((field) => {
                 body.append(field, document.getElementById(field).value.trim());
+            });
+
+            // The three lists post what was chosen, plus the code so the
+            // server can check the three belong together.
+            ['province', 'city', 'barangay'].forEach((field) => {
+                body.append(field, document.getElementById(`usr_${field}`).value.trim());
+                body.append(`${field}_code`, document.getElementById(`usr_${field}_code`).value);
             });
             body.append('role', document.getElementById('role').value);
             body.append('password', document.getElementById('password').value);

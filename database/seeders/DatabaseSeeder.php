@@ -49,6 +49,10 @@ class DatabaseSeeder extends Seeder
             'postal_code' => '1100',
         ]);
 
+        // The place names the address dropdowns are built from. Reference
+        // data rather than this shop's, and the same on every install.
+        $this->call(PsgcLocationSeeder::class);
+
         $this->call(ProductCatalogSeeder::class);
     }
 }

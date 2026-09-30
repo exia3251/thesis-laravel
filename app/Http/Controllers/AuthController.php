@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\RealPlace;
 use App\Support\PasswordPolicy;
 use App\Http\Controllers\Concerns\StartsUserSessions;
 use App\Models\User;
@@ -43,9 +44,11 @@ class AuthController extends Controller
             'full_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[A-Za-z][A-Za-z\s\'.-]*$/'],
             'phone' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/', 'unique:customer_profiles,phone'],
             'house_street' => ['required', 'string', 'min:5', 'max:160'],
-            'barangay'     => ['required', 'string', 'max:100'],
-            'city'         => ['required', 'string', 'max:100'],
-            'province'     => ['required', 'string', 'max:100'],
+            // Real places, and each inside the one above it. The browser
+            // narrows the lists; this is what makes it true.
+            'province'     => ['required', 'string', 'max:100', new RealPlace('province')],
+            'city'         => ['required', 'string', 'max:100', new RealPlace('city', parentField: 'province')],
+            'barangay'     => ['required', 'string', 'max:100', new RealPlace('barangay', parentField: 'city')],
             'postal_code'  => ['nullable', 'string', 'regex:/^\d{4}$/'],
         ];
     }
