@@ -192,23 +192,32 @@
                                 @if ($hasPassword)
                                     <label for="current_password" class="text-sm font-medium text-[var(--muted)]">Current password</label>
                                     <div>
-                                        <input type="password" id="current_password" maxlength="255" required
-                                               class="block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                                        <div class="relative">
+                                            <input type="password" id="current_password" maxlength="255" required
+                                                   class="block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 pr-11 text-sm outline-none transition focus:border-[var(--primary)]">
+                                            @include('partials.password-eye', ['class' => 'absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[var(--muted)] transition hover:text-[var(--ink)]'])
+                                        </div>
                                         <p id="err_current_password" class="mt-1 hidden text-xs text-red-600"></p>
                                     </div>
                                 @endif
 
                                 <label for="new_password" class="text-sm font-medium text-[var(--muted)]">New password</label>
                                 <div>
-                                    <input type="password" id="new_password" minlength="8" maxlength="32" required
-                                           class="block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                                    <div class="relative">
+                                        <input type="password" id="new_password" minlength="8" maxlength="32" required
+                                               class="block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 pr-11 text-sm outline-none transition focus:border-[var(--primary)]">
+                                        @include('partials.password-eye', ['class' => 'absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[var(--muted)] transition hover:text-[var(--ink)]'])
+                                    </div>
                                     <p id="err_new_password" class="mt-1 hidden text-xs text-red-600"></p>
                                 </div>
 
                                 <label for="new_password_confirmation" class="text-sm font-medium text-[var(--muted)]">Confirm</label>
                                 <div>
-                                    <input type="password" id="new_password_confirmation" minlength="8" maxlength="32" required
-                                           class="block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]">
+                                    <div class="relative">
+                                        <input type="password" id="new_password_confirmation" minlength="8" maxlength="32" required
+                                               class="block w-full rounded-xl border border-[var(--line)] px-3.5 py-2.5 pr-11 text-sm outline-none transition focus:border-[var(--primary)]">
+                                        @include('partials.password-eye', ['class' => 'absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[var(--muted)] transition hover:text-[var(--ink)]'])
+                                    </div>
                                     <p id="err_confirm_password" class="mt-1 hidden text-xs text-red-600"></p>
                                 </div>
                             </div>

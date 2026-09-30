@@ -171,9 +171,12 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-[var(--ink)] mb-1">Password <span id="passwordRequired" class="text-red-500">*</span></label>
-                <input type="password" id="password" minlength="8" maxlength="32"
-                       placeholder="Min 8 characters"
-                       class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm focus:outline-none">
+                <div class="relative">
+                    <input type="password" id="password" minlength="8" maxlength="32"
+                           placeholder="Min 8 characters"
+                           class="block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 pr-11 text-sm focus:outline-none">
+                    @include('partials.password-eye', ['class' => 'absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[var(--muted)] transition hover:text-[var(--ink)]'])
+                </div>
                 <p id="err_password" class="hidden mt-1 text-xs text-red-600"></p>
                 <p class="mt-1 text-xs text-[var(--muted)]">Leave blank to keep existing password when editing.</p>
             </div>

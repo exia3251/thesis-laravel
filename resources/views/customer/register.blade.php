@@ -72,12 +72,22 @@
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Password</label>
-                            <input id="password" type="password" required minlength="8" maxlength="100" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Create a password">
+                            <label for="password" class="mb-2 block text-sm font-medium text-[var(--ink)]">Password</label>
+                            {{-- Both halves get the eye. A password typed blind
+                                 into two boxes is a mismatch nobody can see,
+                                 and the form comes back refusing an account
+                                 over a typo that is still invisible. --}}
+                            <div class="relative">
+                                <input id="password" type="password" required minlength="8" maxlength="100" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 pr-12 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Create a password">
+                                @include('partials.password-eye')
+                            </div>
                         </div>
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Confirm Password</label>
-                            <input id="password_confirmation" type="password" required minlength="8" maxlength="100" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Confirm your password">
+                            <label for="password_confirmation" class="mb-2 block text-sm font-medium text-[var(--ink)]">Confirm Password</label>
+                            <div class="relative">
+                                <input id="password_confirmation" type="password" required minlength="8" maxlength="100" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 pr-12 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Confirm your password">
+                                @include('partials.password-eye')
+                            </div>
                         </div>
                     </div>
 

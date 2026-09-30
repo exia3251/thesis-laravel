@@ -41,16 +41,22 @@
 
                     <div>
                         <label for="password" class="mb-2 block text-sm font-medium text-[var(--ink)]">New password</label>
-                        <input id="password" name="password" type="password" required autocomplete="new-password"
-                               minlength="{{ \App\Support\PasswordPolicy::MINIMUM }}" maxlength="{{ \App\Support\PasswordPolicy::MAXIMUM }}"
-                               class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                        <div class="relative">
+                            <input id="password" name="password" type="password" required autocomplete="new-password"
+                                   minlength="{{ \App\Support\PasswordPolicy::MINIMUM }}" maxlength="{{ \App\Support\PasswordPolicy::MAXIMUM }}"
+                                   class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 pr-12 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            @include('partials.password-eye')
+                        </div>
                     </div>
 
                     <div>
                         <label for="password_confirmation" class="mb-2 block text-sm font-medium text-[var(--ink)]">Confirm new password</label>
-                        <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password"
-                               minlength="{{ \App\Support\PasswordPolicy::MINIMUM }}" maxlength="{{ \App\Support\PasswordPolicy::MAXIMUM }}"
-                               class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                        <div class="relative">
+                            <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password"
+                                   minlength="{{ \App\Support\PasswordPolicy::MINIMUM }}" maxlength="{{ \App\Support\PasswordPolicy::MAXIMUM }}"
+                                   class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 pr-12 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]">
+                            @include('partials.password-eye')
+                        </div>
                     </div>
 
                     <button type="submit"

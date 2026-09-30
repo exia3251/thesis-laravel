@@ -210,6 +210,43 @@
     }
 
     /**
+     * Swaps a password box between hidden and readable, and the icon with it.
+     *
+     * Lives here rather than on the two pages that had it, because the other
+     * eleven password boxes in the system did not -- including both halves of
+     * "create a password / confirm your password", where a typo cannot be seen
+     * and costs the whole form.
+     *
+     * Finds the input by walking up from the button, so the markup only has to
+     * put the two inside the same wrapper and nothing has to be named.
+     */
+    function togglePassword(button) {
+        const field = button.closest('div').querySelector('input[type="password"], input[type="text"]');
+
+        if (!field) return;
+
+        const showing = field.type === 'text';
+
+        field.type = showing ? 'password' : 'text';
+        button.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+        button.querySelector('.eye-open').classList.toggle('hidden', !showing);
+        button.querySelector('.eye-shut').classList.toggle('hidden', showing);
+
+        /* Focus goes back to the box, at the end of what is already typed.
+           Without the caret move, showing a password mid-entry dropped the
+           cursor back to the start and the next keystroke landed there. */
+        field.focus();
+
+        const end = field.value.length;
+
+        try {
+            field.setSelectionRange(end, end);
+        } catch (error) {
+            // Not every input type allows a selection range. Nothing is lost.
+        }
+    }
+
+    /**
      * Writes a count into the badge on a header button.
      *
      * The cart button said nothing when something was added to it. The item

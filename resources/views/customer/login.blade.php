@@ -43,16 +43,12 @@
                                 <input id="password" name="password" type="password" required minlength="6" maxlength="255"
                                        class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 pr-12 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]"
                                        placeholder="Enter your password">
-                                {{-- Shows what was typed. Worth having anywhere,
-                                     and worth more here: the password is printed
-                                     on this very page, and somebody whose browser
-                                     autofilled a different one has no way to see
-                                     that is what happened. --}}
-                                <button type="button" onclick="togglePassword(this)" aria-label="Show password"
-                                        class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[var(--muted)] transition hover:text-[var(--ink)]">
-                                    <svg class="eye-open h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.04 12.32a1 1 0 0 1 0-.64C3.42 7.51 7.36 4.5 12 4.5s8.58 3.01 9.96 7.18a1 1 0 0 1 0 .64C20.58 16.49 16.64 19.5 12 19.5s-8.58-3.01-9.96-7.18Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
-                                    <svg class="eye-shut hidden h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.22A10.48 10.48 0 0 0 2.04 11.68a1 1 0 0 0 0 .64C3.42 16.49 7.36 19.5 12 19.5c.99 0 1.95-.14 2.86-.4M6.23 6.23A10.45 10.45 0 0 1 12 4.5c4.64 0 8.58 3.01 9.96 7.18a1 1 0 0 1 0 .64 10.52 10.52 0 0 1-4.29 5.45M6.23 6.23 3 3m3.23 3.23 3.65 3.65m7.89 7.89L21 21m-3.23-3.23-3.65-3.65m0 0a3 3 0 1 1-4.24-4.24m4.24 4.24L9.88 9.88"/></svg>
-                                </button>
+                                {{-- Shows what was typed. Worth having anywhere, and worth
+                                     more here: the password is printed on this
+                                     very page, and somebody whose browser
+                                     autofilled a different one has no way to
+                                     see that is what happened. --}}
+                                @include('partials.password-eye')
                             </div>
                         </div>
                     </div>
@@ -108,17 +104,6 @@
 
 @push('scripts')
 <script>
-        /** Swaps the field between hidden and readable, and the icon with it. */
-        function togglePassword(button) {
-            const field = button.parentElement.querySelector('input');
-            const showing = field.type === 'text';
-
-            field.type = showing ? 'password' : 'text';
-            button.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
-            button.querySelector('.eye-open').classList.toggle('hidden', !showing);
-            button.querySelector('.eye-shut').classList.toggle('hidden', showing);
-            field.focus();
-        }
 
 
     {{-- One tap rather than a retype.
