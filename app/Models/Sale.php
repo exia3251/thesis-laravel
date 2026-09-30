@@ -149,6 +149,45 @@ class Sale extends Model
     }
 
     /**
+     * Whether the customer may confirm this order arrived.
+     *
+     * It has to be with the courier. Before that the goods are still on the
+     * shelf here, and confirming does more than acknowledge -- with nothing
+     * owed it also marks the order delivered, so a customer could complete an
+     * order nobody had sent.
+     *
+     * This rule was written out three times -- in the orders list, on the
+     * receipt page, and in the controller that acts on it -- and they drifted:
+     * the list offered the button on an order still being packed, and the
+     * controller then refused it. One method now, and the three agree.
+     */
+    public function canConfirmReceipt(): bool
+    {
+        return ! $this->isCancelled()
+            && ! $this->received_at
+            && $this->delivery_status === 'to_receive';
+    }
+
+    /**
+     * Which of the customer's order tabs this belongs under.
+     *
+     * Once the goods are moving, where they are matters more than what is
+     * owed: a part-paid order out for delivery belongs under To Receive, not
+     * To Pay. It sat under To Pay, which is how a Received button came to be
+     * offered in the one tab where receiving makes no sense.
+     */
+    public function statusGroup(): string
+    {
+        return match (true) {
+            $this->isCancelled()                    => 'cancelled',
+            $this->isDelivered()                    => 'delivered',
+            $this->delivery_status === 'to_receive' => 'to_receive',
+            $this->payment_status !== 'paid'        => 'to_pay',
+            default                                 => 'to_receive',
+        };
+    }
+
+    /**
      * A customer may not cancel while a payment of theirs is still being
      * reviewed, or the refund owed would move underneath the decision.
      */

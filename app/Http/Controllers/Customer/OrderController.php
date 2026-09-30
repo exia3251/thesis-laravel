@@ -308,14 +308,10 @@ class OrderController extends Controller
                     'refund_amount' => $sale->refund_amount,
                     'received_at' => $sale->received_at,
                     'can_cancel' => $sale->canBeCancelledByCustomer(),
-                    'can_confirm_receipt' => !$sale->isCancelled() && !$sale->received_at,
+                    'can_confirm_receipt' => $sale->canConfirmReceipt(),
                     'item_count' => $sale->items->count(),
                     'processing_requests' => $sale->paymentRequests->where('status', 'processing')->count(),
-                    'status_group' => $sale->isCancelled()
-                        ? 'cancelled'
-                        : ($sale->payment_status !== 'paid'
-                            ? 'to_pay'
-                            : ($sale->delivery_status === 'delivered' ? 'delivered' : 'to_receive')),
+                    'status_group' => $sale->statusGroup(),
                 ];
         });
     }
@@ -481,7 +477,7 @@ class OrderController extends Controller
          * the shelf here, and the warehouse would see a completed order for
          * something nobody had sent.
          */
-        if ($sale->delivery_status === 'to_deliver') {
+        if (! $sale->canConfirmReceipt()) {
             return response()->json([
                 'success' => false,
                 'message' => 'This order has not been sent out yet. You can confirm it once it is with the courier.',

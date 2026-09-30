@@ -342,35 +342,37 @@
 
         const id = document.getElementById('intentId').value;
 
-        const response = await fetch(`/admin-api/assistant/intents/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                Accept: 'application/json',
-            },
-            body: JSON.stringify({
-                label: document.getElementById('intentLabel').value,
-                keywords: document.getElementById('intentKeywords').value,
-                answer: document.getElementById('intentAnswer').value,
-                is_active: document.getElementById('intentActive').checked,
-                is_suggested: document.getElementById('intentSuggested').checked,
-            }),
-        });
+        await withBusy(busyButtonOf(event.target), async () => {
+            const response = await fetch(`/admin-api/assistant/intents/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({
+                    label: document.getElementById('intentLabel').value,
+                    keywords: document.getElementById('intentKeywords').value,
+                    answer: document.getElementById('intentAnswer').value,
+                    is_active: document.getElementById('intentActive').checked,
+                    is_suggested: document.getElementById('intentSuggested').checked,
+                }),
+            });
 
-        const payload = await response.json();
+            const payload = await response.json();
 
-        if (!response.ok) {
-            const errors = payload.errors ? Object.values(payload.errors).flat() : [payload.message || 'Could not save.'];
-            const box = document.getElementById('modalErrors');
-            box.innerHTML = errors.map(escapeHtml).join('<br>');
-            box.classList.remove('hidden');
-            return;
-        }
+            if (!response.ok) {
+                const errors = payload.errors ? Object.values(payload.errors).flat() : [payload.message || 'Could not save.'];
+                const box = document.getElementById('modalErrors');
+                box.innerHTML = errors.map(escapeHtml).join('<br>');
+                box.classList.remove('hidden');
+                return;
+            }
 
-        closeIntent();
-        showMessage(payload.message || 'Saved.');
-        await loadIntents();
+            closeIntent();
+            showMessage(payload.message || 'Saved.');
+            await loadIntents();
+        }, 'Saving');
     }
 
     let vehicles = [];
@@ -455,37 +457,39 @@
 
         const id = document.getElementById('vehicleId').value;
 
-        const response = await fetch(`/admin-api/assistant/vehicles/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                Accept: 'application/json',
-            },
-            body: JSON.stringify({
-                viscosity: document.getElementById('vehicleViscosity').value,
-                viscosity_alt: document.getElementById('vehicleViscosityAlt').value || null,
-                oil_type: document.getElementById('vehicleOilType').value || null,
-                capacity_litres: document.getElementById('vehicleCapacity').value || null,
-                source: document.getElementById('vehicleSource').value || null,
-                notes: document.getElementById('vehicleNotes').value || null,
-                is_verified: document.getElementById('vehicleVerified').checked,
-            }),
-        });
+        await withBusy(busyButtonOf(event.target), async () => {
+            const response = await fetch(`/admin-api/assistant/vehicles/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({
+                    viscosity: document.getElementById('vehicleViscosity').value,
+                    viscosity_alt: document.getElementById('vehicleViscosityAlt').value || null,
+                    oil_type: document.getElementById('vehicleOilType').value || null,
+                    capacity_litres: document.getElementById('vehicleCapacity').value || null,
+                    source: document.getElementById('vehicleSource').value || null,
+                    notes: document.getElementById('vehicleNotes').value || null,
+                    is_verified: document.getElementById('vehicleVerified').checked,
+                }),
+            });
 
-        const payload = await response.json();
+            const payload = await response.json();
 
-        if (!response.ok) {
-            const errors = payload.errors ? Object.values(payload.errors).flat() : [payload.message || 'Could not save.'];
-            const box = document.getElementById('vehicleErrors');
-            box.innerHTML = errors.map(escapeHtml).join('<br>');
-            box.classList.remove('hidden');
-            return;
-        }
+            if (!response.ok) {
+                const errors = payload.errors ? Object.values(payload.errors).flat() : [payload.message || 'Could not save.'];
+                const box = document.getElementById('vehicleErrors');
+                box.innerHTML = errors.map(escapeHtml).join('<br>');
+                box.classList.remove('hidden');
+                return;
+            }
 
-        closeVehicle();
-        showMessage(payload.message || 'Saved.');
-        await loadVehicles();
+            closeVehicle();
+            showMessage(payload.message || 'Saved.');
+            await loadVehicles();
+        }, 'Saving');
     }
 
     loadUnanswered();

@@ -92,6 +92,38 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ActivityLog::class, 'user_id', 'user_id');
     }
 
+    /**
+     * How many bottles are waiting in this account's cart.
+     *
+     * Counted as items rather than lines, because that is the number a
+     * customer is keeping track of: four bottles of one oil reads as four,
+     * the way the cart page totals them.
+     */
+    public function cartItemCount(): int
+    {
+        return (int) $this->cart()->sum('quantity');
+    }
+
+    /**
+     * Orders that are waiting on the customer for something -- money owed, or
+     * goods with the courier that need confirming. Shown as a count beside
+     * Orders, so a customer does not have to open the page to find out whether
+     * anything needs them.
+     */
+    public function ordersNeedingAttention(): int
+    {
+        return (int) $this->sales()
+            ->where('order_status', '!=', Sale::STATUS_CANCELLED)
+            ->where(function ($query) {
+                $query->where('payment_status', '!=', 'paid')
+                    ->orWhere(function ($awaiting) {
+                        $awaiting->where('delivery_status', 'to_receive')
+                            ->whereNull('received_at');
+                    });
+            })
+            ->count();
+    }
+
     // Role checks
     public function isAdmin(): bool
     {

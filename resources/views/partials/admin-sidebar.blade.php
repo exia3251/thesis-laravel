@@ -104,7 +104,7 @@
         @endforeach
 
         <div class="mt-4 mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Session</div>
-        <button type="button" onclick="logout()" class="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">
+        <button type="button" onclick="logout(this)" class="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm text-slate-300 transition hover:bg-[var(--sidebar-hover)] hover:text-white">
             <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['logout'] }}"/>
             </svg>

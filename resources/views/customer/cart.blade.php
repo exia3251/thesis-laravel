@@ -260,7 +260,7 @@
                                 : `<div class="font-semibold text-[var(--ink)]">${formatCurrency(item.subtotal)}</div>`}
                         </td>
                         <td class="px-6 py-4">
-                            <button onclick="removeItem(${item.cart_id})" title="Remove from cart" class="inline-flex items-center gap-1.5 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--muted)] transition hover:border-red-300 hover:bg-red-50 hover:text-red-700">
+                            <button onclick="removeItem(${item.cart_id}, this)" title="Remove from cart" class="inline-flex items-center gap-1.5 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--muted)] transition hover:border-red-300 hover:bg-red-50 hover:text-red-700">
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.35 9m-4.78 0L9.26 9M19 7l-.87 12.14A2 2 0 0 1 16.14 21H7.86a2 2 0 0 1-1.99-1.86L5 7m5-3h4a1 1 0 0 1 1 1v2H9V5a1 1 0 0 1 1-1Z"/></svg>
                                 Remove
                             </button>
@@ -274,6 +274,7 @@
             const response = await fetch('/shop-api/cart', { headers: { Accept: 'application/json' } });
             const data = await response.json();
             cartItems = data.data || [];
+            setCartCount(data.cart_count);
             renderCart();
         }
 
@@ -411,37 +412,62 @@
 
             if (value === previous) return;
 
-            updateQuantity(Number(input.dataset.cart), value);
+            updateQuantity(Number(input.dataset.cart), value, input.parentElement);
         }
 
-        async function updateQuantity(cartId, quantity) {
-            const response = await fetch(`/shop-api/cart/${cartId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ quantity })
-            });
+        async function updateQuantity(cartId, quantity, row = null) {
+            /* The steppers rest while the row is being written.
 
-            const data = await response.json();
-            showMessage(data.message || 'Cart updated.', response.ok ? 'success' : 'error');
-            if (response.ok) loadCart();
+               Presses already collapse into one request through the timer
+               above, but that only covers presses before the request goes --
+               a press during it opened a second one, and whichever answer
+               arrived last decided what the row said. The plus and minus stop
+               for the round trip; the box itself is left alone, because it
+               only commits when it loses focus. */
+            const steppers = row ? [...row.querySelectorAll('.qty-step')] : [];
+            const wasDisabled = steppers.map((button) => button.disabled);
+
+            steppers.forEach((button) => { button.disabled = true; });
+
+            try {
+                const response = await fetch(`/shop-api/cart/${cartId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ quantity })
+                });
+
+                const data = await response.json();
+                setCartCount(data.cart_count);
+                showMessage(data.message || 'Cart updated.', response.ok ? 'success' : 'error');
+                if (response.ok) loadCart();
+            } finally {
+                // A successful change rebuilds the row, so putting these back
+                // only matters when the row survives -- which is every failure.
+                steppers.forEach((button, index) => {
+                    if (button.isConnected) button.disabled = wasDisabled[index];
+                });
+            }
         }
 
-        async function removeItem(cartId) {
-            const response = await fetch(`/shop-api/cart/${cartId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                }
-            });
+        async function removeItem(cartId, button = null) {
+            await withBusy(button, async () => {
+                const response = await fetch(`/shop-api/cart/${cartId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
 
-            const data = await response.json();
-            showMessage(data.message || 'Item removed.', response.ok ? 'success' : 'error');
-            if (response.ok) loadCart();
+                const data = await response.json();
+                setCartCount(data.cart_count);
+                showMessage(data.message || 'Item removed.', response.ok ? 'success' : 'error');
+                if (response.ok) loadCart();
+            }, 'Removing');
         }
 
         async function placeOrder() {
@@ -455,23 +481,40 @@
                 return;
             }
 
-            const response = await fetch('/shop-api/orders', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    payment_plan: selectedPlan(),
-                    gcash_amount: Number(document.getElementById('gcash_amount').value || 0)
-                })
-            });
+            /* The one press on the storefront that must never be sent twice.
+               Checkout writes a sale, its lines and its stock movements, and
+               nothing about the button said the first press had been heard --
+               so an impatient second press ordered the cart again. Held from
+               here until the page leaves, or until the order is refused. */
+            const button = document.getElementById('checkoutButton');
+            const done = startBusy(button, 'Placing order');
 
-            const data = await response.json();
-            showMessage(data.message || 'Order placed.', response.ok ? 'success' : 'error');
-            if (response.ok) {
+            try {
+                const response = await fetch('/shop-api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        payment_plan: selectedPlan(),
+                        gcash_amount: Number(document.getElementById('gcash_amount').value || 0)
+                    })
+                });
+
+                const data = await response.json();
+                showMessage(data.message || 'Order placed.', response.ok ? 'success' : 'error');
+
+                if (!response.ok) {
+                    done();
+                    return;
+                }
+
+                // Left busy from here: the page is about to navigate, and a
+                // button that came back to life first is one somebody presses.
                 loadCart();
+
                 setTimeout(() => {
                     const orderId = data?.data?.order_id;
                     const plan = data?.data?.payment_plan;
@@ -483,6 +526,11 @@
 
                     window.location.href = '/orders';
                 }, 800);
+            } catch (error) {
+                // A dropped connection used to leave the button spinning for
+                // good, with no way to try again but a reload.
+                done();
+                showMessage('Could not reach the server. Please try again.', 'error');
             }
         }
 

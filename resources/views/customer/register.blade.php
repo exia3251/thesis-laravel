@@ -135,35 +135,49 @@
                 password_confirmation: document.getElementById('password_confirmation').value
             };
 
-            const response = await fetch('/shop/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+            /* Held until the page leaves or the form comes back refused. A
+               second press here would try to register the same address twice,
+               and the second attempt fails on the account the first one just
+               created -- so the reward for impatience was being told the email
+               is already taken. */
+            const done = startBusy(busyButtonOf(event.target), 'Creating account');
 
-            const data = await response.json();
+            try {
+                const response = await fetch('/shop/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
 
-            if (response.ok && data.success) {
-                showMessage('Registration successful. Redirecting to login...', 'success');
-                document.getElementById('registerForm').reset();
+                const data = await response.json();
 
-                setTimeout(() => {
-                    window.location.href = '/shop/login?registered=1';
-                }, 1000);
-                return;
+                if (response.ok && data.success) {
+                    showMessage('Registration successful. Redirecting to login...', 'success');
+                    document.getElementById('registerForm').reset();
+
+                    setTimeout(() => {
+                        window.location.href = '/shop/login?registered=1';
+                    }, 1000);
+                    return;
+                }
+
+                done();
+
+                if (data.errors) {
+                    const firstError = Object.values(data.errors)[0];
+                    showMessage(Array.isArray(firstError) ? firstError[0] : 'Registration failed.', 'error');
+                    return;
+                }
+
+                showMessage(data.message || 'Registration failed.', 'error');
+            } catch (error) {
+                done();
+                showMessage('Could not reach the server. Please try again.', 'error');
             }
-
-            if (data.errors) {
-                const firstError = Object.values(data.errors)[0];
-                showMessage(Array.isArray(firstError) ? firstError[0] : 'Registration failed.', 'error');
-                return;
-            }
-
-            showMessage(data.message || 'Registration failed.', 'error');
         });
 </script>
 @endpush

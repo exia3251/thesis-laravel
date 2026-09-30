@@ -10,6 +10,19 @@ use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
+    /**
+     * What the badge beside the cart button should read.
+     *
+     * Returned by every call that changes the cart, so the count the page
+     * shows comes from the same query that just wrote it rather than from the
+     * page guessing what its own change did. A request that failed -- no
+     * stock, a bad quantity -- therefore leaves the badge where it was.
+     */
+    protected function cartCount(): int
+    {
+        return (int) ShoppingCart::where('user_id', auth()->id())->sum('quantity');
+    }
+
     // Get user's cart
     public function getCart()
     {
@@ -52,7 +65,8 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $cart
+            'data' => $cart,
+            'cart_count' => $this->cartCount(),
         ]);
     }
 
@@ -114,7 +128,8 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Added to cart.'
+            'message' => 'Added to cart.',
+            'cart_count' => $this->cartCount(),
         ]);
     }
 
@@ -157,7 +172,8 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cart updated.'
+            'message' => 'Cart updated.',
+            'cart_count' => $this->cartCount(),
         ]);
     }
 
@@ -179,7 +195,8 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Item removed from cart.'
+            'message' => 'Item removed from cart.',
+            'cart_count' => $this->cartCount(),
         ]);
     }
 
@@ -190,7 +207,8 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cart cleared'
+            'message' => 'Cart cleared',
+            'cart_count' => 0,
         ]);
     }
 }

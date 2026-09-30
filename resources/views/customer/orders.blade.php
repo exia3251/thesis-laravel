@@ -132,7 +132,7 @@
                             <div class="flex flex-col items-start gap-2">
                                 <a href="/orders/${order.sale_id}" class="font-semibold text-[var(--primary)] transition hover:text-[var(--ink)]">View Receipt</a>
                                 <div class="flex flex-wrap gap-2">
-                                    ${order.can_confirm_receipt && order.delivery_status !== 'delivered'
+                                    ${order.can_confirm_receipt
                                         ? `<button type="button" onclick="askConfirmReceipt(${order.sale_id})" class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100">
                                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
                                                 Received

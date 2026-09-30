@@ -334,32 +334,38 @@
             event.preventDefault();
 
             const action = document.getElementById('stock_action').value;
-            const response = await fetch(`/admin-api/inventory/${action}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    product_id: Number(document.getElementById('stock_product_id').value),
-                    // Read through the same clamp the steppers use, so a half
-                    // typed number cannot be submitted by pressing return.
-                    quantity: (() => {
-                        const { field, max } = stockBounds();
-                        const value = parseInt(field.value, 10);
-                        return Number.isNaN(value) ? 1 : Math.min(max, Math.max(1, value));
-                    })(),
-                })
-            });
 
-            const data = await response.json();
-            showMessage(data.message || 'Inventory updated.', response.ok ? 'success' : 'error');
+            /* Each press writes a stock movement, and two presses move the
+               stock twice -- which then has to be found and unpicked from the
+               transaction history. */
+            await withBusy(busyButtonOf(event.target), async () => {
+                const response = await fetch(`/admin-api/inventory/${action}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        product_id: Number(document.getElementById('stock_product_id').value),
+                        // Read through the same clamp the steppers use, so a half
+                        // typed number cannot be submitted by pressing return.
+                        quantity: (() => {
+                            const { field, max } = stockBounds();
+                            const value = parseInt(field.value, 10);
+                            return Number.isNaN(value) ? 1 : Math.min(max, Math.max(1, value));
+                        })(),
+                    })
+                });
 
-            if (response.ok) {
-                closeStockModal();
-                loadInventory();
-            }
+                const data = await response.json();
+                showMessage(data.message || 'Inventory updated.', response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    closeStockModal();
+                    loadInventory();
+                }
+            }, 'Saving');
         });
 
         (function bindQuantity() {

@@ -31,7 +31,7 @@
                 <div class="text-sm font-bold text-white">Raney assistant</div>
                 <div class="text-[11px] text-white/70">Answers instantly</div>
             </div>
-            <button type="button" onclick="chatReset()" aria-label="Start a new conversation"
+            <button type="button" onclick="chatReset(this)" aria-label="Start a new conversation"
                     class="rounded-lg p-1.5 text-white/70 transition hover:bg-white/10 hover:text-white">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992V4.356m-.582 4.992a8.25 8.25 0 1 0-1.664 4.5"/>
@@ -303,20 +303,25 @@
         if (resolve) resolve(answer);
     }
 
-    async function chatReset() {
+    async function chatReset(button = null) {
         if (!await chatAskToReset()) return;
 
-        try {
-            const response = await fetch('/shop-api/chat/reset', {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
-            });
+        /* Clearing twice does no harm, but the button should still say it
+           heard the first press -- and the same guard every other action here
+           has is cheaper than explaining why this one is exempt. */
+        await withBusy(button, async () => {
+            try {
+                const response = await fetch('/shop-api/chat/reset', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+                });
 
-            const payload = await response.json();
-            chatRender(payload.data.messages);
-        } catch (error) {
-            /* Leaving what is on screen is a reasonable failure here. */
-        }
+                const payload = await response.json();
+                chatRender(payload.data.messages);
+            } catch (error) {
+                /* Leaving what is on screen is a reasonable failure here. */
+            }
+        }, '');
     }
 
     /* Reopen where the visitor left it, but never open by itself on a first

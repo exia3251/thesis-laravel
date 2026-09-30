@@ -214,7 +214,7 @@
     </div>
     <div class="flex justify-end gap-3 border-t border-[var(--line)] px-7 py-5">
         <button type="button" onclick="closeUserModal()" class="rounded-full border border-[var(--line)] px-5 py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface)] transition">Cancel</button>
-        <button type="button" onclick="document.getElementById('userForm').dispatchEvent(new Event('submit'))" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)] transition">Save User</button>
+        <button type="button" id="saveUserBtn" onclick="document.getElementById('userForm').dispatchEvent(new Event('submit'))" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)] transition">Save User</button>
     </div>
 @endsection
 
@@ -304,16 +304,28 @@
 
             if (!user) return;
 
+            const profile = user.customer_profile || {};
+
             document.getElementById('userId').value = user.user_id;
-            document.getElementById('full_name').value = user.full_name;
-            document.getElementById('email').value = user.email;
+            document.getElementById('full_name').value = user.full_name ?? '';
             setAvatarPreview(user.avatar_url, user.initials, user.avatar_tone);
             document.getElementById('role').value = user.role;
             document.getElementById('is_active').checked = user.is_active;
-            document.getElementById('phone').value = user.customer_profile ? user.customer_profile.phone || '' : '';
-            document.getElementById('email').value = user.customer_profile ? user.customer_profile.email || '' : '';
+
+            /* The login address lives on the account.
+
+               This read it from the account and then read it again from the
+               customer profile, which is where it used to live -- the column
+               was dropped when users.email became the one login identifier.
+               So the second read found nothing and blanked the field: every
+               account opened for editing showed no email, and saving it back
+               failed validation on the address the administrator could see in
+               the row behind the panel. */
+            document.getElementById('email').value = user.email ?? '';
+
+            document.getElementById('phone').value = profile.phone ?? '';
             ['house_street', 'barangay', 'city', 'province', 'postal_code'].forEach((field) => {
-                document.getElementById(field).value = user.customer_profile ? user.customer_profile[field] || '' : '';
+                document.getElementById(field).value = profile[field] ?? '';
             });
         }
 
@@ -392,9 +404,9 @@
                         <td class="px-5 py-3 text-right sm:px-6">
                             <div class="inline-flex gap-2">
                                 ${user.archived
-                                    ? `<button onclick="restoreUser(${user.user_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Restore</button>`
+                                    ? `<button onclick="restoreUser(${user.user_id}, this)" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Restore</button>`
                                     : `<button onclick="editUser(${user.user_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Edit</button>
-                                       <button onclick="archiveUser(${user.user_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:border-red-300">Archive</button>`}
+                                       <button onclick="archiveUser(${user.user_id}, this)" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:border-red-300">Archive</button>`}
                             </div>
                         </td>
                     </tr>`).join('')
@@ -441,7 +453,7 @@
             if (user) openUserModal(user);
         }
 
-        async function archiveUser(userId) {
+        async function archiveUser(userId, button = null) {
             const user = users.find((item) => item.user_id === userId);
             const name = user ? user.full_name : 'this account';
 
@@ -454,31 +466,35 @@
 
             if (!sure) return;
 
-            const response = await fetch(`/admin-api/users/${userId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                }
-            });
+            await withBusy(button, async () => {
+                const response = await fetch(`/admin-api/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
 
-            const data = await response.json();
-            showMessage(data.message || 'Archive request completed.', response.ok ? 'success' : 'error');
-            if (response.ok) loadUsers();
+                const data = await response.json();
+                showMessage(data.message || 'Archive request completed.', response.ok ? 'success' : 'error');
+                if (response.ok) loadUsers();
+            }, 'Archiving');
         }
 
-        async function restoreUser(userId) {
-            const response = await fetch(`/admin-api/users/${userId}/restore`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                }
-            });
+        async function restoreUser(userId, button = null) {
+            await withBusy(button, async () => {
+                const response = await fetch(`/admin-api/users/${userId}/restore`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
 
-            const data = await response.json();
-            showMessage(data.message || 'Restore request completed.', response.ok ? 'success' : 'error');
-            if (response.ok) loadUsers();
+                const data = await response.json();
+                showMessage(data.message || 'Restore request completed.', response.ok ? 'success' : 'error');
+                if (response.ok) loadUsers();
+            }, 'Restoring');
         }
 
         function formatLogDate(dateStr) {
@@ -746,16 +762,32 @@
                 body.append('_method', 'PUT');
             }
 
-            const response = await fetch(userId ? `/admin-api/users/${userId}` : '/admin-api/users', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body
-            });
+            /* The Save button sits in the panel's footer rather than in
+               the form, so it is named here. Without this, saving a photo left
+               a dialog that looked untouched for as long as the upload took. */
+            const done = startBusy(document.getElementById('saveUserBtn'), 'Saving');
 
-            const data = await response.json();
+            let response;
+            let data;
+
+            try {
+                response = await fetch(userId ? `/admin-api/users/${userId}` : '/admin-api/users', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body
+                });
+
+                data = await response.json();
+            } catch (error) {
+                done();
+                showMessage('Could not reach the server. Please try again.', 'error');
+                return;
+            }
+
+            done();
 
             if (response.ok) {
                 clearUserFormErrors();

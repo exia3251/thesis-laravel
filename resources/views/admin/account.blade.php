@@ -39,7 +39,7 @@
                                 Choose photo
                                 <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="pickAvatar(event)">
                             </label>
-                            <button type="button" id="removeAvatarBtn" onclick="removeAvatar()"
+                            <button type="button" id="removeAvatarBtn" onclick="removeAvatar(this)"
                                     class="hidden rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50">
                                 Remove
                             </button>
@@ -516,8 +516,7 @@
         event.preventDefault();
         clearErrors();
 
-        const button = document.getElementById('accountSave');
-        button.disabled = true;
+        const done = startBusy(document.getElementById('accountSave'), 'Saving');
 
         const body = new FormData();
         body.append('full_name', document.getElementById('full_name').value.trim());
@@ -548,11 +547,11 @@
         } catch (error) {
             showErrors({ form: ['Could not save just now. Try again.'] }, 'accountErrors');
         } finally {
-            button.disabled = false;
+            done();
         }
     }
 
-    async function removeAvatar() {
+    async function removeAvatar(button = null) {
         const sure = await askToConfirm({
             title: 'Remove your photo?',
             body: 'Your initials will be shown instead, in the sidebar and against everything in the activity log.',
@@ -562,15 +561,17 @@
 
         if (!sure) return;
 
-        const response = await fetch('/admin-api/account/avatar', {
-            method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
-        });
+        await withBusy(button, async () => {
+            const response = await fetch('/admin-api/account/avatar', {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+            });
 
-        const payload = await response.json();
-        showMessage(payload.message, payload.success ? 'success' : 'error');
+            const payload = await response.json();
+            showMessage(payload.message, payload.success ? 'success' : 'error');
 
-        if (payload.success) window.location.reload();
+            if (payload.success) window.location.reload();
+        }, 'Removing');
     }
 
     async function savePassword(event) {
@@ -579,25 +580,27 @@
 
         const current = document.getElementById('current_password');
 
-        const response = await fetch('/admin-api/account/password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
-            body: JSON.stringify({
-                current_password: current ? current.value : null,
-                new_password: document.getElementById('new_password').value,
-                new_password_confirmation: document.getElementById('new_password_confirmation').value,
-            }),
-        });
+        await withBusy(busyButtonOf(event.target), async () => {
+            const response = await fetch('/admin-api/account/password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+                body: JSON.stringify({
+                    current_password: current ? current.value : null,
+                    new_password: document.getElementById('new_password').value,
+                    new_password_confirmation: document.getElementById('new_password_confirmation').value,
+                }),
+            });
 
-        const payload = await response.json();
+            const payload = await response.json();
 
-        if (!response.ok || !payload.success) {
-            showErrors(payload.errors || { form: [payload.message || 'Could not save.'] }, 'passwordErrors');
-            return;
-        }
+            if (!response.ok || !payload.success) {
+                showErrors(payload.errors || { form: [payload.message || 'Could not save.'] }, 'passwordErrors');
+                return;
+            }
 
-        document.getElementById('passwordForm').reset();
-        showMessage(payload.message);
+            document.getElementById('passwordForm').reset();
+            showMessage(payload.message);
+        }, 'Saving');
     }
 
     loadAccount();

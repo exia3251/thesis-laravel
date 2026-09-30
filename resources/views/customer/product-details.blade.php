@@ -260,7 +260,7 @@
 
                     @auth
                         @if (auth()->user()->isCustomer())
-                            <button onclick="addToCart(selectedPackId)" class="self-end rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110 {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'cursor-not-allowed opacity-60' : '' }}" {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'disabled' : '' }}>Add to Cart</button>
+                            <button onclick="addToCart(selectedPackId, this)" class="self-end rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110 {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'cursor-not-allowed opacity-60' : '' }}" {{ (optional($product->inventory)->quantity ?? 0) < 1 ? 'disabled' : '' }}>Add to Cart</button>
                         @else
                             <a href="/shop/login" class="self-end rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110">Login to Order</a>
                         @endif
@@ -536,7 +536,7 @@
             up.disabled = input.disabled || (Number.isInteger(value) && value >= ceiling);
         }
 
-        async function addToCart(productId) {
+        async function addToCart(productId, button = null) {
             const quantityInput = document.getElementById('quantity');
 
             const entered = parseInt(quantityInput.value, 10);
@@ -564,26 +564,33 @@
             // receipt never need to know a box was involved.
             const units = buyMode === 'box' ? entered * BOX_QUANTITY : entered;
 
-            const response = await fetch('/shop-api/cart/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                    quantity: units
-                })
-            });
+            /* Busy only from here on. The two checks above never reach the
+               server, and a button that flickered while refusing a typo would
+               say something happened when nothing did. */
+            await withBusy(button, async () => {
+                const response = await fetch('/shop-api/cart/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                        quantity: units
+                    })
+                });
 
-            const data = await response.json();
+                const data = await response.json();
 
-            const note = response.ok && buyMode === 'box'
-                ? `${entered} box${entered === 1 ? '' : 'es'} added - ${units} x ${PACKS[productId]?.unit ?? 'units'}.`
-                : (data.message || 'Cart updated.');
+                setCartCount(data.cart_count);
 
-            showMessage(note, response.ok ? 'success' : 'error');
+                const note = response.ok && buyMode === 'box'
+                    ? `${entered} box${entered === 1 ? '' : 'es'} added - ${units} x ${PACKS[productId]?.unit ?? 'units'}.`
+                    : (data.message || 'Cart updated.');
+
+                showMessage(note, response.ok ? 'success' : 'error');
+            }, 'Adding');
         }
 
         function showShot(url, button) {

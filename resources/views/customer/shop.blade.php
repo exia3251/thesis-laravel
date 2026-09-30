@@ -242,7 +242,7 @@
                                 <div class="mt-3">
                                     <button onclick="event.stopPropagation(); ${(product.pack_count ?? 1) > 1
                                         ? `window.location.href='/shop/products/${product.product_id}'`
-                                        : `addToCart(${product.product_id})`}" class="w-full rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110">
+                                        : `addToCart(${product.product_id}, this)`}" class="w-full rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110">
                                         Add to Cart
                                     </button>
                                 </div>
@@ -350,7 +350,7 @@
                                     <div class="mt-3">
                                         <button onclick="event.stopPropagation(); ${multiPack
                                             ? `window.location.href='/shop/products/${product.product_id}'`
-                                            : `addToCart(${product.product_id})`}" class="w-full rounded-xl ${unavailable ? 'cursor-not-allowed bg-slate-400' : 'bg-[var(--primary)]'} px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 ${!isCustomer && !multiPack ? 'opacity-60 cursor-not-allowed' : ''}" ${unavailable ? 'disabled' : ''}>
+                                            : `addToCart(${product.product_id}, this)`}" class="w-full rounded-xl ${unavailable ? 'cursor-not-allowed bg-slate-400' : 'bg-[var(--primary)]'} px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 ${!isCustomer && !multiPack ? 'opacity-60 cursor-not-allowed' : ''}" ${unavailable ? 'disabled' : ''}>
                                             ${unavailable ? 'Out of stock' : 'Add to Cart'}
                                         </button>
                                     </div>
@@ -397,24 +397,32 @@
             }
         }
 
-        async function addToCart(productId) {
+        /* Held busy for the round trip, and the badge in the header is moved
+           by the count that comes back. Pressing this twice used to put two
+           bottles in the cart, because nothing about the button said the first
+           press had been heard. */
+        async function addToCart(productId, button = null) {
             if (!isCustomer) {
                 window.location.href = '/shop/login';
                 return;
             }
 
-            const response = await fetch('/shop-api/cart/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ product_id: productId, quantity: 1 })
-            });
+            await withBusy(button, async () => {
+                const response = await fetch('/shop-api/cart/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ product_id: productId, quantity: 1 })
+                });
 
-            const data = await response.json();
-            showMessage(data.message || 'Cart updated.', response.ok ? 'success' : 'error');
+                const data = await response.json();
+
+                setCartCount(data.cart_count);
+                showMessage(data.message || 'Cart updated.', response.ok ? 'success' : 'error');
+            }, 'Adding');
         }
 
         document.getElementById('searchInput').addEventListener('input', renderProducts);

@@ -351,14 +351,9 @@
                     $canCancel = $sale->canBeCancelledByCustomer();
 
                     /* Nothing can be received while it is still being packed.
-                       The button used to appear the moment the order existed,
-                       and pressing it set the order delivered -- so a customer
-                       could complete an order whose goods had not left the
-                       shelf. It waits for the courier now. */
-                    $canConfirm = !$sale->isCancelled()
-                        && !$sale->received_at
-                        && !$sale->isDelivered()
-                        && $sale->delivery_status !== 'to_deliver';
+                       The rule is on the model, so this page, the orders list
+                       and the controller cannot drift apart again. */
+                    $canConfirm = $sale->canConfirmReceipt();
 
                     /* Once it has arrived there is nothing left to cancel, so
                        the same place offers the thing that is still possible:
@@ -640,21 +635,27 @@
                     formData.append('proof_image', proofFile);
                 }
 
-                const response = await fetch('/shop-api/orders/{{ $sale->sale_id }}/payment-requests', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: formData
-                });
+                /* Uploading a screenshot is the slowest thing on this page,
+                   and only one payment may be under review at a time -- so a
+                   second press was answered with a refusal for a request the
+                   customer had in fact made correctly. */
+                await withBusy(busyButtonOf(paymentRequestForm), async () => {
+                    const response = await fetch('/shop-api/orders/{{ $sale->sale_id }}/payment-requests', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    });
 
-                const data = await response.json();
-                showMessage(data.message || 'Payment request submitted.', response.ok ? 'success' : 'error');
+                    const data = await response.json();
+                    showMessage(data.message || 'Payment request submitted.', response.ok ? 'success' : 'error');
 
-                if (response.ok) {
-                    setTimeout(() => window.location.reload(), 900);
-                }
+                    if (response.ok) {
+                        setTimeout(() => window.location.reload(), 900);
+                    }
+                }, 'Sending');
             });
         }
 

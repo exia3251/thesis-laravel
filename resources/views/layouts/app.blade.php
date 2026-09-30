@@ -210,6 +210,37 @@
     }
 
     /**
+     * Writes a count into the badge on a header button.
+     *
+     * The cart button said nothing when something was added to it. The item
+     * went in, a small message appeared in the corner, and the button beside
+     * it -- the one place a customer looks to find out what is in their cart --
+     * carried the same nothing it had a second earlier. So people added the
+     * same oil twice, or opened the cart to check.
+     *
+     * The number comes from the server's reply, not from adding one here: a
+     * request that was refused for stock leaves the badge telling the truth.
+     * Missing or not a number means the reply did not carry one, so the badge
+     * is left alone rather than being zeroed.
+     */
+    function setBadgeCount(name, count) {
+        const number = Number(count);
+
+        if (!Number.isFinite(number)) return;
+
+        document.querySelectorAll(`[data-badge="${name}"]`).forEach((badge) => {
+            badge.textContent = number > 99 ? '99+' : String(number);
+            badge.classList.toggle('hidden', number < 1);
+            badge.setAttribute('aria-hidden', number < 1 ? 'true' : 'false');
+        });
+    }
+
+    /** The cart badge specifically, which is the one that changes most. */
+    function setCartCount(count) {
+        setBadgeCount('cart', count);
+    }
+
+    /**
      * The same, for a form that submits through fetch: finds its submit
      * button so each caller does not have to.
      */
@@ -397,17 +428,38 @@
             return `PHP ${Number(value || 0).toFixed(2)}`;
         }
 
-        async function logout() {
-            const response = await fetch(LOGOUT_URL, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                }
-            });
+        /* Signing out is one decision however many times the button is
+           pressed. The second request arrives at a session that has already
+           gone, is refused, and the refusal is what the page then acts on --
+           so pressing twice could leave somebody looking at a signed-out page
+           that never moved. */
+        let signingOut = false;
 
-            if (response.ok) {
-                window.location.href = LOGIN_URL;
+        async function logout(button = null) {
+            if (signingOut) return;
+            signingOut = true;
+
+            const done = startBusy(button, 'Signing out');
+
+            try {
+                const response = await fetch(LOGOUT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    window.location.href = LOGIN_URL;
+                    return;
+                }
+
+                signingOut = false;
+                done();
+            } catch (error) {
+                signingOut = false;
+                done();
             }
         }
     </script>

@@ -366,23 +366,25 @@
             body[field] = document.getElementById(field).value.trim();
         });
 
-        const response = await fetch('/shop-api/profile', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
-            body: JSON.stringify(body),
-        });
+        await withBusy(busyButtonOf(event.target), async () => {
+            const response = await fetch('/shop-api/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+                body: JSON.stringify(body),
+            });
 
-        const payload = await response.json();
+            const payload = await response.json();
 
-        if (!response.ok) {
-            const isAddress = event.target.id === 'addressForm';
-            showFieldErrors(payload.errors || { form: [payload.message || 'Could not save.'] },
-                isAddress ? 'addressErrors' : 'profileErrors');
-            return;
-        }
+            if (!response.ok) {
+                const isAddress = event.target.id === 'addressForm';
+                showFieldErrors(payload.errors || { form: [payload.message || 'Could not save.'] },
+                    isAddress ? 'addressErrors' : 'profileErrors');
+                return;
+            }
 
-        showMessage(payload.message || 'Saved.');
-        await loadProfile();
+            showMessage(payload.message || 'Saved.');
+            await loadProfile();
+        }, 'Saving');
     }
 
     async function savePassword(event) {
@@ -391,25 +393,27 @@
 
         const current = document.getElementById('current_password');
 
-        const response = await fetch('/shop-api/profile/password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
-            body: JSON.stringify({
-                current_password: current ? current.value : null,
-                new_password: document.getElementById('new_password').value,
-                new_password_confirmation: document.getElementById('new_password_confirmation').value,
-            }),
-        });
+        await withBusy(busyButtonOf(event.target), async () => {
+            const response = await fetch('/shop-api/profile/password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+                body: JSON.stringify({
+                    current_password: current ? current.value : null,
+                    new_password: document.getElementById('new_password').value,
+                    new_password_confirmation: document.getElementById('new_password_confirmation').value,
+                }),
+            });
 
-        const payload = await response.json();
+            const payload = await response.json();
 
-        if (!response.ok || !payload.success) {
-            showFieldErrors(payload.errors || { form: [payload.message || 'Could not save.'] }, 'passwordErrors');
-            return;
-        }
+            if (!response.ok || !payload.success) {
+                showFieldErrors(payload.errors || { form: [payload.message || 'Could not save.'] }, 'passwordErrors');
+                return;
+            }
 
-        document.getElementById('passwordForm').reset();
-        showMessage(payload.message || 'Password updated.');
+            document.getElementById('passwordForm').reset();
+            showMessage(payload.message || 'Password updated.');
+        }, 'Saving');
     }
 
     ADDRESS_FIELDS.forEach((field) => {

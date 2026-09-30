@@ -154,7 +154,7 @@
                             class="rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">
                         Download
                     </button>
-                    <button type="button" data-filename="${escapeHtml(backup.filename)}" onclick="deleteBackup(this.dataset.filename)"
+                    <button type="button" data-filename="${escapeHtml(backup.filename)}" onclick="deleteBackup(this.dataset.filename, this)"
                             class="rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50">
                         Delete
                     </button>
@@ -286,7 +286,7 @@
         window.location.href = `/admin-api/backups/${encodeURIComponent(filename)}/download`;
     }
 
-    async function deleteBackup(filename) {
+    async function deleteBackup(filename, button = null) {
         const sure = await askToConfirm({
             title: 'Delete this backup?',
             body: `${filename} will be removed from the server. There is no undoing it, and if it is the only copy the data it holds goes with it.`,
@@ -297,15 +297,17 @@
         if (!sure) return;
 
         try {
-            const response = await fetch(`/admin-api/backups/${encodeURIComponent(filename)}`, {
-                method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
-            });
+            await withBusy(button, async () => {
+                const response = await fetch(`/admin-api/backups/${encodeURIComponent(filename)}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+                });
 
-            const payload = await response.json();
-            showMessage(payload.message, payload.success ? 'success' : 'error');
+                const payload = await response.json();
+                showMessage(payload.message, payload.success ? 'success' : 'error');
 
-            if (payload.success) await loadBackups();
+                if (payload.success) await loadBackups();
+            }, 'Deleting');
         } catch (error) {
             showMessage('The backup could not be deleted.', 'error');
         }

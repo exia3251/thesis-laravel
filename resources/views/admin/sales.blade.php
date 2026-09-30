@@ -74,7 +74,7 @@
                 <label class="mt-4 block text-sm font-medium text-[var(--ink)]">Notes</label>
                 <textarea id="dlNotes" rows="2" maxlength="500" placeholder="e.g. received by the shop supervisor" class="mt-2 block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]"></textarea>
                 <p id="dlError" class="mt-3 hidden text-xs font-semibold text-red-600"></p>
-                <button type="button" onclick="submitDeliveryProof()" class="mt-4 w-full rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:bg-[var(--primary-dark)]">Confirm delivery</button>
+                <button type="button" onclick="submitDeliveryProof(this)" class="mt-4 w-full rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-white transition hover:bg-[var(--primary-dark)]">Confirm delivery</button>
             </div>
         </div>
     </div>
@@ -102,7 +102,7 @@
                 <label class="mt-4 block text-sm font-medium text-[var(--ink)]">Notes</label>
                 <textarea id="rfNotes" rows="2" maxlength="500" placeholder="e.g. sent to 09XXXXXXXXX" class="mt-2 block w-full resize-none rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]"></textarea>
                 <p id="rfError" class="mt-3 hidden text-xs font-semibold text-red-600"></p>
-                <button type="button" onclick="submitRefund()" class="mt-4 w-full rounded-xl bg-amber-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-amber-700">Mark as refunded</button>
+                <button type="button" onclick="submitRefund(this)" class="mt-4 w-full rounded-xl bg-amber-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-amber-700">Mark as refunded</button>
             </div>
         </div>
     </div>
@@ -272,7 +272,7 @@
         <div class="text-lg font-bold text-slate-900">Total: <span id="saleTotal" class="text-blue-600">PHP 0.00</span></div>
         <div class="flex gap-3">
             <button type="button" onclick="closeSaleModal()" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-            <button type="button" onclick="submitSale()" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)]">Save Sale</button>
+            <button type="button" onclick="submitSale(this)" class="rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--primary-dark)]">Save Sale</button>
         </div>
     </div>
 @endsection
@@ -495,7 +495,7 @@
                         <td class="px-5 py-4 text-right sm:px-6">
                             <div class="inline-flex flex-col items-stretch gap-2">
                                 <div class="flex flex-wrap justify-end gap-2">
-                                    ${cancelled ? '' : `<button type="button" onclick="updateSaleStatus(${sale.sale_id})"
+                                    ${cancelled ? '' : `<button type="button" onclick="updateSaleStatus(${sale.sale_id}, this)"
                                             class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Update</button>`}
                                     <button type="button" onclick="openReceipt(${sale.sale_id})"
                                             class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--muted)] transition hover:text-[var(--ink)]">Receipt${requests.length ? ` (${requests.length})` : ''}</button>
@@ -610,7 +610,7 @@
                 : '<tr><td colspan="5" class="py-6 text-center text-slate-400 text-sm">No items added yet.</td></tr>';
         }
 
-        async function submitSale() {
+        async function submitSale(button = null) {
             const customerName = document.getElementById('customer_name').value.trim();
             if (!customerName) {
                 showMessage('Customer name is required.', 'error');
@@ -626,51 +626,58 @@
             const total = saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
             document.getElementById('paid_amount').value = total;
 
-            const response = await fetch('/admin-api/sales', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    customer_name: document.getElementById('customer_name').value || 'Walk-in Customer',
-                    payment_method: document.getElementById('payment_method').value,
-                    paid_amount: document.getElementById('paid_amount').value || 0,
-                    items: saleItems
-                })
-            });
+            /* Two presses here are two sales, each taking its own stock. The
+               checks above run first, so a missing customer name still comes
+               back instantly rather than after a spinner. */
+            await withBusy(button, async () => {
+                const response = await fetch('/admin-api/sales', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        customer_name: document.getElementById('customer_name').value || 'Walk-in Customer',
+                        payment_method: document.getElementById('payment_method').value,
+                        paid_amount: document.getElementById('paid_amount').value || 0,
+                        items: saleItems
+                    })
+                });
 
-            const data = await response.json();
-            showMessage(data.message || 'Sale saved.', response.ok ? 'success' : 'error');
+                const data = await response.json();
+                showMessage(data.message || 'Sale saved.', response.ok ? 'success' : 'error');
 
-            if (response.ok) {
-                closeSaleModal();
-                loadSales();
-            }
+                if (response.ok) {
+                    closeSaleModal();
+                    loadSales();
+                }
+            }, 'Saving');
         }
 
-        async function updateSaleStatus(saleId) {
-            const response = await fetch(`/admin-api/sales/${saleId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    payment_status: 'derived',
-                    delivery_status: document.getElementById(`delivery_status_${saleId}`).value,
-                    paid_amount: document.getElementById(`paid_amount_${saleId}`).value || 0
-                })
-            });
+        async function updateSaleStatus(saleId, button = null) {
+            await withBusy(button, async () => {
+                const response = await fetch(`/admin-api/sales/${saleId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        payment_status: 'derived',
+                        delivery_status: document.getElementById(`delivery_status_${saleId}`).value,
+                        paid_amount: document.getElementById(`paid_amount_${saleId}`).value || 0
+                    })
+                });
 
-            const data = await response.json();
-            showMessage(data.message || 'Sale status updated.', response.ok ? 'success' : 'error');
+                const data = await response.json();
+                showMessage(data.message || 'Sale status updated.', response.ok ? 'success' : 'error');
 
-            if (response.ok) {
-                loadSales();
-            }
+                if (response.ok) {
+                    loadSales();
+                }
+            }, 'Saving');
         }
 
 
@@ -980,7 +987,7 @@
 
             if (sale.delivery_status !== 'delivered') {
                 buttons.push(`<button type="button" onclick="openDeliveryModal(${sale.sale_id})" class="flex-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100">Confirm delivery</button>`);
-                buttons.push(`<button type="button" onclick="cancelSale(${sale.sale_id})" class="flex-1 rounded border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-50">Cancel</button>`);
+                buttons.push(`<button type="button" onclick="cancelSale(${sale.sale_id}, this)" class="flex-1 rounded border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-50">Cancel</button>`);
             } else if (sale.delivery_proof_path) {
                 buttons.push(`<a href="/storage/${sale.delivery_proof_path}" target="_blank" class="flex-1 rounded border border-[var(--line)] px-2 py-1 text-center text-xs font-semibold text-[var(--muted)] transition hover:bg-[var(--surface)]">Delivery photo</a>`);
             }
@@ -1013,7 +1020,7 @@
             deliveryContext = null;
         }
 
-        async function submitDeliveryProof() {
+        async function submitDeliveryProof(button = null) {
             if (!deliveryContext) return;
 
             const file = document.getElementById('dlProof').files[0];
@@ -1029,26 +1036,28 @@
             body.append('delivery_proof', file);
             body.append('notes', document.getElementById('dlNotes').value.trim());
 
-            const response = await fetch(`/admin-api/sales/${deliveryContext.saleId}/delivery-proof`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-                body
-            });
+            await withBusy(button, async () => {
+                const response = await fetch(`/admin-api/sales/${deliveryContext.saleId}/delivery-proof`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    body
+                });
 
-            const data = await response.json();
+                const data = await response.json();
 
-            if (response.ok) {
-                closeDeliveryModal();
-                showMessage(data.message || 'Delivery confirmed.', 'success');
-                loadSales();
-                return;
-            }
+                if (response.ok) {
+                    closeDeliveryModal();
+                    showMessage(data.message || 'Delivery confirmed.', 'success');
+                    loadSales();
+                    return;
+                }
 
-            error.textContent = data.message || Object.values(data.errors || {})[0]?.[0] || 'Could not confirm delivery.';
-            error.classList.remove('hidden');
+                error.textContent = data.message || Object.values(data.errors || {})[0]?.[0] || 'Could not confirm delivery.';
+                error.classList.remove('hidden');
+            }, 'Uploading');
         }
 
-        async function cancelSale(saleId) {
+        async function cancelSale(saleId, button = null) {
             const reason = prompt(`Cancel order #${saleId}?\n\nStock goes back and any payment becomes a refund you owe.\n\nReason:`);
             if (reason === null) return;
 
@@ -1057,15 +1066,17 @@
                 return;
             }
 
-            const response = await fetch(`/admin-api/sales/${saleId}/cancel`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-                body: JSON.stringify({ reason: reason.trim() })
-            });
+            await withBusy(button, async () => {
+                const response = await fetch(`/admin-api/sales/${saleId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    body: JSON.stringify({ reason: reason.trim() })
+                });
 
-            const data = await response.json();
-            showMessage(data.message || 'Order cancelled.', response.ok ? 'success' : 'error');
-            if (response.ok) loadSales();
+                const data = await response.json();
+                showMessage(data.message || 'Order cancelled.', response.ok ? 'success' : 'error');
+                if (response.ok) loadSales();
+            }, 'Cancelling');
         }
 
         function openRefundModal(saleId) {
@@ -1086,30 +1097,32 @@
             refundContext = null;
         }
 
-        async function submitRefund() {
+        async function submitRefund(button = null) {
             if (!refundContext) return;
 
-            const response = await fetch(`/admin-api/sales/${refundContext.saleId}/refund`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-                body: JSON.stringify({
-                    reference: document.getElementById('rfReference').value.trim() || null,
-                    notes: document.getElementById('rfNotes').value.trim() || null
-                })
-            });
+            await withBusy(button, async () => {
+                const response = await fetch(`/admin-api/sales/${refundContext.saleId}/refund`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        reference: document.getElementById('rfReference').value.trim() || null,
+                        notes: document.getElementById('rfNotes').value.trim() || null
+                    })
+                });
 
-            const data = await response.json();
+                const data = await response.json();
 
-            if (response.ok) {
-                closeRefundModal();
-                showMessage(data.message || 'Refund recorded.', 'success');
-                loadSales();
-                return;
-            }
+                if (response.ok) {
+                    closeRefundModal();
+                    showMessage(data.message || 'Refund recorded.', 'success');
+                    loadSales();
+                    return;
+                }
 
-            const error = document.getElementById('rfError');
-            error.textContent = data.message || Object.values(data.errors || {})[0]?.[0] || 'Could not record the refund.';
-            error.classList.remove('hidden');
+                const error = document.getElementById('rfError');
+                error.textContent = data.message || Object.values(data.errors || {})[0]?.[0] || 'Could not record the refund.';
+                error.classList.remove('hidden');
+            }, 'Recording');
         }
 
         ['deliveryModal', 'refundModal'].forEach((id) => {

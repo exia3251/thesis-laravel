@@ -816,9 +816,9 @@
                         <td class="px-5 py-3 text-right sm:px-6">
                             <div class="inline-flex gap-2">
                                 ${showArchived
-                                    ? `<button type="button" onclick="restoreProduct(${product.product_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Restore</button>`
+                                    ? `<button type="button" onclick="restoreProduct(${product.product_id}, this)" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Restore</button>`
                                     : `<button type="button" onclick="editProduct(${product.product_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]">Edit</button>
-                                       <button type="button" onclick="archiveProduct(${product.product_id})" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:border-red-300">Archive</button>`}
+                                       <button type="button" onclick="archiveProduct(${product.product_id}, this)" class="rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:border-red-300">Archive</button>`}
                             </div>
                         </td>
                     </tr>`;
@@ -851,7 +851,7 @@
             }
         }
 
-        async function archiveProduct(productId) {
+        async function archiveProduct(productId, button = null) {
             const product = products.find((item) => item.product_id === productId);
             const name = product ? product.product_name : 'this product';
 
@@ -864,37 +864,41 @@
 
             if (!sure) return;
 
-            const response = await fetch(`/admin-api/products/${productId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
+            await withBusy(button, async () => {
+                const response = await fetch(`/admin-api/products/${productId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                showMessage(data.message || 'Archive request completed.', response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    loadProducts();
                 }
-            });
-
-            const data = await response.json();
-            showMessage(data.message || 'Archive request completed.', response.ok ? 'success' : 'error');
-
-            if (response.ok) {
-                loadProducts();
-            }
+            }, 'Archiving');
         }
 
-        async function restoreProduct(productId) {
-            const response = await fetch(`/admin-api/products/${productId}/restore`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
+        async function restoreProduct(productId, button = null) {
+            await withBusy(button, async () => {
+                const response = await fetch(`/admin-api/products/${productId}/restore`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                showMessage(data.message || 'Restore request completed.', response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    loadProducts();
                 }
-            });
-
-            const data = await response.json();
-            showMessage(data.message || 'Restore request completed.', response.ok ? 'success' : 'error');
-
-            if (response.ok) {
-                loadProducts();
-            }
+            }, 'Restoring');
         }
 
         function setArchivedView(archived) {
@@ -914,7 +918,7 @@
 
         async function submitProduct() {
             const confirmButton = document.getElementById('btnConfirm');
-            confirmButton.disabled = true;
+            const done = startBusy(confirmButton, 'Saving');
 
             const productId = document.getElementById('productId').value;
             const values = formValues();
@@ -949,7 +953,7 @@
                 backToForm();
                 showFormErrors({ form: ['Could not save just now. Try again.'] });
             } finally {
-                confirmButton.disabled = false;
+                done();
             }
         }
 
