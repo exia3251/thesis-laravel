@@ -8,6 +8,7 @@ use App\Observers\SaleObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,6 +26,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        /*
+         * What the shop says about itself, available to every view.
+         *
+         * Shared rather than fetched per page, because the footer, the header,
+         * the receipt and the emails all want the same handful of values.
+         * Resolved lazily through a composer so the console and the migrations
+         * never touch the table -- it does not exist yet during a fresh
+         * install, and a provider that queried it would break `migrate`.
+         */
+        View::composer('*', function ($view) {
+            $view->with('site', \App\Support\SiteContent::all());
+        });
+
         Sale::observe(SaleObserver::class);
 
         /*

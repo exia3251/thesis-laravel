@@ -81,19 +81,19 @@
                  details are part of the shell rather than each page's text. --}}
             <section class="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-7">
                 <h2 class="text-lg font-bold text-[var(--ink)]">Questions about this page</h2>
-                <p class="mt-2 text-sm leading-7 text-[var(--muted)]">{{ config('business.name') }}</p>
+                <p class="mt-2 text-sm leading-7 text-[var(--muted)]">{{ $site['name'] }}</p>
                 <ul class="mt-4 grid gap-4 text-sm sm:grid-cols-3">
                     <li>
                         <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Email</div>
-                        <div class="mt-1 break-all text-[var(--ink)]">{{ config('business.email') }}</div>
+                        <div class="mt-1 break-all text-[var(--ink)]">{{ $site['email'] }}</div>
                     </li>
                     <li>
                         <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Phone</div>
-                        <div class="mt-1 text-[var(--ink)]">{{ config('business.phone') ?: config('business.email') }}</div>
+                        <div class="mt-1 text-[var(--ink)]">{{ $site['phone'] ?: $site['email'] }}</div>
                     </li>
                     <li>
                         <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Address</div>
-                        <div class="mt-1 text-[var(--ink)]">{{ config('business.address') }}</div>
+                        <div class="mt-1 text-[var(--ink)]">{{ $site['address'] }}</div>
                     </li>
                 </ul>
             </section>

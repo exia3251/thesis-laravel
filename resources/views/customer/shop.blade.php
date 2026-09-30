@@ -18,7 +18,15 @@
 @section('content')
 
     <main class="container mx-auto px-4 py-8 sm:px-6">
+        {{-- An uploaded banner sits behind the heading, under a wash dark
+             enough that white lettering stays readable over any photograph.
+             With no banner the panel keeps its gradient. --}}
         <section class="relative mb-6 overflow-hidden rounded-[1.5rem] bg-[linear-gradient(135deg,_#0d1f18_0%,_#163d2c_55%,_#1a3020_100%)] px-5 py-10 text-white shadow-lg sm:px-8 sm:py-12">
+            @if ($site['banner_url'])
+                <img src="{{ $site['banner_url'] }}" alt="" aria-hidden="true"
+                     class="pointer-events-none absolute inset-0 h-full w-full object-cover">
+                <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,_rgba(10,26,20,0.92)_0%,_rgba(13,40,28,0.78)_48%,_rgba(13,40,28,0.55)_100%)]"></div>
+            @endif
             {{-- Decorative blobs --}}
             <div class="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,_rgba(20,138,103,0.35)_0%,_rgba(20,138,103,0)_70%)]"></div>
             <div class="pointer-events-none absolute -bottom-16 left-1/4 h-56 w-56 rounded-full bg-[radial-gradient(circle,_rgba(217,177,74,0.22)_0%,_rgba(217,177,74,0)_70%)]"></div>

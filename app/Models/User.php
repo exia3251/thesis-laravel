@@ -243,6 +243,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->isAdmin();
     }
 
+    /** Editing the shop's own contact details, logo, banner and QR code. */
+    public function canManageContent(): bool
+    {
+        return $this->isAdmin();
+    }
+
     public function canManageProducts(): bool
     {
         return $this->isAdmin() || $this->isInventoryStaff();

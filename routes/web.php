@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SalesController;
+use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\GoogleAuthController;
@@ -81,6 +82,9 @@ Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function 
 
     Route::get('/assistant', [ChatbotAdminController::class, 'index'])
         ->middleware('permission:manage_chatbot')->name('admin.assistant');
+
+    Route::get('/cms', [SiteContentController::class, 'index'])
+        ->middleware('permission:manage_content')->name('admin.cms');
 
     // No permission gate: every staff role manages its own account, which is
     // the whole point of it existing.
@@ -156,6 +160,18 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
 
     Route::get('/logs', [UserManagementController::class, 'getLogs'])
         ->middleware('permission:view_logs');
+
+    /*
+     * The shop's own details: what it is called, where it is, how to reach it,
+     * and the pictures it shows. Administrator only, because these are what
+     * the business says about itself to every visitor.
+     */
+    Route::middleware('permission:manage_content')->group(function () {
+        Route::get('/site-content', [SiteContentController::class, 'show']);
+        Route::put('/site-content', [SiteContentController::class, 'update']);
+        Route::post('/site-content/images/{field}', [SiteContentController::class, 'uploadImage']);
+        Route::delete('/site-content/images/{field}', [SiteContentController::class, 'removeImage']);
+    });
 
     Route::middleware('permission:manage_chatbot')->group(function () {
         Route::get('/assistant/intents', [ChatbotAdminController::class, 'intents']);

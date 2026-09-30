@@ -1,6 +1,6 @@
 @extends('layouts.bare')
 
-@section('title', $sale->reference() . ' - ' . config('business.name'))
+@section('title', $sale->reference() . ' - ' . $site['name'])
 
 @push('styles')
 <style>
@@ -490,11 +490,11 @@
                                      placeholder was h-56 w-56 and never noticed. Height
                                      is left to follow the image, which is taller than it
                                      is wide, because squaring it crops the code off. --}}
-                                <img src="{{ asset('images/gcash-qr.png') }}" alt="GCash QR code for {{ config('business.name') }}"
+                                <img src="{{ $site['gcash_qr_url'] }}" alt="GCash QR code for {{ $site['name'] }}"
                                      class="mx-auto block h-auto w-64 max-w-full rounded-2xl border border-[var(--line)]">
                                 <p class="mt-3 text-xs uppercase tracking-[0.22em] text-[var(--muted)]">GCash QR</p>
                                 <p class="mt-2 text-sm leading-6 text-[var(--muted)]">
-                                    Scan this with GCash, or send to {{ config('business.phone') }} instead. Either way, enter your reference number below.
+                                    Scan this with GCash, or send to {{ $site['phone'] }} instead. Either way, enter your reference number below.
                                 </p>
                             </div>
                         </div>

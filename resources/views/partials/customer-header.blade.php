@@ -21,12 +21,19 @@
 <header class="sticky top-0 z-50 border-b border-[var(--line)] bg-[rgba(246,248,251,0.84)] backdrop-blur-xl">
     <div class="container mx-auto px-4 sm:px-6">
         <div class="flex min-h-16 flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <a href="/shop" class="group block">
-                <div class="text-lg font-black tracking-tight sm:text-xl">
-                    <span class="text-[var(--primary)]">RANEY</span>
-                    <span class="text-[var(--accent)]"> LUBRICANTS</span>
-                </div>
-                <div class="text-[10px] uppercase tracking-[0.28em] text-[var(--muted)]">Trading</div>
+            {{-- An uploaded logo stands in for the wording. Nothing is
+                 required: with no logo the shop keeps the wordmark it has
+                 always had, so the slot being empty is not a broken header. --}}
+            <a href="/shop" class="group block shrink-0">
+                @if ($site['logo_url'])
+                    <img src="{{ $site['logo_url'] }}" alt="{{ $site['name'] }}" class="h-11 w-auto max-w-[190px] object-contain">
+                @else
+                    <div class="text-lg font-black tracking-tight sm:text-xl">
+                        <span class="text-[var(--primary)]">RANEY</span>
+                        <span class="text-[var(--accent)]"> LUBRICANTS</span>
+                    </div>
+                    <div class="text-[10px] uppercase tracking-[0.28em] text-[var(--muted)]">Trading</div>
+                @endif
             </a>
 
             @if ($showSearch ?? false)
