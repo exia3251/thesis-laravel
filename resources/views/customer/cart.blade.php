@@ -23,8 +23,17 @@
 
         <section class="mb-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
             <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm sm:p-6">
-                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Delivery Address</div>
+                <div class="flex items-start justify-between gap-3">
+                    <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">Delivery Address</div>
+                    <a href="/profile#address" id="profileAddressEdit" class="hidden shrink-0 text-xs font-semibold text-[var(--primary)] hover:underline">Change</a>
+                </div>
                 <p id="profileAddress" class="mt-3 text-sm leading-7 text-[var(--ink)]">Loading saved address...</p>
+                <p id="profileAddressPhone" class="mt-1 hidden text-sm text-[var(--muted)]"></p>
+                <a href="/profile#address" id="profileAddressAdd"
+                   class="mt-3 hidden items-center gap-1.5 text-sm font-semibold text-[var(--primary)] hover:underline">
+                    Add your delivery address
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+                </a>
             </div>
             <div class="rounded-[1.5rem] border border-[var(--accent-soft)] bg-[#fffcf3] p-5 shadow-sm sm:p-6">
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[#9d7b20]">Checkout Reminder</div>
@@ -278,13 +287,56 @@
             renderCart();
         }
 
+        /*
+         * The address the order will be sent to.
+         *
+         * This read `profile.address`, which stopped existing when the single
+         * address line was split into house, barangay, city, province and
+         * postal code. The read found nothing, so the panel showed "complete
+         * your profile address" to everybody -- including customers whose
+         * address was complete and printed on their last receipt. The one
+         * thing this panel exists to confirm was the one thing it never said.
+         *
+         * It reads `full_address`, which the profile composes from those
+         * fields, and asks `is_complete` whether anything is actually missing
+         * rather than inferring it from an empty string.
+         */
         async function loadProfileSummary() {
             const response = await fetch('/shop-api/profile', { headers: { Accept: 'application/json' } });
             const data = await response.json();
             const profile = data.data || {};
-            document.getElementById('profileAddress').textContent = profile.address
-                ? `${escapeHtml(profile.address)}${profile.phone ? ` | ${escapeHtml(profile.phone)}` : ''}`
-                : 'Complete your profile address and phone before placing an order.';
+
+            const line = document.getElementById('profileAddress');
+            const phone = document.getElementById('profileAddressPhone');
+            const change = document.getElementById('profileAddressEdit');
+            const add = document.getElementById('profileAddressAdd');
+
+            // Assigned as text, so the escaping the old version did on the way
+            // into textContent -- which showed &amp; to anybody living on a
+            // street with an ampersand in it -- is gone with it.
+            if (profile.full_address) {
+                line.textContent = profile.full_address;
+                line.classList.remove('text-[var(--muted)]');
+            } else {
+                line.textContent = 'No delivery address saved yet.';
+                line.classList.add('text-[var(--muted)]');
+            }
+
+            phone.textContent = profile.phone || '';
+            phone.classList.toggle('hidden', !profile.phone);
+
+            // Complete means deliverable, which needs a phone as well as an
+            // address -- the same test the Place Order button is gated on, so
+            // the panel cannot say one thing while the button does another.
+            change.classList.toggle('hidden', !profile.is_complete);
+            add.classList.toggle('hidden', !!profile.is_complete);
+            add.classList.toggle('inline-flex', !profile.is_complete);
+
+            if (!profile.is_complete) {
+                add.textContent = profile.full_address && !profile.phone
+                    ? 'Add a phone number for the courier'
+                    : 'Add your delivery address';
+            }
         }
 
         /*
