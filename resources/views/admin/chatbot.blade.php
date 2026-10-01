@@ -79,7 +79,7 @@
             <div class="flex flex-wrap items-center gap-2">
                 <input type="text" id="vehicleSearch" oninput="searchVehicles()" placeholder="Search make or model"
                        class="w-full rounded-xl border border-[var(--line)] px-3 py-2 text-sm outline-none focus:border-[var(--primary)] sm:w-56">
-                <select id="vehicleFilter" onchange="loadVehicles()"
+                <select id="vehicleFilter" onchange="loadVehicles(1)"
                         class="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]">
                     <option value="all">All</option>
                     <option value="unverified" selected>Not yet checked</option>
@@ -100,6 +100,7 @@
         </div>
 
         <div id="vehicleList" class="divide-y divide-[var(--line)]"></div>
+        <div id="vehiclePagination"></div>
     </section>
 
     <div id="vehicleModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
@@ -387,25 +388,36 @@
     }
 
     let vehicles = [];
+    let vehiclePage = 1;
 
-    async function loadVehicles() {
-        const params = new URLSearchParams({ only: document.getElementById('vehicleFilter').value });
+    async function loadVehicles(page = 1) {
+        const params = new URLSearchParams({ only: document.getElementById('vehicleFilter').value, page });
         const search = document.getElementById('vehicleSearch').value.trim();
         if (search) params.set('search', search);
 
         const response = await fetch(`/admin-api/assistant/vehicles?${params}`, { headers: { Accept: 'application/json' } });
         if (response.status === 401) { window.location.href = '/admin/login'; return; }
 
-        const { data } = await response.json();
-        vehicles = data.specs;
+        const { data, meta, summary } = await response.json();
+
+        /* Checking the last unchecked row on the last page empties that page,
+           and the filter it was found under no longer has one. Rather than
+           leave somebody looking at "nothing matches" with sixty vehicles in
+           the table, fall back to the last page that still has rows. */
+        if (!data.length && meta.total > 0 && meta.current_page > meta.last_page) {
+            return loadVehicles(meta.last_page);
+        }
+
+        vehicles = data;
+        vehiclePage = meta.current_page;
 
         document.getElementById('vehicleSummary').textContent =
-            `${data.verified} of ${data.total} checked against a manual`;
+            `${summary.verified} of ${summary.total} checked against a manual`;
 
         /* Grades a customer will be told about but cannot buy here. That is a
            stocking decision, so it is worth naming rather than hiding. */
-        document.getElementById('unstockedNote').textContent = data.unstocked_grades.length
-            ? 'Not stocked: ' + data.unstocked_grades
+        document.getElementById('unstockedNote').textContent = summary.unstocked_grades.length
+            ? 'Not stocked: ' + summary.unstocked_grades
                 .map((row) => `${row.viscosity} (${row.vehicles} ${row.vehicles === 1 ? 'vehicle' : 'vehicles'})`)
                 .join(', ') + '. The assistant says so rather than offering a different grade.'
             : 'Every grade in this table is stocked.';
@@ -431,9 +443,12 @@
                             class="shrink-0 rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">Check</button>
                 </div>`).join('')
             : '<p class="px-6 py-10 text-center text-sm text-[var(--muted)]">Nothing matches that.</p>';
+
+        renderPagination('vehiclePagination', meta, loadVehicles);
     }
 
-    const searchVehicles = debounce(() => loadVehicles());
+    // A new search is a new list, so it starts at its own beginning.
+    const searchVehicles = debounce(() => loadVehicles(1));
 
     function openVehicle(id) {
         const spec = vehicles.find((item) => String(item.spec_id) === String(id));
@@ -499,7 +514,10 @@
 
             closeVehicle();
             showMessage(payload.message || 'Saved.');
-            await loadVehicles();
+            // Back to the page the row was on. Checking sixty vehicles means
+            // sixty saves, and being returned to the first page each time
+            // would mean paging back out to where you were, sixty times.
+            await loadVehicles(vehiclePage);
         }, 'Saving');
     }
 

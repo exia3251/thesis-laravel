@@ -118,12 +118,24 @@ class ChatbotAdminController extends Controller
             $query->where('is_verified', true);
         }
 
-        $specs = $query->orderBy('is_verified')->orderBy('make')->orderBy('model')->get();
+        /*
+         * Ordered unverified first, then by make and model -- but ordering by
+         * make alone is not a total order, because a make has many rows. Two
+         * rows that tie on every column the database is told to sort by may
+         * come back in either order, and on a paged query that means a row can
+         * appear on two pages or on none. The key settles the ties.
+         */
+        $page = $query->orderBy('is_verified')
+            ->orderBy('make')
+            ->orderBy('model')
+            ->orderBy('spec_id')
+            ->paginate($this->perPage());
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'specs' => $specs,
+        return $this->paginated($page, null, [
+            // Counted over the whole table, not the filter: this line says how
+            // far the checking has got altogether, and a filter is how
+            // somebody looks for the next row to check, not a different total.
+            'summary' => [
                 'total' => VehicleSpec::count(),
                 'verified' => VehicleSpec::where('is_verified', true)->count(),
                 // Grades the shop cannot currently serve. A customer asking
