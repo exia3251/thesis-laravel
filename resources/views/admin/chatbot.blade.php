@@ -79,25 +79,13 @@
             <div class="flex flex-wrap items-center gap-2">
                 <input type="text" id="vehicleSearch" oninput="searchVehicles()" placeholder="Search make or model"
                        class="w-full rounded-xl border border-[var(--line)] px-3 py-2 text-sm outline-none focus:border-[var(--primary)] sm:w-56">
-                <select id="vehicleFilter" onchange="loadVehicles(1)"
-                        class="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]">
-                    <option value="all">All</option>
-                    <option value="unverified" selected>Not yet checked</option>
-                    <option value="verified">Checked</option>
-                </select>
             </div>
         </div>
 
-        <div class="border-b border-amber-200 bg-amber-50 px-6 py-4">
-            <p class="text-sm leading-relaxed text-amber-900">
-                <span class="font-bold">These figures have not been checked against the manufacturers' manuals.</span>
-                They are general reference values seeded to get the guide working. Every oil answer the assistant gives
-                ends on the same line, telling the customer their own handbook decides &mdash; the same line whether the
-                figure came from this guide or not, because none of it has been verified.
-                Open a row, verify it against the manual, and tick <span class="font-semibold">Checked</span>.
-            </p>
-            <p id="unstockedNote" class="mt-2 text-xs text-amber-900/80"></p>
-        </div>
+        {{-- Grades a customer will be told about but cannot buy here. Kept out
+             of the row list because it is a stocking decision about the shop,
+             not a fact about any one vehicle. --}}
+        <p id="unstockedNote" class="border-b border-[var(--line)] bg-[var(--surface)] px-6 py-3 text-xs text-[var(--muted)]"></p>
 
         <div id="vehicleList" class="divide-y divide-[var(--line)]"></div>
         <div id="vehiclePagination"></div>
@@ -162,13 +150,6 @@
                               class="mt-1.5 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]"></textarea>
                 </div>
 
-                <label class="flex items-start gap-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3.5">
-                    <input type="checkbox" id="vehicleVerified" class="mt-0.5 h-4 w-4 rounded border-[var(--line)]">
-                    <span class="text-sm text-[var(--ink)]">
-                        <span class="font-semibold">Checked against the manual</span>
-                        <span class="mt-0.5 block text-xs text-[var(--muted)]">Until this is ticked the assistant tells customers the figure is unverified.</span>
-                    </span>
-                </label>
 
                 <div class="flex justify-end gap-3 border-t border-[var(--line)] pt-5">
                     <button type="button" onclick="closeVehicle()" class="rounded-xl border border-[var(--line)] px-5 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--surface)]">Cancel</button>
@@ -391,7 +372,7 @@
     let vehiclePage = 1;
 
     async function loadVehicles(page = 1) {
-        const params = new URLSearchParams({ only: document.getElementById('vehicleFilter').value, page });
+        const params = new URLSearchParams({ page });
         const search = document.getElementById('vehicleSearch').value.trim();
         if (search) params.set('search', search);
 
@@ -400,10 +381,10 @@
 
         const { data, meta, summary } = await response.json();
 
-        /* Checking the last unchecked row on the last page empties that page,
-           and the filter it was found under no longer has one. Rather than
-           leave somebody looking at "nothing matches" with sixty vehicles in
-           the table, fall back to the last page that still has rows. */
+        /* A search that no longer matches anything on this page, or a row that
+           has gone, can leave somebody past the end of the list. Rather than
+           show "nothing matches" while rows exist, fall back to the last page
+           that still has some. */
         if (!data.length && meta.total > 0 && meta.current_page > meta.last_page) {
             return loadVehicles(meta.last_page);
         }
@@ -412,10 +393,8 @@
         vehiclePage = meta.current_page;
 
         document.getElementById('vehicleSummary').textContent =
-            `${summary.verified} of ${summary.total} checked against a manual`;
+            `${summary.total} ${summary.total === 1 ? 'vehicle' : 'vehicles'} in the guide`;
 
-        /* Grades a customer will be told about but cannot buy here. That is a
-           stocking decision, so it is worth naming rather than hiding. */
         document.getElementById('unstockedNote').textContent = summary.unstocked_grades.length
             ? 'Not stocked: ' + summary.unstocked_grades
                 .map((row) => `${row.viscosity} (${row.vehicles} ${row.vehicles === 1 ? 'vehicle' : 'vehicles'})`)
@@ -429,9 +408,6 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="text-sm font-semibold text-[var(--ink)]">${escapeHtml(spec.make)} ${escapeHtml(spec.model)}</span>
                             ${spec.variant ? `<span class="text-xs text-[var(--muted)]">${escapeHtml(spec.variant)}</span>` : ''}
-                            ${spec.is_verified
-                                ? '<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Checked</span>'
-                                : '<span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Not checked</span>'}
                         </div>
                         <div class="mt-1 text-xs text-[var(--muted)]">
                             ${escapeHtml(spec.viscosity)}${spec.viscosity_alt ? ' or ' + escapeHtml(spec.viscosity_alt) : ''}
@@ -440,7 +416,7 @@
                         </div>
                     </div>
                     <button type="button" data-id="${spec.spec_id}" onclick="openVehicle(this.dataset.id)"
-                            class="shrink-0 rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">Check</button>
+                            class="shrink-0 rounded-xl border border-[var(--line)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]">Edit</button>
                 </div>`).join('')
             : '<p class="px-6 py-10 text-center text-sm text-[var(--muted)]">Nothing matches that.</p>';
 
@@ -464,7 +440,6 @@
         document.getElementById('vehicleCapacity').value = spec.capacity_litres || '';
         document.getElementById('vehicleSource').value = spec.source || '';
         document.getElementById('vehicleNotes').value = spec.notes || '';
-        document.getElementById('vehicleVerified').checked = !!spec.is_verified;
         document.getElementById('vehicleErrors').classList.add('hidden');
 
         const modal = document.getElementById('vehicleModal');
@@ -498,7 +473,6 @@
                     capacity_litres: document.getElementById('vehicleCapacity').value || null,
                     source: document.getElementById('vehicleSource').value || null,
                     notes: document.getElementById('vehicleNotes').value || null,
-                    is_verified: document.getElementById('vehicleVerified').checked,
                 }),
             });
 

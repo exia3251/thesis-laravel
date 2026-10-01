@@ -91,18 +91,16 @@ class ChatbotAdminController extends Controller
     }
 
     /**
-     * The vehicle table, unverified rows first.
+     * The vehicle table: which oil grade each engine takes.
      *
-     * Those rows are general reference figures rather than readings from the
-     * manufacturers' manuals, and the assistant says so to customers. This is
-     * where somebody here checks one and takes responsibility for it.
+     * These are reference figures about other manufacturers' engines, and
+     * every oil answer the assistant gives ends on the same line telling the
+     * customer their own handbook decides -- the same line whatever is stored
+     * here. This screen is simply where the figures are kept correct.
      */
     public function vehicles(Request $request)
     {
-        $request->validate([
-            'search' => 'nullable|string|max:60',
-            'only' => 'nullable|in:all,unverified,verified',
-        ]);
+        $request->validate(['search' => 'nullable|string|max:60']);
 
         $query = VehicleSpec::query();
 
@@ -112,32 +110,23 @@ class ChatbotAdminController extends Controller
             Search::apply($query, $term, ['make', 'model', 'aliases']);
         }
 
-        if ($request->input('only') === 'unverified') {
-            $query->where('is_verified', false);
-        } elseif ($request->input('only') === 'verified') {
-            $query->where('is_verified', true);
-        }
-
         /*
-         * Ordered unverified first, then by make and model -- but ordering by
-         * make alone is not a total order, because a make has many rows. Two
-         * rows that tie on every column the database is told to sort by may
-         * come back in either order, and on a paged query that means a row can
-         * appear on two pages or on none. The key settles the ties.
+         * Ordering by make alone is not a total order, because a make has many
+         * rows. Two rows that tie on every column the database is told to sort
+         * by may come back in either order, and on a paged query that means a
+         * row can appear on two pages or on none. The key settles the ties.
          */
-        $page = $query->orderBy('is_verified')
-            ->orderBy('make')
+        $page = $query->orderBy('make')
             ->orderBy('model')
             ->orderBy('spec_id')
             ->paginate($this->perPage());
 
         return $this->paginated($page, null, [
-            // Counted over the whole table, not the filter: this line says how
-            // far the checking has got altogether, and a filter is how
-            // somebody looks for the next row to check, not a different total.
+            // Counted over the whole table rather than the search, so the
+            // heading says how large the guide is, not how much of it is
+            // currently on screen.
             'summary' => [
                 'total' => VehicleSpec::count(),
-                'verified' => VehicleSpec::where('is_verified', true)->count(),
                 // Grades the shop cannot currently serve. A customer asking
                 // about one of these is a stocking decision, not a dead end.
                 'unstocked_grades' => VehicleSpec::whereNotIn('viscosity', $this->stockedGrades())
@@ -165,7 +154,6 @@ class ChatbotAdminController extends Controller
             'capacity_litres' => 'nullable|numeric|min:0.5|max:99',
             'notes' => 'nullable|string|max:500',
             'source' => 'nullable|string|max:120',
-            'is_verified' => 'nullable|boolean',
         ], [
             'viscosity.regex' => 'Write the grade as it appears in the handbook, such as 5W-30 or 15W40.',
             'viscosity_alt.regex' => 'Write the alternative grade as 5W-30 or 15W40.',
@@ -179,15 +167,20 @@ class ChatbotAdminController extends Controller
             $validated['viscosity_alt'] = str_replace('-', '', strtoupper($validated['viscosity_alt']));
         }
 
-        $wasVerified = $spec->is_verified;
-        $spec->update($validated + ['is_verified' => $request->boolean('is_verified')]);
+        /*
+         * is_verified is deliberately absent. The screen no longer offers it,
+         * and writing $request->boolean('is_verified') for a field nobody
+         * posts resolves to false -- so every edit of any row would quietly
+         * clear the flag on the rows that genuinely were checked against a
+         * manufacturer's manual, and the record of who checked what would
+         * disappear one save at a time. The stored value is left alone.
+         */
+        $spec->update($validated);
 
         ActivityLog::logAction(
             auth()->id(),
-            $spec->is_verified && !$wasVerified ? 'vehicle_spec_verified' : 'vehicle_spec_updated',
-            auth()->user()->full_name . ' '
-                . ($spec->is_verified && !$wasVerified ? 'verified' : 'updated')
-                . " the oil spec for {$spec->title()} ({$spec->viscosity})"
+            'vehicle_spec_updated',
+            auth()->user()->full_name . " updated the oil spec for {$spec->title()} ({$spec->viscosity})"
         );
 
         return response()->json(['success' => true, 'message' => 'Saved.']);

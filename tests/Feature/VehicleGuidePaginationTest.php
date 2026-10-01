@@ -62,7 +62,7 @@ class VehicleGuidePaginationTest extends TestCase
             $this->spec();
         }
 
-        $response = $this->fetch($admin, 'only=all');
+        $response = $this->fetch($admin, '');
 
         $this->assertCount(20, $response->json('data'));
         $this->assertSame(70, $response->json('meta.total'));
@@ -87,7 +87,7 @@ class VehicleGuidePaginationTest extends TestCase
         $seen = [];
 
         for ($page = 1; $page <= 3; $page++) {
-            foreach ($this->fetch($admin, "only=all&page={$page}")->json('data') as $row) {
+            foreach ($this->fetch($admin, "page={$page}")->json('data') as $row) {
                 $seen[] = $row['spec_id'];
             }
         }
@@ -96,62 +96,79 @@ class VehicleGuidePaginationTest extends TestCase
         $this->assertCount(50, array_unique($seen), 'A vehicle was on two pages.');
     }
 
+
+
+    /**
+     * The heading says how large the guide is, so it counts the guide -- not
+     * the search somebody happens to be running, and not the page they
+     * happen to be reading.
+     */
     #[Test]
-    public function unchecked_rows_still_come_first(): void
-    {
-        $admin = $this->admin();
-
-        for ($i = 0; $i < 25; $i++) {
-            $this->spec(['is_verified' => true]);
-        }
-
-        $unchecked = $this->spec(['make' => 'Zephyr', 'model' => 'Last Alphabetically']);
-
-        $rows = $this->fetch($admin, 'only=all')->json('data');
-
-        $this->assertSame(
-            $unchecked->spec_id,
-            $rows[0]['spec_id'],
-            'The row that still needs checking was not put first.'
-        );
-    }
-
-    #[Test]
-    public function the_filter_decides_the_total(): void
+    public function the_summary_counts_the_whole_guide(): void
     {
         $admin = $this->admin();
 
         for ($i = 0; $i < 30; $i++) {
-            $this->spec(['is_verified' => $i < 12]);
+            $this->spec();
         }
 
-        $this->assertSame(30, $this->fetch($admin, 'only=all')->json('meta.total'));
-        $this->assertSame(12, $this->fetch($admin, 'only=verified')->json('meta.total'));
-        $this->assertSame(18, $this->fetch($admin, 'only=unverified')->json('meta.total'));
+        $this->spec(['make' => 'Mitsubishi', 'model' => 'Montero Sport']);
+
+        $this->assertSame(31, $this->fetch($admin, 'page=1')->json('summary.total'));
+        $this->assertSame(31, $this->fetch($admin, 'page=2')->json('summary.total'));
+
+        // A search narrows the rows, not the size of the guide.
+        $narrowed = $this->fetch($admin, 'search=montero');
+        $this->assertSame(1, $narrowed->json('meta.total'));
+        $this->assertSame(31, $narrowed->json('summary.total'));
     }
 
     /**
-     * How far the checking has got altogether. A filter is how somebody looks
-     * for the next row to check, not a different count of the work.
+     * The screen no longer offers the tick, and a field nobody posts reads as
+     * false. Writing it back on every save would clear the flag on the rows
+     * that genuinely were checked against a manufacturer's manual, one save
+     * at a time, with nothing on screen to show it happening.
      */
     #[Test]
-    public function the_summary_counts_the_whole_table_whatever_is_filtered(): void
+    public function editing_a_row_does_not_wipe_the_record_of_it_having_been_checked(): void
     {
         $admin = $this->admin();
 
-        for ($i = 0; $i < 30; $i++) {
-            $this->spec(['is_verified' => $i < 12]);
+        $spec = $this->spec([
+            'is_verified' => true,
+            'source' => "2019 Vios owner's manual, page 312",
+            'viscosity' => '5W30',
+        ]);
+
+        $this->actingAs($admin, 'staff')
+            ->putJson("/admin-api/assistant/vehicles/{$spec->spec_id}", [
+                'viscosity' => '0W20',
+                'source' => "2019 Vios owner's manual, page 312",
+            ])
+            ->assertOk();
+
+        $spec->refresh();
+
+        $this->assertSame('0W20', $spec->viscosity, 'The edit did not take.');
+        $this->assertTrue($spec->is_verified, 'The record of this row having been checked was wiped.');
+    }
+
+    #[Test]
+    public function the_screen_no_longer_offers_the_verification_controls(): void
+    {
+        $view = file_get_contents(resource_path('views/admin/chatbot.blade.php'));
+
+        foreach (['vehicleFilter', 'vehicleVerified', 'Not yet checked', 'Not checked',
+                  'Checked against the manual', 'have not been checked against'] as $gone) {
+            $this->assertStringNotContainsString($gone, $view, "\"{$gone}\" is still on the screen.");
         }
 
-        foreach (['all', 'verified', 'unverified'] as $only) {
-            $response = $this->fetch($admin, "only={$only}&page=1");
+        // The row button opens the row for editing, and says so.
+        $this->assertStringContainsString('>Edit</button>', $view);
+        $this->assertStringNotContainsString('>Check</button>', $view);
 
-            $this->assertSame(30, $response->json('summary.total'), "wrong total under {$only}");
-            $this->assertSame(12, $response->json('summary.verified'), "wrong verified under {$only}");
-        }
-
-        // And it does not change as you page through.
-        $this->assertSame(12, $this->fetch($admin, 'only=all&page=2')->json('summary.verified'));
+        // The stocking note outlived the banner it used to sit in.
+        $this->assertStringContainsString('id="unstockedNote"', $view);
     }
 
     #[Test]
@@ -166,7 +183,7 @@ class VehicleGuidePaginationTest extends TestCase
         // Placed well past the first page if the search were ignored.
         $this->spec(['make' => 'Mitsubishi', 'model' => 'Montero Sport']);
 
-        $response = $this->fetch($admin, 'only=all&search=montero');
+        $response = $this->fetch($admin, 'search=montero');
 
         $this->assertSame(1, $response->json('meta.total'));
         $this->assertSame('Montero Sport', $response->json('data.0.model'));
@@ -182,7 +199,7 @@ class VehicleGuidePaginationTest extends TestCase
         }
 
         // The state after checking the last row on the last page.
-        $response = $this->fetch($admin, 'only=all&page=9');
+        $response = $this->fetch($admin, 'page=9');
 
         $this->assertSame([], $response->json('data'));
         $this->assertSame(25, $response->json('meta.total'));
@@ -199,7 +216,7 @@ class VehicleGuidePaginationTest extends TestCase
             $this->spec(['viscosity' => '0W16']);
         }
 
-        $grades = $this->fetch($admin, 'only=all')->json('summary.unstocked_grades');
+        $grades = $this->fetch($admin, '')->json('summary.unstocked_grades');
 
         $this->assertNotEmpty($grades, 'A grade nobody stocks stopped being named.');
         $this->assertSame('0W16', $grades[0]['viscosity']);
@@ -215,7 +232,7 @@ class VehicleGuidePaginationTest extends TestCase
             $this->spec();
         }
 
-        $response = $this->fetch($admin, 'only=all&per_page=5000');
+        $response = $this->fetch($admin, 'per_page=5000');
 
         $this->assertLessThanOrEqual(100, count($response->json('data')));
         $this->assertSame(150, $response->json('meta.total'));
@@ -232,8 +249,7 @@ class VehicleGuidePaginationTest extends TestCase
         // The save handler returns to the page the row was on, not page one.
         $this->assertStringContainsString('await loadVehicles(vehiclePage);', $view);
 
-        // A new filter or search is a new list, so those do start at the top.
-        $this->assertStringContainsString('onchange="loadVehicles(1)"', $view);
+        // A new search is a new list, so it does start at the top.
         $this->assertStringContainsString('debounce(() => loadVehicles(1))', $view);
     }
 
