@@ -170,12 +170,25 @@ class GoogleAuthController extends Controller
         // 3. Nobody we know. New customers only -- a staff account is
         //    something an administrator creates deliberately, never something
         //    that appears because somebody signed in.
+        /*
+         * is_active is set here rather than left to the column default.
+         *
+         * The default applies in the database, so the row is correct -- but
+         * the model in memory keeps whatever was passed, and nothing was, so
+         * is_active read as null for the rest of the request. isCustomer()
+         * asks for the flag, returned false, and the branch below that sends
+         * a brand new customer to fill in their phone and address never ran.
+         * They were dropped on the catalogue instead and found out at
+         * checkout that they could not order, which is the exact thing that
+         * branch exists to prevent.
+         */
         $user = User::create([
             'email' => $email,
             'google_id' => $googleId,
             'full_name' => $this->nameFrom($googleUser, $email),
             'role' => User::ROLE_CUSTOMER,
             'password' => null,
+            'is_active' => true,
         ]);
 
         $user->forceFill(['email_verified_at' => now()])->save();
