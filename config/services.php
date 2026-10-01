@@ -39,18 +39,21 @@ return [
     'google' => [
         /*
          * A switch of its own, so the feature can be turned off without
-         * deleting the credentials that make it work.
+         * deleting the credentials that make it work. Off, the buttons go
+         * rather than sending people to a Google error page; everything
+         * behind them stays.
          *
-         * It is off while the system is demonstrated over a tunnel. Google
+         * It was off while the system was demonstrated over a tunnel. Google
          * will not accept an ngrok address as an authorised domain -- those
          * live on the Public Suffix List, where anybody can take a subdomain,
-         * so Google has no way to tell that this one is ours -- and an app
-         * that cannot be published is limited to a hundred named test users,
-         * which a survey of strangers cannot work with.
+         * so Google has no way to tell that this one is ours.
          *
-         * Rather than leave a button that sends people to a Google error
-         * page, the button goes. Everything behind it stays, and still works
-         * on localhost, where the callback is an address Google accepts.
+         * Turning it on is therefore a statement about where the system is
+         * being served from, not just about the feature: the address the
+         * visitor arrives on becomes the callback, and every such address has
+         * to be registered on the OAuth client beforehand or Google refuses
+         * the handover. localhost is registered. A tunnel address is not, and
+         * changes each time the tunnel restarts.
          */
         'enabled' => filter_var(env('GOOGLE_SIGNIN_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
 
