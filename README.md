@@ -1,16 +1,25 @@
-## Requirements
+# Inventory Management System with POS & Chatbot
 
-Make sure you have all of these installed before starting.
+RANEY LUBRICANTS TRADING — Laravel 12, MySQL, Tailwind.
 
-| Tool          | Version       | Download                      |
+A clone of this repository runs on its own: the product catalogue, the product
+photographs, and the Philippine place names behind the address fields are all
+in here. Nothing has to be fetched from anywhere, and nothing but the database
+has to be created by hand.
+
+---
+
+## What you need first
+
+| Tool          | Version       | Where                         |
 | ------------- | ------------- | ----------------------------- |
 | XAMPP         | Latest        | https://www.apachefriends.org |
-| PHP           | 8.2 or higher | Included with XAMPP           |
+| PHP           | 8.2 or higher | Comes with XAMPP              |
 | Composer      | Latest        | https://getcomposer.org       |
 | Node.js + npm | 18 or higher  | https://nodejs.org            |
 | Git           | Latest        | https://git-scm.com           |
 
-To verify versions after installing, open a terminal and run:
+Check them before you start. Every one of these should print a version:
 
 ```bash
 php -v
@@ -20,190 +29,300 @@ npm -v
 git -v
 ```
 
----
-
-## Step 1 — Start XAMPP
-
-1. Open XAMPP Control Panel
-2. Start **Apache** and **MySQL**
-3. Make sure both show green — if either fails, check that port 80 (Apache) and port 3306 (MySQL) are not occupied by another program
+If `php -v` is not found, or prints a version below 8.2, add `C:\xampp\php` to
+your Windows PATH and open a new terminal.
 
 ---
 
-## Step 2 — Create the Database
+## Setting up
 
-1. Open your browser and go to `http://localhost/phpmyadmin`
-2. Click **New** on the left sidebar
-3. Name the database: `engine_oil_inventory`
-4. Set collation to `utf8mb4_general_ci`
-5. Click **Create**
+### 1. Start XAMPP
 
----
+Open the XAMPP Control Panel and start **Apache** and **MySQL**. Both should
+go green. If MySQL will not start, something else is using port 3306.
 
-## Step 3 — Clone the Repository
+### 2. Create the database
 
-Open a terminal and navigate to XAMPP's `htdocs` folder:
+Go to `http://localhost/phpmyadmin`, click **New**, and create a database
+named `engine_oil_inventory` with collation `utf8mb4_general_ci`.
+
+Create it empty. The tables come from the migrations in the next steps.
+
+### 3. Clone the repository
 
 ```bash
-# Windows
 cd C:/xampp/htdocs
-
 ```
-
-Then clone the project:
 
 ```bash
 git clone https://github.com/exia3251/thesis-laravel.git
+```
+
+```bash
 cd thesis-laravel
 ```
 
-## Step 4 — Open vs code and Install PHP Dependencies
-
-Open thesis-laravel folder name in xampp htdocs and in terminal:
+### 4. Install the PHP packages
 
 ```bash
-cd C:/xampp/htdocs/thesis-laravel
 composer install
 ```
 
-This installs all Laravel packages listed in `composer.json`. It may take a minute.
-
----
-
-## Step 5 — Install Frontend Dependencies
+### 5. Install the frontend packages
 
 ```bash
-cd C:/xampp/htdocs/thesis-laravel
 npm install
 ```
 
----
-
-## Step 6 — Set Up the Environment File
-
-Copy the example environment file:
+### 6. Create your .env file
 
 ```bash
-# Windows
 copy .env.example .env
-
 ```
 
-Open the `.env` file and update the database section:
+That is for Windows Command Prompt or PowerShell. In Git Bash, or on macOS
+or Linux, use this instead:
+
+```bash
+cp .env.example .env
+```
+
+Open the new `.env` and check the database block matches what you created:
 
 ```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
 DB_DATABASE=engine_oil_inventory
 DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-## Step 7 — Generate Application Key
+A default XAMPP MySQL has no root password, so leave `DB_PASSWORD` empty
+unless you set one.
+
+Everything else in `.env` can stay as it is for now — the system runs without
+any of the optional keys. See **Optional keys** below for what each one turns
+on.
+
+### 7. Generate the application key
 
 ```bash
 php artisan key:generate
 ```
 
-This fills in `APP_KEY` in your `.env` file.
-
----
-
-## Step 8 — Run Migrations and Seed the Database
+### 8. Create the tables and fill them
 
 ```bash
 php artisan migrate --seed
 ```
 
-This creates all the database tables and populates them with the default demo accounts and products (SOLAR, CANROYAL, PATROL only).
+This builds every table and loads the staff and customer accounts, the product
+catalogue, and 43,764 Philippine provinces, cities and barangays for the
+address fields. The place names take a few seconds — that is normal.
 
-If you ever need to reset everything and start fresh:
-
-```bash
-php artisan migrate:fresh --seed
-```
-
-> **Warning:** `migrate:fresh` drops all tables and recreates them.
-
----
-
-## Step 9 — Create the Storage Link
-
-This links the `storage` folder so uploaded product images are accessible in the browser:
+### 9. Link the storage folder
 
 ```bash
 php artisan storage:link
 ```
 
----
+Without this, product photographs and anything uploaded through the admin
+screens will not display.
 
-## Step 10 — Run the Development Server
+If it says the link already exists, that is fine — carry on.
 
-```bash
-php artisan serve
-```
-
-Open your browser and go to: `http://localhost:8000`
-
-The root URL redirects to `/shop` automatically.
-
----
-
-## Default Demo Accounts
-
-These accounts are created automatically by the seeder in Step 8.
-
-| Role        | Username     | Password        |
-| ----------- | ------------ | --------------- |
-| Super Admin | `superadmin` | `superadmin123` |
-| Admin       | `admin`      | `admin123`      |
-| Customer    | `customer`   | `customer123`   |
-
-| URL                                   | Purpose                   |
-| ------------------------------------- | ------------------------- |
-| `http://localhost:8000/shop`          | Customer storefront       |
-| `http://localhost:8000/shop/login`    | Customer login            |
-| `http://localhost:8000/shop/register` | Customer registration     |
-| `http://localhost:8000/admin/login`   | Admin / Super Admin login |
-
----
-
-## Common Issues
-
-**`composer install` fails with PHP version error**
-Make sure your system is using PHP 8.2+. On Windows with XAMPP, add `C:/xampp/php` to your system PATH environment variable.
-
-**`php artisan` command not found**
-Your PHP is not in your PATH. On Windows, add `C:/xampp/php` to system environment variables. On Mac, add it to your shell profile.
-
-**Database connection error on `php artisan migrate`**
-
-- Check that MySQL is running in XAMPP
-- Double-check `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` in your `.env`
-- Make sure the database `engine_oil_inventory` exists in phpMyAdmin
-
-**`php artisan storage:link` fails**
-Run it as administrator (Windows) or with `sudo` (Mac/Linux). If the link already exists, it will say so — that's fine, skip it.
-
-**Port 8000 already in use**
-Run the server on a different port:
+### 10. Build the stylesheet
 
 ```bash
-php artisan serve --port=8080
+npm run build
 ```
 
-## Project Structure (Quick Reference)
+**Do not skip this.** The stylesheet is compiled, not shipped. Without it
+every page loads unstyled, or Laravel stops with "Vite manifest not found".
+
+Run it again any time you pull changes that touch a `.blade.php` or
+`.css` file.
+
+### 11. Run it
+
+```bash
+php artisan serve --port=8123
+```
+
+Then open **http://localhost:8123**
+
+Use port 8123. It is the port the Google Sign-In callback is registered
+against, and the one `.claude/launch.json` expects.
+
+---
+
+## Signing in
+
+These accounts are created by step 8. **Sign in with the email address, not a
+username.**
+
+| Role            | Email                     | Password         |
+| --------------- | ------------------------- | ---------------- |
+| Administrator   | `admin@raney.test`        | `admin123`       |
+| Inventory Staff | `inventory@raney.test`    | `inventory123`   |
+| Accounting      | `accounting@raney.test`   | `accounting123`  |
+| Customer        | `john@example.com`        | `customer123`    |
+
+| Page                 | Address                                  |
+| -------------------- | ---------------------------------------- |
+| Shop                 | `http://localhost:8123/shop`             |
+| Customer sign-in     | `http://localhost:8123/shop/login`       |
+| Customer registration| `http://localhost:8123/shop/register`    |
+| Back office sign-in  | `http://localhost:8123/admin/login`      |
+
+Staff sign in with an email and password only. Google Sign-In is for
+customers, and the back office refuses it deliberately.
+
+---
+
+## Optional keys in .env
+
+The system runs with all of these empty. Each one turns on a feature; none of
+them stops anything else working.
+
+| Key | What it turns on | Without it |
+| --- | --- | --- |
+| `GROQ_API_KEY` | The assistant answers with Groq | It matches keywords against the answers in **Admin → Assistant** and still reads real orders, stock and prices from the database |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | Order, payment, delivery, verification and password-reset emails | Mail is logged as a failure and swallowed; an order still completes, it just goes unannounced |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | "Continue with Google" on the customer pages | The buttons are hidden and the route is closed |
+| `SURVEY_FORM_URL` | The link on the `/survey` page | The page has nothing to point at |
+
+`.env` is in `.gitignore` and must stay there. It holds live credentials and
+is never committed — which is why `.env.example` carries empty placeholders
+and comments instead of values.
+
+**Getting the real values:** ask whoever set the services up and keep them out
+of the repository, out of issues, and out of chat threads. A key that reaches
+a place other people can read has to be replaced, not hidden.
+
+Check the assistant key once it is in:
+
+```bash
+php artisan assistant:check
+```
+
+It says whether the key works, and lists the models it can reach if the
+configured one has been retired.
+
+---
+
+## Optional extra data
+
+Neither of these runs as part of `--seed`. Both are deliberate.
+
+**A year of trading history**, so the dashboard and analytics have something
+to show:
+
+```bash
+php artisan db:seed --class=DemoSalesSeeder
+```
+
+These are written as orders that already happened. They do not move current
+stock.
+
+**Re-fetch the product photographs** from the manufacturers' own sites. The
+repository already carries them, so this is only for refreshing them:
+
+```bash
+php artisan db:seed --class=ProductImageSeeder
+```
+
+---
+
+## Everyday commands
+
+```bash
+php artisan serve --port=8123
+```
+
+```bash
+npm run dev
+```
+
+`npm run dev` rebuilds the stylesheet as you edit, instead of running
+`npm run build` by hand each time. Leave it running in its own terminal.
+
+```bash
+php artisan test
+```
+
+The test suite. It runs against a database of its own and sends no mail, so
+it cannot touch your data or anybody's inbox.
+
+That database has to exist first. Create one more empty database in
+phpMyAdmin named `engine_oil_inventory_test`, the same way as in step 2. You
+do not need to migrate or seed it — the suite builds and empties it itself on
+every run.
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+Start the database over. **This drops every table**, including any orders or
+accounts you made while working.
+
+---
+
+## When something is wrong
+
+**Pages load with no styling, or "Vite manifest not found"**
+`npm run build` has not been run, or has not been run since the last pull.
+
+**`php artisan` is not recognised**
+PHP is not on your PATH. Add `C:\xampp\php` and open a new terminal.
+
+**`composer install` complains about the PHP version**
+Your terminal is using a PHP older than 8.2 — often a second PHP that is
+earlier in PATH than XAMPP's. Check with `php -v`.
+
+**Migrations cannot connect**
+MySQL is not running in XAMPP, or `engine_oil_inventory` does not exist yet,
+or `DB_PASSWORD` in `.env` does not match your MySQL root password.
+
+**Product images are missing**
+`php artisan storage:link` has not been run.
+
+**Port 8123 is already in use**
+Something is still serving from an earlier run. Close that terminal, or pick
+another port — but if you change it, the Google Sign-In callback for the new
+port has to be registered in the Google console, or that button will fail.
+
+**The assistant answers oddly, or always the same way**
+`GROQ_API_KEY` is empty or rejected, so it has fallen back to keyword
+matching. Run `php artisan assistant:check`.
+
+---
+
+## The other documents here
+
+| File | What it covers |
+| --- | --- |
+| `USER-MANUAL.md` | How to actually use the system, screen by screen |
+| `TECHNICAL-OVERVIEW.md` | How it is built and why, for the write-up |
+| `PROJECT_GUIDE.md` | Which file to edit for a given change |
+| `SHARING.md` | Putting the system on a public link for the survey |
+| `SURVEY-PREAMBLE.md` | The wording for the survey form |
+
+This file is the only one about getting it running.
+
+---
+
+## Where things live
 
 ```
-app/Http/Controllers/Admin/       — Admin backend logic
-app/Http/Controllers/Customer/    — Customer storefront logic
-app/Models/                       — Database models
-resources/views/admin/            — Admin UI pages
-resources/views/customer/         — Customer UI pages
-routes/web.php                    — Main web routes
-routes/api.php                    — API routes
-database/migrations/              — Database schema
-database/seeders/                 — Demo data seeders
-storage/app/public/products/      — Uploaded product images
+app/Http/Controllers/Admin/      Back office
+app/Http/Controllers/Customer/   Storefront
+app/Services/                    Business rules, kept out of controllers
+app/Models/                      Database models
+resources/views/admin/           Back office pages
+resources/views/customer/        Storefront pages
+resources/views/layouts/         Shared layout and shared JavaScript
+routes/web.php                   Every route, grouped by who may reach it
+database/migrations/             Table definitions
+database/seeders/                Starting data
+database/data/psgc.csv           The Philippine place names
+tests/Feature/                   The test suite
 ```
