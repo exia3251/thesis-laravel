@@ -196,6 +196,12 @@ class ChatbotAdminController extends Controller
     /**
      * Questions the matcher could not place, most common first, so the same
      * question asked twenty times is one row rather than twenty.
+     *
+     * Paginated rather than capped. This list was cut off at the fifty most
+     * asked, which on a quiet week is the whole of it and after a campaign is
+     * not: everything past the fiftieth was dropped without the page saying
+     * so, on the one screen whose entire purpose is to show what the business
+     * is missing. A truncated list here reads exactly like a complete one.
      */
     public function unanswered(Request $request)
     {
@@ -203,19 +209,19 @@ class ChatbotAdminController extends Controller
 
         $since = now()->subDays((int) $request->integer('days', 90));
 
-        $rows = ChatMessage::unanswered()
+        /*
+         * Grouped, so a page is twenty distinct questions rather than twenty
+         * messages. Laravel counts the groups for the total by wrapping this
+         * query as a subquery, which keeps the select list -- and so keeps the
+         * "question" alias that the grouping is written against.
+         */
+        $page = ChatMessage::unanswered()
             ->where('created_at', '>=', $since)
             ->selectRaw('LOWER(TRIM(body)) AS question, COUNT(*) AS times, MAX(created_at) AS last_asked')
             ->groupBy('question')
             ->orderByDesc('times')
             ->orderByDesc('last_asked')
-            ->limit(50)
-            ->get()
-            ->map(fn ($row) => [
-                'question' => $row->question,
-                'times' => (int) $row->times,
-                'last_asked' => \Illuminate\Support\Carbon::parse($row->last_asked)->diffForHumans(),
-            ]);
+            ->paginate($this->perPage());
 
         $totals = DB::table('chat_messages')
             ->where('role', ChatMessage::ROLE_USER)
@@ -226,15 +232,21 @@ class ChatbotAdminController extends Controller
         $asked = (int) ($totals->asked ?? 0);
         $missed = (int) ($totals->missed ?? 0);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'questions' => $rows,
+        return $this->paginated(
+            $page,
+            fn ($row) => [
+                'question' => $row->question,
+                'times' => (int) $row->times,
+                'last_asked' => \Illuminate\Support\Carbon::parse($row->last_asked)->diffForHumans(),
+            ],
+            // The figures above the list describe the whole period, not the
+            // page being read, so they travel outside the paginated rows.
+            ['stats' => [
                 'asked' => $asked,
                 'missed' => $missed,
                 'answered_percent' => $asked > 0 ? round((($asked - $missed) / $asked) * 100, 1) : null,
                 'conversations' => DB::table('chat_conversations')->where('last_message_at', '>=', $since)->count(),
-            ],
-        ]);
+            ]]
+        );
     }
 }

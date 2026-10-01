@@ -100,6 +100,50 @@ class ViewScriptSyntaxTest extends TestCase
         return $views;
     }
 
+    /**
+     * The same shape of fault in CSS rather than JavaScript.
+     *
+     * The shared pagination control wrote `bg-white` into the part of the
+     * class list every button gets, and let the current page's own classes
+     * override it with the brand colour. They cannot: both are a single class
+     * deep, so the winner is whichever Tailwind writes later, and that is
+     * `bg-white`. The page you were actually on was drawn white on white --
+     * the one button in the row whose number could not be read, on every
+     * screen that pages: Products, Sales, Users, Orders and the Assistant.
+     *
+     * No test that reads the DOM would have caught it. The class was present
+     * and the markup was correct; only the cascade was wrong.
+     */
+    #[Test]
+    public function the_pagination_control_does_not_fight_itself_for_a_background(): void
+    {
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+
+        $start = strpos($layout, 'const button = (label, target, opts = {}) => {');
+        $this->assertNotFalse($start, 'The pagination button builder has moved or been renamed.');
+
+        $builder = substr($layout, $start, (int) (strpos($layout, '};', $start) - $start));
+
+        // The shared part of the class list is the template literal.
+        $shared = substr($builder, (int) strpos($builder, 'class="'));
+
+        $this->assertStringNotContainsString(
+            'bg-white',
+            $shared,
+            'bg-white is back in the shared class list, where it silently beats the '
+            . "current page's own background and makes its number unreadable."
+        );
+
+        $this->assertStringContainsString('bg-[var(--primary)] text-white', $builder);
+
+        // Every other state still needs a background of its own.
+        $this->assertSame(
+            2,
+            substr_count($builder, 'bg-white'),
+            'The inactive and disabled buttons must each carry their own background.'
+        );
+    }
+
     /** @return array<string, array<int, string>> */
     private function scriptBlocks(): array
     {

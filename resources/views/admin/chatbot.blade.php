@@ -46,7 +46,10 @@
                 <h2 class="text-base font-bold text-[var(--ink)]">Questions it could not answer</h2>
                 <p class="mt-1 text-xs text-[var(--muted)]">Most asked first. Each one is a keyword worth adding below.</p>
             </div>
-            <select id="unansweredRange" onchange="loadUnanswered()"
+            {{-- Back to the first page: the period being asked about has
+                 changed, so whatever was on page four of the old one is not
+                 what page four of this one holds. --}}
+            <select id="unansweredRange" onchange="loadUnanswered(1)"
                     class="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]">
                 <option value="7">Last 7 days</option>
                 <option value="30">Last 30 days</option>
@@ -54,6 +57,7 @@
             </select>
         </div>
         <div id="unansweredList" class="divide-y divide-[var(--line)]"></div>
+        <div id="unansweredPagination"></div>
     </section>
 
     <section class="mt-5 rounded-[1.5rem] border border-[var(--line)] bg-white shadow-sm">
@@ -255,21 +259,26 @@
             </div>`;
     }
 
-    async function loadUnanswered() {
+    async function loadUnanswered(page = 1) {
         const days = document.getElementById('unansweredRange').value;
-        const response = await fetch(`/admin-api/assistant/unanswered?days=${days}`, { headers: { Accept: 'application/json' } });
+        const response = await fetch(`/admin-api/assistant/unanswered?days=${days}&page=${page}`, { headers: { Accept: 'application/json' } });
         if (response.status === 401) { window.location.href = '/admin/login'; return; }
 
-        const { data } = await response.json();
+        const { data, meta, stats } = await response.json();
 
+        /* The unanswered card counts the rows of the list beneath it, not the
+           messages behind them, because its note sends the reader there: the
+           same question asked twice is one thing to answer, and a card saying
+           118 above a list saying 117 only invites the question of which is
+           lying. The rate keeps to messages, which is what a rate is of. */
         document.getElementById('statCards').innerHTML =
-            card('Conversations', data.conversations, 'in this period') +
-            card('Questions asked', data.asked, 'by customers') +
-            card('Answered', data.answered_percent === null ? '—' : data.answered_percent + '%', 'matched to an entry') +
-            card('Unanswered', data.missed, 'worth adding below');
+            card('Conversations', stats.conversations, 'in this period') +
+            card('Questions asked', stats.asked, 'by customers') +
+            card('Answered', stats.answered_percent === null ? '—' : stats.answered_percent + '%', 'matched to an entry') +
+            card('Unanswered', meta.total, 'distinct, all listed below');
 
-        document.getElementById('unansweredList').innerHTML = data.questions.length
-            ? data.questions.map((row) => `
+        document.getElementById('unansweredList').innerHTML = data.length
+            ? data.map((row) => `
                 <div class="flex items-center justify-between gap-4 px-6 py-3.5">
                     <div class="min-w-0">
                         <div class="truncate text-sm font-medium text-[var(--ink)]">${escapeHtml(row.question)}</div>
@@ -278,6 +287,8 @@
                     <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">${row.times}&times;</span>
                 </div>`).join('')
             : '<p class="px-6 py-10 text-center text-sm text-[var(--muted)]">Nothing went unanswered in this period.</p>';
+
+        renderPagination('unansweredPagination', meta, loadUnanswered);
     }
 
     async function loadIntents() {

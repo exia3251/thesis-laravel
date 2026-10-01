@@ -416,16 +416,22 @@
             const wanted = new Set([1, last, page, page - 1, page + 1]);
             const pages = [...wanted].filter(p => p >= 1 && p <= last).sort((a, b) => a - b);
 
+            /* Each tone carries its own background. It used to inherit
+               bg-white from the shared part and override it, which it cannot:
+               the two are both one class deep, so the one written later in the
+               compiled stylesheet wins, and that is bg-white. The page you
+               were on was therefore drawn in white on white -- the one button
+               in the row whose number you could not read. */
             const button = (label, target, opts = {}) => {
                 const disabled = opts.disabled ? ' disabled' : '';
                 const tone = opts.active
                     ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
                     : opts.disabled
-                        ? 'border-[var(--line)] text-[var(--muted)] opacity-40 cursor-not-allowed'
-                        : 'border-[var(--line)] text-[var(--ink)] hover:border-[var(--primary)] hover:text-[var(--primary)]';
+                        ? 'bg-white border-[var(--line)] text-[var(--muted)] opacity-40 cursor-not-allowed'
+                        : 'bg-white border-[var(--line)] text-[var(--ink)] hover:border-[var(--primary)] hover:text-[var(--primary)]';
 
                 return `<button type="button"${disabled} onclick="window['${handlerName}'](${target})"
-                    class="min-w-[2.25rem] rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold transition ${tone}">${label}</button>`;
+                    class="min-w-[2.25rem] rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${tone}">${label}</button>`;
             };
 
             let numbers = '';
