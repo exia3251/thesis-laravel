@@ -71,8 +71,16 @@ Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function 
     Route::get('/sales', [SalesController::class, 'index'])
         ->middleware('permission:view_sales')->name('admin.sales');
 
+    /*
+     * Analytics answers the questions the old reports screen answered, and
+     * the two exports below it still carry the same figures into a
+     * spreadsheet. Accounting has always been able to pull those exports, so
+     * gating the page on the dashboard's permission only meant the figures
+     * were theirs to download but not to read on screen. It is view_reports
+     * for the same reason the exports are.
+     */
     Route::get('/analytics', [AnalyticsController::class, 'index'])
-        ->middleware('permission:full_dashboard')->name('admin.analytics');
+        ->middleware('permission:view_reports')->name('admin.analytics');
 
     Route::get('/users', [UserManagementController::class, 'index'])
         ->middleware('permission:manage_users')->name('admin.users');
@@ -97,7 +105,7 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
         ->middleware('permission:full_dashboard');
 
     Route::get('/analytics', [AnalyticsController::class, 'data'])
-        ->middleware('permission:full_dashboard');
+        ->middleware('permission:view_reports');
 
     Route::middleware('permission:manage_products')->group(function () {
         Route::get('/products', [ProductController::class, 'getProducts']);

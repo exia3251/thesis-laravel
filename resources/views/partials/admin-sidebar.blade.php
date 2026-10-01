@@ -14,7 +14,7 @@
     $groups = [
         'Menu' => collect([
             ['url' => '/admin/dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard', 'can' => $user?->canViewFullDashboard()],
-            ['url' => '/admin/analytics', 'label' => 'Analytics', 'icon' => 'analytics', 'can' => $user?->canViewFullDashboard()],
+            ['url' => '/admin/analytics', 'label' => 'Analytics', 'icon' => 'analytics', 'can' => $user?->canViewReports()],
             ['url' => '/admin/products',  'label' => 'Products',  'icon' => 'products',  'can' => $user?->canManageProducts()],
             ['url' => '/admin/inventory', 'label' => 'Inventory', 'icon' => 'inventory', 'can' => $user?->canManageInventory()],
             ['url' => '/admin/sales',     'label' => 'Sales',     'icon' => 'sales',     'can' => $user?->canViewSales(), 'badge' => $awaitingReview],
