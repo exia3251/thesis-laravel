@@ -162,7 +162,42 @@
         const peak = Math.max(...series.map((m) => m.collected), 1);
         const busiest = series.reduce((best, m) => (m.collected > best.collected ? m : best), series[0]);
 
-        holder.innerHTML = columns(series, peak, busiest);
+        holder.innerHTML = columns(series, moneyAxis(peak), busiest);
+    }
+
+    /**
+     * A scale for the money axis: round figures that cover the tallest bar.
+     *
+     * The top of the axis is not the tallest bar. Tying them together would
+     * mean a quiet week and a record week drew the identical picture, each
+     * topping out at the same height, and only the numbers in the corner
+     * would say which was which. Rounding out to a whole step instead leaves
+     * the tallest bar short of the top by however much it actually is.
+     */
+    function moneyAxis(peak, wanted = 4) {
+        const rough = peak / wanted;
+        const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
+        const run = rough / magnitude;
+
+        // The steps a reader adds up without thinking.
+        const step = Math.max(1, (run <= 1 ? 1 : run <= 2 ? 2 : run <= 2.5 ? 2.5 : run <= 5 ? 5 : 10) * magnitude);
+        const max = Math.ceil(peak / step) * step;
+
+        const ticks = [];
+        for (let i = 0; i * step <= max + step / 2; i++) {
+            ticks.push(Math.round(i * step * 100) / 100);
+        }
+
+        return { max, ticks };
+    }
+
+    /* Bare and short, because the axis is money from top to bottom and
+       repeating "PHP" five times down the side says it five times too many.
+       The caption underneath carries the currency in full. */
+    function axisTick(value) {
+        if (value >= 1000000) return (value / 1000000).toFixed(value % 1000000 ? 1 : 0) + 'M';
+        if (value >= 1000) return (value / 1000).toFixed(value % 1000 ? 1 : 0) + 'k';
+        return String(Math.round(value));
     }
 
     /** A bar that is still visible when the period was quiet but not empty. */
@@ -170,7 +205,8 @@
         return Math.max(value > 0 ? 3 : 1, (value / peak) * 100);
     }
 
-    function columns(series, peak, busiest) {
+    function columns(series, axis, busiest) {
+        const peak = axis.max;
         // Every label will not fit on a long span, so roughly a dozen of them
         // are kept and the rest left blank rather than overlapped into mush.
         const every = Math.ceil(series.length / 12);
@@ -185,17 +221,49 @@
                      title="${escapeHtml(m.full_label)}: ${peso(m.collected)}"></div>
             </div>`).join('');
 
+        /* Allowed to spill past its own column rather than be clipped to it.
+           Only every few columns carries a date and the rest are blank, so a
+           label has its neighbours' width to grow into -- and on a phone a
+           column is narrower than the word "Sep". */
         const labels = series.map((m, i) => `
-            <div class="${width} overflow-hidden text-center text-[10px] leading-4 text-[var(--muted)]">
-                ${i % every === 0 ? escapeHtml(m.label) : ''}
+            <div class="${width} text-center text-[10px] leading-4 text-[var(--muted)]">
+                <span class="whitespace-nowrap">${i % every === 0 ? escapeHtml(m.label) : ''}</span>
             </div>`).join('');
 
+        /* Each gridline and its figure are placed from the bottom by the same
+           percentage, so the number beside a line is the number that line
+           means. The figures are nudged up by half their own height to sit
+           on the line rather than hang beneath it. */
+        const gridlines = axis.ticks.map((value) => {
+            const atBottom = value === 0;
+
+            return `<div class="absolute inset-x-0 border-t ${atBottom ? 'border-[var(--line)]' : 'border-[var(--line)]/60'}"
+                         style="bottom:${(value / peak) * 100}%"></div>`;
+        }).join('');
+
+        const scale = axis.ticks.map((value) => `
+            <div class="absolute right-0 translate-y-1/2 text-[10px] leading-none text-[var(--muted)]"
+                 style="bottom:${(value / peak) * 100}%">${escapeHtml(axisTick(value))}</div>`).join('');
+
+        // The gutter is reserved on the label row too, or the dates would sit
+        // one axis-width to the left of the bars they name.
+        const gutter = 'w-11 shrink-0';
+
         return `
-            <div class="flex h-56 items-stretch gap-[3px]">${bars}</div>
-            <div class="mt-2 flex gap-[3px]">${labels}</div>
+            <div class="flex items-stretch">
+                <div class="${gutter} relative h-56 pr-2">${scale}</div>
+                <div class="relative h-56 flex-1">
+                    <div class="absolute inset-0">${gridlines}</div>
+                    <div class="relative flex h-full items-stretch gap-[3px]">${bars}</div>
+                </div>
+            </div>
+            <div class="mt-2 flex">
+                <div class="${gutter} pr-2"></div>
+                <div class="flex flex-1 gap-[3px]">${labels}</div>
+            </div>
             <p class="mt-4 border-t border-[var(--line)] pt-3 text-xs leading-5 text-[var(--muted)]">
                 Best: ${escapeHtml(busiest.full_label)}, ${peso(busiest.collected)}.
-                <span class="text-[var(--muted)]">Hover a bar for its figure.</span>
+                <span class="text-[var(--muted)]">Figures down the left are pesos. Hover a bar for its own.</span>
             </p>`;
     }
 
