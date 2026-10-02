@@ -95,30 +95,61 @@ class ProductCatalogSeeder extends Seeder
             foreach (array_keys($line['prices']) as $packKey) {
                 $pack = self::PACKS[$packKey];
 
-                $product = Product::create([
-                    // No pack size in the name. The size lives in `unit`, and
-                    // product_line ties the sizes of one oil together so the
-                    // shop shows a single card with a size selector on it.
-                    'product_name'    => $line['name'],
-                    'product_line'    => $line['key'],
-                    'brand'           => $line['brand'],
-                    'oil_type'        => $line['oil_type'],
-                    'viscosity_grade' => $line['viscosity'],
-                    'unit'            => $pack['unit'],
-                    'price'           => $line['prices'][$packKey],
-                    'reorder_level'   => 10,
-                    'description'     => $line['description'],
-                    'specifications'  => $specifications,
-                ]);
+                /*
+                 * Matched on the line and the pack, so running this again
+                 * updates the row it wrote last time.
+                 *
+                 * It used to create unconditionally, which made seeding a
+                 * one-shot operation nobody could repeat: a second
+                 * `php artisan db:seed` wrote the whole catalogue again, and
+                 * the shop then showed every oil two, three, ten times over.
+                 * Seeding is meant to be safe to re-run -- it is how a new
+                 * seeder reaches an existing install.
+                 *
+                 * Price is deliberately part of the write rather than the key:
+                 * the catalogue here is the source of truth for it.
+                 */
+                $product = Product::withTrashed()->updateOrCreate(
+                    [
+                        'product_line' => $line['key'],
+                        'unit'         => $pack['unit'],
+                    ],
+                    [
+                        // No pack size in the name. The size lives in `unit`,
+                        // and product_line ties the sizes of one oil together
+                        // so the shop shows a single card with a size
+                        // selector on it.
+                        'product_name'    => $line['name'],
+                        'brand'           => $line['brand'],
+                        'oil_type'        => $line['oil_type'],
+                        'viscosity_grade' => $line['viscosity'],
+                        'price'           => $line['prices'][$packKey],
+                        'reorder_level'   => 10,
+                        'description'     => $line['description'],
+                        'specifications'  => $specifications,
+                        // A line that was archived and is being seeded again
+                        // is being put back deliberately.
+                        'deleted_at'      => null,
+                    ]
+                );
 
-                Inventory::create([
-                    'product_id'   => $product->product_id,
-                    // Patrol is being withdrawn by its manufacturer, so it is
-                    // listed at zero rather than hidden: a customer looking
-                    // for it should see that we carried it and it is gone.
-                    'quantity'     => ($line['discontinued'] ?? false) ? 0 : 40,
-                    'last_updated' => now(),
-                ]);
+                /*
+                 * firstOrCreate, not updateOrCreate: the opening quantity is
+                 * a starting point, and a shop that has been trading has a
+                 * truer one. Re-seeding must not reset the shelf to forty and
+                 * wipe out every stock movement since.
+                 */
+                Inventory::firstOrCreate(
+                    ['product_id' => $product->product_id],
+                    [
+                        // Patrol is being withdrawn by its manufacturer, so it
+                        // is listed at zero rather than hidden: a customer
+                        // looking for it should see that we carried it and it
+                        // is gone.
+                        'quantity'     => ($line['discontinued'] ?? false) ? 0 : 40,
+                        'last_updated' => now(),
+                    ]
+                );
             }
         }
     }

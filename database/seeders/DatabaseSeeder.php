@@ -68,5 +68,22 @@ class DatabaseSeeder extends Seeder
          */
         $this->call(ChatIntentSeeder::class);
         $this->call(VehicleSpecSeeder::class);
+
+        /*
+         * Points each product at its photograph.
+         *
+         * The catalogue seeder writes no image_path, so a fresh install had
+         * eighty products that all rendered as "No Image" -- while the
+         * photographs themselves sat in storage, committed to the repository
+         * and reachable, with nothing in the database pointing at them.
+         *
+         * This was kept out for needing the network, which was true when the
+         * files were fetched from the suppliers every time. They are in the
+         * repository now, and the seeder skips any file it already has, so on
+         * a clone it downloads nothing and only writes the paths. A file that
+         * is genuinely missing is still fetched, and still gives up after
+         * thirty seconds rather than failing the seed.
+         */
+        $this->call(ProductImageSeeder::class);
     }
 }
