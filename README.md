@@ -114,9 +114,15 @@ php artisan key:generate
 php artisan migrate --seed
 ```
 
-This builds every table and loads the staff and customer accounts, the product
-catalogue, and 43,764 Philippine provinces, cities and barangays for the
-address fields. The place names take a few seconds — that is normal.
+This builds every table and loads everything the system needs to run: the
+staff and customer accounts, the product catalogue, the assistant's answers,
+the vehicle oil guide, and 43,764 Philippine provinces, cities and barangays
+for the address fields. The place names take a few seconds — that is normal.
+
+If you set the database up before this was added to the seeder, run
+`php artisan db:seed` once on its own to pick up the assistant's answers and
+the vehicle guide. It is safe on an existing install: nothing is duplicated
+and nothing you have entered is touched.
 
 ### 9. Link the storage folder
 
@@ -124,10 +130,27 @@ address fields. The place names take a few seconds — that is normal.
 php artisan storage:link
 ```
 
-Without this, product photographs and anything uploaded through the admin
-screens will not display.
+**This is the step that makes product photographs appear.** The pictures are
+in the repository, but they live under `storage/` and the browser can only
+reach `public/`. This command bridges the two.
 
 If it says the link already exists, that is fine — carry on.
+
+**On Windows it can fail**, because creating a link needs permission that an
+ordinary terminal does not have. The symptom is a shop with every product
+photograph missing. Two ways out, either is fine:
+
+- Close the terminal, reopen it with **Run as administrator**, and run the
+  command again; or
+- Turn on **Settings → System → For developers → Developer Mode**, then run it
+  again in a new terminal.
+
+If neither is available to you, copy the folder by hand instead. It works, but
+anything uploaded afterwards will not appear until you copy it again:
+
+```bash
+xcopy /E /I /Y storage\app\public public\storage
+```
 
 ### 10. Build the stylesheet
 
@@ -283,7 +306,19 @@ MySQL is not running in XAMPP, or `engine_oil_inventory` does not exist yet,
 or `DB_PASSWORD` in `.env` does not match your MySQL root password.
 
 **Product images are missing**
-`php artisan storage:link` has not been run.
+`php artisan storage:link` has not been run, or it failed. On Windows it needs
+an administrator terminal or Developer Mode — see step 9, which has the
+fallback if neither is possible.
+
+**The assistant answers nothing, or the shop looks empty of chat answers**
+The assistant's answers were not loaded. Run `php artisan db:seed`. It is safe
+to run on an existing database.
+
+**The assistant answers, but never with AI**
+That is the fallback working, not a fault. With no `GROQ_API_KEY` it matches
+keywords against the answers in **Admin → Assistant** and still reads real
+orders, stock and prices from the database. Run `php artisan assistant:check`
+to see what it thinks of the key.
 
 **Port 8123 is already in use**
 Something is still serving from an earlier run. Close that terminal, or pick

@@ -54,5 +54,19 @@ class DatabaseSeeder extends Seeder
         $this->call(PsgcLocationSeeder::class);
 
         $this->call(ProductCatalogSeeder::class);
+
+        /*
+         * What the assistant knows, and the oil guide behind its
+         * recommendations.
+         *
+         * These were left out, so a fresh clone came up with an empty
+         * chat_intents table: the assistant had nothing to match a question
+         * against and nothing to fall back on when Groq is unreachable, which
+         * on a machine with no API key is always. It answered nothing and
+         * read as broken. Both seeders write with updateOrCreate, so running
+         * them again on a working install changes nothing.
+         */
+        $this->call(ChatIntentSeeder::class);
+        $this->call(VehicleSpecSeeder::class);
     }
 }
