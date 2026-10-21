@@ -441,10 +441,31 @@ class ChatbotGroqTest extends TestCase
 
             return str_contains($instructions, 'viscosity grade is one that engine')
                 && str_contains($instructions, 'never offer a different grade')
-                // One disclaimer for every vehicle, added by the caller. It
-                // used to be told to say a car was "not on the shop's list",
-                // which implied the ones on it had been checked.
-                && str_contains($instructions, "Never say whether a vehicle is or is not on the shop's list")
+
+                /*
+                 * A vehicle the shop holds no figure for gets no grade.
+                 *
+                 * The model will produce one on request, confidently and
+                 * sometimes wrongly, and a customer who follows a guess and
+                 * loses an engine blames the shop that told them.
+                 */
+                && str_contains($instructions, 'do not give a grade for it, and do not work one out')
+                && str_contains($instructions, "owner's handbook")
+
+                /*
+                 * The protection the old wording existed for, kept in its new
+                 * form. The guide is general reference figures that nobody
+                 * here has checked against a manual, so saying a vehicle is
+                 * missing from it must not become a claim that the rest were
+                 * verified.
+                 */
+                && str_contains($instructions, 'Never say or imply that the vehicles in the list have been checked')
+
+                // Grade alone is not a match: it offered a motorcycle oil for
+                // a Vios because the number agreed.
+                && str_contains($instructions, 'Match what the oil is for as well as its grade')
+
+                // One disclaimer for every vehicle, added by the caller.
                 && str_contains($instructions, 'One standard line is added to your answer for you');
         });
     }

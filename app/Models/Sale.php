@@ -12,7 +12,7 @@ class Sale extends Model
     public const PLAN_LABELS = [
         self::PLAN_COD        => 'Cash on Delivery',
         self::PLAN_GCASH_FULL => 'GCash (full payment)',
-        self::PLAN_SPLIT      => 'Split - GCash down payment, balance on delivery',
+        self::PLAN_SPLIT      => 'Installment - GCash down payment, balance on delivery',
     ];
 
     public const STATUS_ACTIVE    = 'active';

@@ -347,7 +347,7 @@
                mixed in with them. */
             ['cod', 'Cash on delivery', 'amber'],
             ['gcash', 'GCash in full', 'sky'],
-            ['split', 'Split payment', 'violet'],
+            ['split', 'Installment', 'violet'],
             ['cancelled', 'Cancelled', 'slate'],
         ];
 
@@ -393,7 +393,7 @@
         const PLAN_TONES = {
             cod: ['bg-amber-100 text-amber-800', 'Cash on delivery'],
             gcash_full: ['bg-sky-100 text-sky-800', 'GCash in full'],
-            split: ['bg-violet-100 text-violet-800', 'Split'],
+            split: ['bg-violet-100 text-violet-800', 'Installment'],
         };
 
         function codAmount(sale) {
@@ -687,7 +687,7 @@
         const PLAN_LABELS = {
             cod: 'Cash on Delivery',
             gcash_full: 'GCash (full payment)',
-            split: 'Split - GCash down payment, balance on delivery',
+            split: 'Installment - GCash down payment, balance on delivery',
         };
 
         let verifyContext = null;

@@ -95,8 +95,8 @@
                     <div class="flex items-start gap-3">
                         <input type="radio" name="payment_plan" value="split" class="mt-1 accent-[var(--primary)]" onchange="onPlanChange()">
                         <div>
-                            <div class="font-bold text-[var(--ink)]">Down payment</div>
-                            <p class="mt-1 text-xs leading-5 text-[var(--muted)]">Send part by GCash now, pay the rest on delivery.</p>
+                            <div class="font-bold text-[var(--ink)]">Installment</div>
+                            <p class="mt-1 text-xs leading-5 text-[var(--muted)]">Pay at least {{ (int) config('payments.minimum_down_payment_percent') }}% by GCash now, the rest on delivery.</p>
                         </div>
                     </div>
                     <div class="mt-3 rounded-xl bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)]">

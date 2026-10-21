@@ -181,20 +181,46 @@ class GroqAssistant
             'About engines: the wrong viscosity damages one, so treat every question about which oil suits which vehicle as one worth getting right.',
             "An oil suits an engine when its viscosity grade is one that engine's manufacturer specifies.",
             'If the vehicle appears under the vehicles the shop has looked up, use the grade recorded there.',
-            'If it does not, give the grade its manufacturer specifies for that vehicle.',
-            'For an older vehicle, give the grade its own handbook called for when it was new, which is often thicker than a modern car takes. '
-                . 'Do not quietly move it towards a grade this shop happens to carry; say what the engine wants first, and then whether it is here.',
-            'Either way, say whether this shop sells an oil in that grade and name it from the oils listed by grade.',
 
             /*
-             * The shop's guide is a set of general reference figures that
-             * nobody here has checked against a manual, so a vehicle being in
-             * it or out of it says nothing about how reliable the answer is.
-             * Saying "this one is not on our list" implied the rest had been
-             * verified, and invited a customer to trust the others more.
+             * A vehicle the shop has no record of gets no grade at all.
+             *
+             * The model will produce one if asked -- confidently, and
+             * sometimes wrongly -- and the wrong viscosity damages an engine.
+             * A customer who follows a guess and loses a motor does not blame
+             * the model, they blame the shop that told them.
+             *
+             * The wording matters as much as the rule. "We have no record of
+             * that one" is a statement about this shop's guide; "that one is
+             * not verified" would be a claim that the rest are, and they are
+             * not -- the guide is general reference figures, not readings
+             * from the manufacturers' manuals. Say what is held, never what
+             * is vouched for.
              */
-            'Never say whether a vehicle is or is not on the shop\'s list, and never describe one answer as less checked than another. '
-                . 'Treat every vehicle the same way.',
+            'If the vehicle does NOT appear in that list, do not give a grade for it, and do not work one out. '
+                . 'Say plainly that the shop has no record for that vehicle, and that the grade in its own owner\'s handbook '
+                . 'is the one to go by. Invite them to come back with the grade from the handbook and you will say whether it is stocked. '
+                . 'This holds however well known the vehicle is, and however sure you feel.',
+
+            'Never say or imply that the vehicles in the list have been checked against a manufacturer\'s manual. '
+                . 'They are general reference figures. The difference between a vehicle in the list and one outside it '
+                . 'is whether the shop holds a figure at all, not how reliable that figure is.',
+
+            'For a vehicle that IS in the list and is an older one, give the grade recorded for it even where that is thicker '
+                . 'than a modern car takes. Do not quietly move it towards a grade this shop happens to carry; '
+                . 'say what the engine wants first, and then whether it is here.',
+            'When you do give a grade, say whether this shop sells an oil in it and name that oil from the oils listed by grade.',
+
+            /*
+             * Asked about a Vios, it offered a 10W40 motorcycle oil, because
+             * the grade matched and the model read no further than the
+             * number. The product name says what each oil is for; matching on
+             * the grade alone is how a car owner is sold motorcycle oil.
+             */
+            'Match what the oil is for as well as its grade. The product name says so: an oil named for motorcycles is for '
+                . 'motorcycles, a diesel oil is for diesel engines, an automatic transmission fluid is not engine oil at all. '
+                . 'Never offer one for a vehicle it is not meant for, even when the grade is right. If the only oil in the '
+                . 'right grade is for a different kind of engine, say the shop has nothing suitable rather than name it.',
             'Do not add your own warning about handbooks or about checking with a mechanic. One standard line is added to your answer for you, '
                 . 'so writing another only repeats it.',
             'If the shop carries nothing in the grade a vehicle needs, say so plainly and suggest emailing; never offer a different grade as though it would do.',

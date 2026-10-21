@@ -147,7 +147,7 @@ class ChatIntentSeeder extends Seeder
                 'answer' => "We take GCash and cash on delivery. At checkout you choose one of three plans:\n\n"
                     . "• Cash on delivery — pay the whole amount when the order arrives.\n"
                     . "• GCash in full — pay online before we dispatch.\n"
-                    . "• Split — a GCash down payment now, the balance in cash on delivery.\n\n"
+                    . "• Installment — a GCash down payment now, the balance in cash on delivery.\n\n"
                     . "We do not take credit or debit cards yet.",
                 'is_suggested' => true,
                 'sort_order' => 90,
@@ -169,8 +169,8 @@ class ChatIntentSeeder extends Seeder
                 'intent_key' => 'down_payment',
                 'category' => 'payments',
                 'label' => 'What is the minimum down payment?',
-                'keywords' => 'down payment downpayment minimum deposit split partial percent least initial',
-                'answer' => "If you split payment, the GCash down payment has to be at least :down_payment_percent% of the order total. "
+                'keywords' => 'down payment downpayment minimum deposit split installment instalment partial percent least initial',
+                'answer' => "If you pay by installment, the GCash down payment has to be at least :down_payment_percent% of the order total. "
                     . "The rest is paid in cash when the order arrives.\n\n"
                     . "The checkout works out the exact figure for your basket, so you do not have to.\n\n"
                     . "You can send it in one transfer or in parts of at least PHP :minimum_extra_payment each. "

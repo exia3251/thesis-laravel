@@ -234,4 +234,45 @@ class SplitPaymentTest extends TestCase
         $this->assertSame(['GC-FIRST-0001', 'GC-SECOND-0002'], $claims->pluck('reference_no')->all());
         $this->assertTrue($claims->every(fn ($claim) => filled($claim->proof_image_path)));
     }
+
+    /**
+     * What the plan is called to the people using it.
+     *
+     * The panel asked for "installment", which is what a down payment and a
+     * balance actually are. The stored value stays "split": renaming a column
+     * that every order already carries would be a migration for a word, and
+     * the names people read come from one place anyway.
+     */
+    #[Test]
+    public function the_plan_is_called_an_installment_wherever_it_is_named(): void
+    {
+        $label = Sale::PLAN_LABELS[Sale::PLAN_SPLIT];
+
+        $this->assertStringContainsString('Installment', $label);
+        $this->assertStringNotContainsString('Split', $label);
+
+        foreach (['views/customer/cart.blade.php', 'views/admin/sales.blade.php'] as $view) {
+            $source = file_get_contents(resource_path($view));
+
+            $this->assertStringNotContainsString(
+                'Split payment',
+                $source,
+                "{$view} still calls it a split payment."
+            );
+        }
+
+        // The cart states the floor from config rather than hardcoding a
+        // number that would drift the moment the floor changed.
+        $cart = file_get_contents(resource_path('views/customer/cart.blade.php'));
+        $this->assertStringContainsString('Installment', $cart);
+        $this->assertStringContainsString("config('payments.minimum_down_payment_percent')", $cart);
+    }
+
+    /** The floor the panel asked for, read from config rather than assumed. */
+    #[Test]
+    public function the_down_payment_floor_is_half_the_order(): void
+    {
+        $this->assertSame(50, (int) config('payments.minimum_down_payment_percent'));
+        $this->assertSame(500.0, Sale::minimumDownPayment(1000.0));
+    }
 }
