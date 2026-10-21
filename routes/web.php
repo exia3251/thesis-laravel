@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\ChatbotController;
 use App\Http\Controllers\Customer\OrderController;
+use App\Http\Controllers\Customer\ProductReviewController;
 use App\Http\Controllers\Customer\ProfileController;
 use App\Http\Controllers\Customer\ShopController;
 use App\Http\Controllers\PlaceController;
@@ -60,7 +62,7 @@ Route::post('/admin/logout', [AuthController::class, 'staffLogout'])->name('admi
 */
 Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->middleware('permission:full_dashboard')->name('admin.dashboard');
+        ->middleware('permission:view_dashboard')->name('admin.dashboard');
 
     Route::get('/products', [ProductController::class, 'index'])
         ->middleware('permission:manage_products')->name('admin.products');
@@ -94,6 +96,9 @@ Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function 
     Route::get('/cms', [SiteContentController::class, 'index'])
         ->middleware('permission:manage_content')->name('admin.cms');
 
+    Route::get('/reviews', fn () => view('admin.reviews'))
+        ->middleware('permission:manage_reviews')->name('admin.reviews');
+
     // No permission gate: every staff role manages its own account, which is
     // the whole point of it existing.
     Route::get('/account', [AccountController::class, 'index'])->name('admin.account');
@@ -102,7 +107,7 @@ Route::middleware(['admin', 'active_session'])->prefix('admin')->group(function 
 // Session-backed admin endpoints
 Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(function () {
     Route::get('/dashboard/stats', [DashboardController::class, 'getStats'])
-        ->middleware('permission:full_dashboard');
+        ->middleware('permission:view_dashboard');
 
     Route::get('/analytics', [AnalyticsController::class, 'data'])
         ->middleware('permission:view_reports');
@@ -179,6 +184,17 @@ Route::middleware(['admin', 'active_session'])->prefix('admin-api')->group(funct
         Route::put('/site-content', [SiteContentController::class, 'update']);
         Route::post('/site-content/images/{field}', [SiteContentController::class, 'uploadImage']);
         Route::delete('/site-content/images/{field}', [SiteContentController::class, 'removeImage']);
+    });
+
+    /*
+     * Customer reviews, for the whole shop on one screen. Removing one is a
+     * decision about the business's own reputation, so it sits with the
+     * other administrator-only screens rather than with stock.
+     */
+    Route::middleware('permission:manage_reviews')->group(function () {
+        Route::get('/reviews', [ReviewController::class, 'index']);
+        Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
+        Route::post('/reviews/{id}/restore', [ReviewController::class, 'restore']);
     });
 
     Route::middleware('permission:manage_chatbot')->group(function () {
@@ -298,6 +314,13 @@ Route::middleware('throttle:30,1')->prefix('shop-api/chat')->group(function () {
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/shop-api/products', [ShopController::class, 'getProducts']);
     Route::get('/shop-api/featured-products', [ShopController::class, 'getFeaturedProducts']);
+
+    /*
+     * Reviews are part of the catalogue, not something behind a sign-in. A
+     * review a customer cannot read until after they have an account is a
+     * review that cannot help them decide, which is the only thing it is for.
+     */
+    Route::get('/shop-api/products/{id}/reviews', [ProductReviewController::class, 'index']);
 });
 
 /*
@@ -340,6 +363,10 @@ Route::middleware(['customer', 'active_session'])->prefix('shop-api')->group(fun
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']);
     Route::post('/orders/{id}/receipt', [OrderController::class, 'confirmReceipt']);
     Route::post('/orders/{id}/refund-request', [OrderController::class, 'requestRefund']);
+
+    // Writing one. Who may is decided in ProductReview, against a delivered
+    // order, so the route only has to say that a customer is signed in.
+    Route::post('/products/{id}/reviews', [ProductReviewController::class, 'store']);
 
     Route::get('/profile', [ProfileController::class, 'getProfile']);
     Route::put('/profile', [ProfileController::class, 'updateProfile']);

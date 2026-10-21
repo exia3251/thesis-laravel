@@ -270,6 +270,42 @@
                 </div>
             </div>
         </div>
+
+        {{-- What people who bought it thought. Open to everybody, signed in
+             or not: a review a customer cannot read until they have an
+             account cannot help them decide, which is all it is for. --}}
+        <section id="reviews" class="mx-auto mt-10 max-w-6xl px-4 sm:px-6">
+            <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm sm:p-8">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-black tracking-tight text-[var(--ink)]">Customer reviews</h2>
+                        <p id="reviewSummary" class="mt-1 text-sm text-[var(--muted)]">Loading&hellip;</p>
+                    </div>
+                    <div id="reviewAverage" class="text-right"></div>
+                </div>
+
+                <div id="reviewForm" class="mt-6 hidden rounded-2xl border border-[var(--primary-soft)] bg-[var(--primary-soft)]/40 p-5">
+                    <h3 class="text-sm font-bold text-[var(--ink)]">You bought this. How was it?</h3>
+                    <form onsubmit="submitReview(event)" class="mt-3">
+                        <div class="flex items-center gap-1" id="ratingPicker"></div>
+                        <p class="mt-1 text-xs text-[var(--muted)]">Choose a rating, then add words if you want to.</p>
+
+                        <textarea id="reviewBody" rows="3" maxlength="1000"
+                                  placeholder="How did it run? Anything another customer should know?"
+                                  class="mt-3 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]"></textarea>
+
+                        <p id="reviewError" class="mt-1 hidden text-xs text-red-600"></p>
+
+                        <div class="mt-3 flex justify-end">
+                            <button type="submit" class="rounded-xl bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110">Post review</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="reviewList" class="mt-6 divide-y divide-[var(--line)]"></div>
+                <div id="reviewPagination"></div>
+            </div>
+        </section>
     </main>
 
 @endsection
@@ -607,5 +643,103 @@
         // for it before anyone touches the size buttons.
         refreshBuyMode();
         refreshSteppers();
+
+        /* ---------------------------------------------------------- reviews
+           The reviews belong to the product line, not the pack size: the oil
+           is the same whether it came in a litre or a drum, so a review of
+           the 1L is a review of the 4L. The id is the one the page opened on. */
+        const REVIEW_PRODUCT_ID = {{ $product->product_id }};
+        let chosenRating = 0;
+
+        function reviewStars(rating) {
+            let out = '';
+            for (let i = 1; i <= 5; i++) {
+                out += `<span class="${i <= rating ? 'text-amber-500' : 'text-[var(--line)]'}">&#9733;</span>`;
+            }
+            return `<span class="leading-none" title="${rating} out of 5">${out}</span>`;
+        }
+
+        function drawRatingPicker() {
+            document.getElementById('ratingPicker').innerHTML = [1, 2, 3, 4, 5].map((n) => `
+                <button type="button" data-n="${n}" onclick="pickRating(this.dataset.n)"
+                        aria-label="${n} star${n === 1 ? '' : 's'}"
+                        class="text-2xl leading-none transition ${n <= chosenRating ? 'text-amber-500' : 'text-[var(--line)] hover:text-amber-300'}">&#9733;</button>`).join('');
+        }
+
+        function pickRating(n) {
+            chosenRating = Number(n);
+            drawRatingPicker();
+        }
+
+        async function loadReviews(page = 1) {
+            const response = await fetch(`/shop-api/products/${REVIEW_PRODUCT_ID}/reviews?page=${page}`, {
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) return;
+
+            const { data, meta, summary } = await response.json();
+
+            document.getElementById('reviewSummary').textContent = summary.count
+                ? `${summary.count} ${summary.count === 1 ? 'review' : 'reviews'} from customers who bought it`
+                : 'No reviews yet. Customers can review an oil once their order arrives.';
+
+            document.getElementById('reviewAverage').innerHTML = summary.average === null ? '' : `
+                <div class="text-3xl font-black tracking-tight text-[var(--ink)]">${summary.average}</div>
+                <div class="text-lg">${reviewStars(Math.round(summary.average))}</div>`;
+
+            // Shown only to somebody who bought it and has not reviewed it.
+            document.getElementById('reviewForm').classList.toggle('hidden', !summary.can_review);
+            if (summary.can_review) drawRatingPicker();
+
+            document.getElementById('reviewList').innerHTML = data.length
+                ? data.map((r) => `
+                    <div class="py-4">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-base">${reviewStars(r.rating)}</span>
+                            <span class="text-sm font-semibold text-[var(--ink)]">${escapeHtml(r.author)}</span>
+                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Verified purchase</span>
+                        </div>
+                        ${r.body ? `<p class="mt-1.5 text-sm leading-6 text-[var(--ink)]">${escapeHtml(r.body)}</p>` : ''}
+                        <div class="mt-1 text-xs text-[var(--muted)]">${escapeHtml(r.written || '')}</div>
+                    </div>`).join('')
+                : '';
+
+            renderPagination('reviewPagination', meta, loadReviews);
+        }
+
+        async function submitReview(event) {
+            event.preventDefault();
+            const box = document.getElementById('reviewError');
+            box.classList.add('hidden');
+
+            if (!chosenRating) {
+                box.textContent = 'Choose a rating from one to five stars.';
+                box.classList.remove('hidden');
+                return;
+            }
+
+            await withBusy(busyButtonOf(event.target), async () => {
+                const response = await fetch(`/shop-api/products/${REVIEW_PRODUCT_ID}/reviews`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+                    body: JSON.stringify({ rating: chosenRating, body: document.getElementById('reviewBody').value }),
+                });
+
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    box.textContent = payload.errors ? Object.values(payload.errors).flat().join(' ') : (payload.message || 'Could not post it.');
+                    box.classList.remove('hidden');
+                    return;
+                }
+
+                document.getElementById('reviewBody').value = '';
+                chosenRating = 0;
+                showMessage(payload.message || 'Thank you.');
+                await loadReviews();
+            }, 'Posting');
+        }
+
+        loadReviews();
 </script>
 @endpush

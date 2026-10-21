@@ -7,11 +7,16 @@
         <div class="w-full max-w-md">
             <div class="mb-8 text-center">
                 <a href="/shop">
-                    <div class="text-3xl font-black tracking-tight sm:text-4xl">
-                        <span class="text-[var(--primary)]">RANEY</span>
-                        <span class="text-[var(--accent)]"> LUBRICANTS</span>
-                    </div>
-                    <div class="mt-1 text-[11px] uppercase tracking-[0.32em] text-[var(--muted)]">Trading</div>
+                    @if ($site['logo_url'] ?? null)
+                        <img src="{{ $site['logo_url'] }}" alt="{{ $site['name'] }}"
+                             class="mx-auto h-16 w-auto max-w-[240px] object-contain">
+                    @else
+                        <div class="text-3xl font-black tracking-tight sm:text-4xl">
+                            <span class="text-[var(--primary)]">RANEY</span>
+                            <span class="text-[var(--accent)]"> LUBRICANTS</span>
+                        </div>
+                        <div class="mt-1 text-[11px] uppercase tracking-[0.32em] text-[var(--muted)]">Trading</div>
+                    @endif
                 </a>
             </div>
 

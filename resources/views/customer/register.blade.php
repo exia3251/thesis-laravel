@@ -7,11 +7,16 @@
         <div class="w-full max-w-xl">
             <div class="mb-8 text-center">
                 <a href="/shop">
-                    <div class="text-3xl font-black tracking-tight sm:text-4xl">
-                        <span class="text-[var(--primary)]">RANEY</span>
-                        <span class="text-[var(--accent)]"> LUBRICANTS</span>
-                    </div>
-                    <div class="mt-1 text-[11px] uppercase tracking-[0.32em] text-[var(--muted)]">Trading</div>
+                    @if ($site['logo_url'] ?? null)
+                        <img src="{{ $site['logo_url'] }}" alt="{{ $site['name'] }}"
+                             class="mx-auto h-16 w-auto max-w-[240px] object-contain">
+                    @else
+                        <div class="text-3xl font-black tracking-tight sm:text-4xl">
+                            <span class="text-[var(--primary)]">RANEY</span>
+                            <span class="text-[var(--accent)]"> LUBRICANTS</span>
+                        </div>
+                        <div class="mt-1 text-[11px] uppercase tracking-[0.32em] text-[var(--muted)]">Trading</div>
+                    @endif
                 </a>
             </div>
             <section class="mx-auto w-full max-w-xl rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm sm:p-8">
@@ -29,15 +34,9 @@
                         <input id="full_name" type="text" required minlength="2" maxlength="100" pattern="[A-Za-z][A-Za-z\s'.-]*" title="Full name must contain letters only. Spaces, apostrophes, periods, and hyphens are allowed." class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="Juan Dela Cruz">
                     </div>
 
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <div>
-                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Phone</label>
-                            <input id="phone" type="text" required inputmode="numeric" maxlength="13" pattern="^(09\d{9}|\+639\d{9})$" title="Enter a valid Philippine mobile number like 09XXXXXXXXX or +639XXXXXXXXX." class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="09XXXXXXXXX">
-                        </div>
-                        <div>
-                            <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Email</label>
-                            <input id="email" type="email" required maxlength="150" autocomplete="username" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="you@example.com">
-                        </div>
+                    <div>
+                        <label class="mb-2 block text-sm font-medium text-[var(--ink)]">Email</label>
+                        <input id="email" type="email" required maxlength="150" autocomplete="username" class="block w-full rounded-2xl border border-[var(--line)] bg-white/85 px-4 py-3 text-[var(--ink)] shadow-sm transition focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary-soft)]" placeholder="you@example.com">
                     </div>
 
                     {{-- Province, then city, then barangay, then the street.
@@ -138,7 +137,6 @@
 
             const payload = {
                 full_name: document.getElementById('full_name').value.trim(),
-                phone: document.getElementById('phone').value.trim(),
                 email: document.getElementById('email').value.trim(),
                 house_street: document.getElementById('house_street').value.trim(),
                 // The three place boxes post what was picked from the list,

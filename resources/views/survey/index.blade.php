@@ -19,11 +19,16 @@
         <div class="mx-auto w-full max-w-3xl">
 
             <div class="mb-8 text-center">
-                <div class="text-3xl font-black tracking-tight sm:text-4xl">
-                    <span class="text-[var(--primary)]">RANEY</span>
-                    <span class="text-[var(--accent)]"> LUBRICANTS</span>
-                </div>
-                <p class="mt-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--muted)]">Trading</p>
+                @if ($site['logo_url'] ?? null)
+                    <img src="{{ $site['logo_url'] }}" alt="{{ $site['name'] }}"
+                         class="mx-auto h-16 w-auto max-w-[240px] object-contain">
+                @else
+                    <div class="text-3xl font-black tracking-tight sm:text-4xl">
+                        <span class="text-[var(--primary)]">RANEY</span>
+                        <span class="text-[var(--accent)]"> LUBRICANTS</span>
+                    </div>
+                    <p class="mt-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--muted)]">Trading</p>
+                @endif
                 <h1 class="mt-6 text-2xl font-black tracking-tight text-[var(--ink)] sm:text-3xl">Thank you for testing this system</h1>
                 <p class="mx-auto mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">
                     This is a working online store and back office for a lubricants business. Nothing here is real:

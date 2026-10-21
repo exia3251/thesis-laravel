@@ -74,9 +74,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
                 </svg>
             </button>
-            <div class="text-sm font-black tracking-tight">
-                <span class="text-[var(--primary)]">RANEY</span><span class="text-[var(--accent)]"> LUBRICANTS</span>
-            </div>
+            @if ($site['logo_url'] ?? null)
+                <img src="{{ $site['logo_url'] }}" alt="{{ $site['name'] }}"
+                     class="h-7 w-auto max-w-[140px] object-contain">
+            @else
+                <div class="text-sm font-black tracking-tight">
+                    <span class="text-[var(--primary)]">RANEY</span><span class="text-[var(--accent)]"> LUBRICANTS</span>
+                </div>
+            @endif
         </header>
 
         <div class="p-4 sm:p-6 lg:p-8">

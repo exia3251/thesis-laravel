@@ -152,6 +152,38 @@ class ProductController extends Controller
     }
 
     /**
+     * Lets go of the picture a product is about to stop using, and deletes
+     * the file only if nothing else still points at it.
+     *
+     * Packs of one oil share a file -- the seeder writes the same path to
+     * every pack in a line -- so deleting on sight took the picture away from
+     * the pack's siblings and left them pointing at nothing. The shop then
+     * showed a broken image for an oil whose picture had just been changed
+     * successfully.
+     *
+     * @param  string  $column  image_path or image_path_2
+     */
+    protected function releaseImage(Product $product, string $column): void
+    {
+        $path = $product->{$column};
+
+        if (blank($path)) {
+            return;
+        }
+
+        // Both columns of every other row, archived ones included: an
+        // archived product still has to show its picture on an old receipt.
+        $stillUsed = Product::withTrashed()
+            ->where('product_id', '<>', $product->product_id)
+            ->where(fn ($q) => $q->where('image_path', $path)->orWhere('image_path_2', $path))
+            ->exists();
+
+        if (! $stillUsed) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
+    /**
      * The manufacturer's link lives inside the specifications, beside the
      * copy scraped from their site, so writing it must not wipe the rest.
      */
@@ -287,17 +319,13 @@ class ProductController extends Controller
         $secondPath = $product->image_path_2;
 
         if ($request->hasFile('image')) {
-            if ($product->image_path) {
-                Storage::disk('public')->delete($product->image_path);
-            }
+            $this->releaseImage($product, 'image_path');
 
             $imagePath = $request->file('image')->store('products', 'public');
         }
 
         if ($request->hasFile('image_2')) {
-            if ($product->image_path_2) {
-                Storage::disk('public')->delete($product->image_path_2);
-            }
+            $this->releaseImage($product, 'image_path_2');
 
             $secondPath = $request->file('image_2')->store('products', 'public');
         }
@@ -318,6 +346,31 @@ class ProductController extends Controller
             'image_path' => $imagePath,
             'image_path_2' => $secondPath,
         ]);
+
+        /*
+         * A new picture belongs to the whole product line, not to the pack
+         * that happened to be open.
+         *
+         * The shop shows one card per line and reads its picture off the
+         * first pack that has one, which is rarely the pack somebody edited.
+         * Changing the 4-litre therefore left the card reading the 1-litre --
+         * still pointing at the file that had just been deleted, because the
+         * seeder gives every pack of a line the same path. The back office
+         * showed the new picture on the row that had been edited, so it
+         * looked like it had worked and only the shop was broken.
+         *
+         * It is the same oil whatever size bottle it comes in, which is why
+         * the seeder writes the line and not the pack.
+         */
+        if (($request->hasFile('image') || $request->hasFile('image_2')) && filled($product->product_line)) {
+            $shared = [];
+            if ($request->hasFile('image'))   { $shared['image_path']   = $imagePath; }
+            if ($request->hasFile('image_2')) { $shared['image_path_2'] = $secondPath; }
+
+            Product::where('product_line', $product->product_line)
+                ->where('product_id', '<>', $product->product_id)
+                ->update($shared);
+        }
 
         ActivityLog::logAction(
             auth()->id(),

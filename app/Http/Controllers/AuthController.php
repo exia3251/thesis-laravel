@@ -42,7 +42,14 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'max:150', 'unique:users,email'],
             'password' => PasswordPolicy::rules(),
             'full_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[A-Za-z][A-Za-z\s\'.-]*$/'],
-            'phone' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/', 'unique:customer_profiles,phone'],
+            /*
+             * No phone number here. It is asked for on the account page
+             * instead, where it is validated by the same rules, and an order
+             * cannot be placed until it has been given -- so the shop still
+             * never dispatches to a customer it cannot telephone. Signing in
+             * with Google already created accounts this way; registration now
+             * matches it rather than asking for one more thing at the door.
+             */
             'house_street' => ['required', 'string', 'min:5', 'max:160'],
             // Real places, and each inside the one above it. The browser
             // narrows the lists; this is what makes it true.
@@ -62,9 +69,6 @@ class AuthController extends Controller
             'full_name.required' => 'Full name is required.',
             'full_name.min' => 'Full name must be at least 2 characters.',
             'full_name.regex' => 'Full name may only contain letters, spaces, apostrophes, periods, and hyphens.',
-            'phone.required' => 'Phone number is required.',
-            'phone.regex'   => 'Phone number must be a valid Philippine mobile number such as 09XXXXXXXXX or +639XXXXXXXXX.',
-            'phone.unique'  => 'That phone number is already registered to another account.',
             'house_street.required' => 'Enter the house or building number and street.',
             'house_street.min'      => 'That looks too short to find. Include the number and street.',
             'barangay.required'     => 'Barangay is required. Couriers here rely on it.',
@@ -218,11 +222,16 @@ class AuthController extends Controller
                 'password' => $request->password, // hashed by the model cast
                 'full_name' => $request->full_name,
                 'role' => User::ROLE_CUSTOMER,
+                // Stated rather than left to the column default, which the
+                // database applies but Eloquent does not, so the model in
+                // memory would read null for the rest of the request.
+                'is_active' => true,
             ]);
 
+            // No phone yet: it is given on the account page, and checkout
+            // asks for it before it will take an order.
             CustomerProfile::create([
                 'user_id' => $user->user_id,
-                'phone' => $request->phone,
             ] + $request->only(['house_street', 'barangay', 'city', 'province', 'postal_code']));
 
             DB::commit();

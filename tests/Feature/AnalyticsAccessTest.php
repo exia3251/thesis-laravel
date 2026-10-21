@@ -97,18 +97,13 @@ class AnalyticsAccessTest extends TestCase
      * running state, and this change was only the first of the two.
      */
     #[Test]
-    public function the_dashboard_is_still_the_administrators_alone(): void
+    public function the_dashboard_is_open_to_every_staff_role(): void
     {
         foreach ([User::ROLE_ACCOUNTING, User::ROLE_INVENTORY_STAFF] as $role) {
             $user = $this->staff($role);
 
-            $this->actingAs($user, 'staff')
-                ->get('/admin/dashboard')
-                ->assertRedirect($user->homePath());
-
-            $this->actingAs($user, 'staff')
-                ->getJson('/admin-api/dashboard/stats')
-                ->assertForbidden();
+            $this->actingAs($user, 'staff')->get('/admin/dashboard')->assertOk();
+            $this->actingAs($user, 'staff')->getJson('/admin-api/dashboard/stats')->assertOk();
         }
     }
 
@@ -121,8 +116,9 @@ class AnalyticsAccessTest extends TestCase
 
         $page->assertSee('/admin/analytics', false);
 
-        // And the screens they still cannot reach are not offered to them.
-        $page->assertDontSee('/admin/dashboard', false);
+        // And a screen that is not theirs is not offered to them. Inventory
+        // is the shelf, which Accounting has no part in.
+        $page->assertDontSee('/admin/inventory', false);
     }
 
     #[Test]

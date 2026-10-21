@@ -92,7 +92,7 @@ class CustomerEmailLifecycleTest extends TestCase
             'email' => 'fresh@example.com',
             'password' => 'Str0ng!Passw0rd',
             'password_confirmation' => 'Str0ng!Passw0rd',
-            'phone' => '09123456789',
+            // No phone: the form no longer asks for one.
             'house_street' => '123 Main Street',
             'barangay' => 'Bagumbayan',
             'city' => 'Quezon City',
@@ -107,6 +107,68 @@ class CustomerEmailLifecycleTest extends TestCase
             $user->email_verified_at,
             'An address nobody has proved was treated as proved.'
         );
+    }
+
+    /**
+     * The form stopped asking for a phone number, so registration has to
+     * succeed without one.
+     */
+    #[Test]
+    public function registering_does_not_ask_for_a_phone_number(): void
+    {
+        Mail::fake();
+
+        $this->postJson('/shop/register', [
+            'full_name' => 'No Phone Customer',
+            'email' => 'nophone@example.com',
+            'password' => 'Str0ng!Passw0rd',
+            'password_confirmation' => 'Str0ng!Passw0rd',
+            'house_street' => '123 Main Street',
+            'barangay' => 'Bagumbayan',
+            'city' => 'Quezon City',
+            'province' => 'Metro Manila',
+            'postal_code' => '1100',
+        ])->assertOk()->assertJson(['success' => true]);
+
+        $user = User::where('email', 'nophone@example.com')->first();
+
+        $this->assertNotNull($user, 'Registration still demands a phone number.');
+        $this->assertNull($user->customerProfile->phone, 'A phone number appeared from somewhere.');
+
+        // The view must not ask for one either.
+        $form = file_get_contents(resource_path('views/customer/register.blade.php'));
+        $this->assertStringNotContainsString('id="phone"', $form);
+    }
+
+    /**
+     * Moving the phone number to the account page must not become a way of
+     * ordering without one. The rider telephones that number on the day.
+     */
+    #[Test]
+    public function an_order_is_still_refused_until_a_phone_number_is_given(): void
+    {
+        Mail::fake();
+
+        $user = $this->customer();
+        $user->forceFill(['email_verified_at' => now()])->save();
+
+        // Everything an order needs except the number.
+        $user->customerProfile->forceFill(['phone' => null])->save();
+        $this->withCart($user);
+
+        $response = $this->actingAs($user, 'web')
+            ->postJson('/shop-api/orders', ['payment_plan' => 'cod'])
+            ->assertStatus(422);
+
+        $this->assertStringContainsString('profile', strtolower((string) $response->json('message')));
+        $this->assertDatabaseMissing('sales', ['user_id' => $user->user_id]);
+
+        // And once it is given, the same order goes through.
+        $user->customerProfile->forceFill(['phone' => '09123456789'])->save();
+
+        $this->actingAs($user, 'web')
+            ->postJson('/shop-api/orders', ['payment_plan' => 'cod'])
+            ->assertOk();
     }
 
     // -------------------------------------------------------------- placing orders

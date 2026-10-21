@@ -55,6 +55,30 @@ class Product extends Model
         return $this->hasMany(ShoppingCart::class, 'product_id', 'product_id');
     }
 
+    /** What customers who bought this oil thought of it. */
+    public function reviews()
+    {
+        return $this->hasMany(ProductReview::class, 'product_id', 'product_id');
+    }
+
+    /**
+     * The average rating, or null when nobody has rated it.
+     *
+     * Null rather than zero: no reviews is not the same as a bad score, and
+     * a product showing "0.0" would read as the latter.
+     */
+    public function averageRating(): ?float
+    {
+        $average = $this->reviews()->avg('rating');
+
+        return $average === null ? null : round((float) $average, 1);
+    }
+
+    public function reviewCount(): int
+    {
+        return $this->reviews()->count();
+    }
+
     // Helper methods
     public function isLowStock()
     {

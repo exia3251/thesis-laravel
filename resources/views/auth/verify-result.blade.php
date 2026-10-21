@@ -6,10 +6,17 @@
     <div class="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top_right,_rgba(20,138,103,0.09),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(217,177,74,0.10),_transparent_24%),linear-gradient(180deg,_#fbfcfe_0%,_#f3f6f9_100%)] px-4 py-10 sm:px-6">
         <div class="w-full max-w-md">
             <div class="mb-8 text-center">
-                <a href="/shop" class="text-2xl font-black tracking-tight">
-                    <span class="text-[var(--primary)]">RANEY</span><span class="text-[var(--accent)]"> LUBRICANTS</span>
-                </a>
-                <div class="mt-1 text-[10px] uppercase tracking-[0.28em] text-[var(--muted)]">Trading</div>
+                @if ($site['logo_url'] ?? null)
+                    <a href="/shop">
+                        <img src="{{ $site['logo_url'] }}" alt="{{ $site['name'] }}"
+                             class="mx-auto h-14 w-auto max-w-[220px] object-contain">
+                    </a>
+                @else
+                    <a href="/shop" class="text-2xl font-black tracking-tight">
+                        <span class="text-[var(--primary)]">RANEY</span><span class="text-[var(--accent)]"> LUBRICANTS</span>
+                    </a>
+                    <div class="mt-1 text-[10px] uppercase tracking-[0.28em] text-[var(--muted)]">Trading</div>
+                @endif
             </div>
 
             <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 text-center shadow-sm sm:p-8">

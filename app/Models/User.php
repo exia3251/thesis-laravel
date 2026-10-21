@@ -249,6 +249,18 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->isAdmin();
     }
 
+    /**
+     * Reading customer reviews and taking one down.
+     *
+     * The administrator's alone, like the other things that change what the
+     * shop says to the public. Removing a review is a decision about the
+     * business's own reputation, not a stock or bookkeeping task.
+     */
+    public function canManageReviews(): bool
+    {
+        return $this->isAdmin();
+    }
+
     public function canManageProducts(): bool
     {
         return $this->isAdmin() || $this->isInventoryStaff();
@@ -276,8 +288,35 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->isAdmin() || $this->isAccounting();
     }
 
-    public function canViewFullDashboard(): bool
+    /**
+     * Opening the dashboard at all.
+     *
+     * Every staff role may, because every role has work waiting on it and the
+     * dashboard is where the shop says what is waiting. What each of them
+     * sees there is a separate question, answered per figure by the
+     * permissions below -- an accountant is shown the money and not the
+     * shelf, and somebody on the shelf is shown the opposite.
+     *
+     * It used to be the administrator's alone, which meant the two roles with
+     * queues to clear had no screen telling them a queue existed.
+     */
+    public function canViewDashboard(): bool
     {
-        return $this->isAdmin();
+        return $this->isStaff();
+    }
+
+    /**
+     * Figures about money: what came in, what is owed, what is still to be
+     * collected or paid back.
+     */
+    public function canSeeMoneyFigures(): bool
+    {
+        return $this->isAdmin() || $this->isAccounting();
+    }
+
+    /** Figures about the shelf: what is out, what is running low, what to send. */
+    public function canSeeStockFigures(): bool
+    {
+        return $this->isAdmin() || $this->isInventoryStaff();
     }
 }

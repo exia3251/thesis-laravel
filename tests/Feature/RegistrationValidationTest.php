@@ -28,7 +28,6 @@ class RegistrationValidationTest extends TestCase
             'password' => 'secret12345',
             'password_confirmation' => 'secret12345',
             'full_name' => 'Ramon Villanueva',
-            'phone' => '09171234567',
             'house_street' => '12 Mabini Street',
             'barangay' => 'San Roque',
             'city' => 'Batangas City',
@@ -93,8 +92,8 @@ class RegistrationValidationTest extends TestCase
                 'password' => str_repeat('a', PasswordPolicy::MAXIMUM + 1),
                 'password_confirmation' => str_repeat('a', PasswordPolicy::MAXIMUM + 1),
             ]],
-            'phone that is a landline' => [['phone' => '0281234567']],
-            'phone with letters'    => [['phone' => '09abcdefghi']],
+            // Registration no longer asks for a phone number; it is given on
+            // the account page, and ProfileValidationTest holds its rules.
             'street past the column' => [['house_street' => str_repeat('a', 161)]],
             'barangay past the column' => [['barangay' => str_repeat('a', 101)]],
             'postal code of five digits' => [['postal_code' => '12345']],

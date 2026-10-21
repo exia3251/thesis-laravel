@@ -41,7 +41,10 @@
     <div id="dashBody" class="hidden space-y-5">
         <section id="statCards" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5"></section>
 
-        <section class="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
+        {{-- One column when the Collections chart is not for this reader,
+             so the action list does not sit beside a gap. --}}
+        <section class="grid gap-5 {{ auth()->user()?->canSeeMoneyFigures() ? 'lg:grid-cols-[1.35fr_1fr]' : '' }}">
+            @if (auth()->user()?->canSeeMoneyFigures())
             <div class="rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     {{-- Money only. A count of orders and a sum of pesos
@@ -57,6 +60,7 @@
                 </div>
                 <div id="collectionsChart" class="mt-6"></div>
             </div>
+            @endif
 
             {{-- The jobs waiting on somebody here. Each one is a link to the
                  screen that clears it, filtered to the same set it counted,
