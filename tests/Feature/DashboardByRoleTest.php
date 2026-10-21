@@ -197,6 +197,46 @@ class DashboardByRoleTest extends TestCase
     }
 
     /**
+     * Hiding the chart must not take the action list with it.
+     *
+     * renderCollections runs before renderActions and reached straight
+     * through getElementById to set the caption. For a role whose chart is
+     * not on the page that element is null, so the line threw -- inside the
+     * catch around the whole load, which swallowed it. The page came up with
+     * an empty queue and said nothing about why, while the server had sent
+     * all three stock queues correctly.
+     *
+     * No request can catch this: the payload was right and the markup was
+     * right, and only the order the page ran them in was wrong. What is
+     * checkable is that the function no longer assumes its own elements
+     * exist.
+     */
+    #[Test]
+    public function hiding_the_chart_does_not_take_the_action_list_with_it(): void
+    {
+        $view = file_get_contents(resource_path('views/admin/dashboard.blade.php'));
+
+        $start = strpos($view, 'function renderCollections(');
+        $this->assertNotFalse($start, 'renderCollections has moved or been renamed.');
+
+        $body = substr($view, $start, 700);
+
+        $this->assertStringContainsString(
+            'if (!note || !holder) return;',
+            $body,
+            'renderCollections no longer checks that its elements are on the page, so a '
+            . 'role without the chart loses everything drawn after it.'
+        );
+
+        // The guard has to come before the first use, or it guards nothing.
+        $this->assertLessThan(
+            strpos($body, 'note.textContent'),
+            strpos($body, 'if (!note || !holder) return;'),
+            'The guard sits after the line it is meant to protect.'
+        );
+    }
+
+    /**
      * A deactivated account keeps its role and loses everything else, so each
      * of these has to read the active flag and not the role alone.
      */

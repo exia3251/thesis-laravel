@@ -147,9 +147,17 @@
      */
     function renderCollections(series, range) {
         const note = document.getElementById('collectionsNote');
-        note.textContent = 'Money received, ' + (range.description || '');
-
         const holder = document.getElementById('collectionsChart');
+
+        /* The card is not on the page at all for a role that is never sent
+           its figures, so there is nothing here to draw. Returning rather
+           than reaching through a null: this runs before the action list is
+           drawn, and the throw took the action list down with it -- inside a
+           catch, so the page simply came up with an empty queue and said
+           nothing about why. */
+        if (!note || !holder) return;
+
+        note.textContent = 'Money received, ' + (range.description || '');
 
         /* Nothing at all, rather than nothing yet: a window with no trade in
            it comes back as a full set of empty buckets, because a quiet day
