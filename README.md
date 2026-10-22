@@ -177,6 +177,78 @@ against, and the one `.claude/launch.json` expects.
 
 ---
 
+## Updating a copy you already have
+
+If you cloned this before and want the newer version, you do **not** need to
+clone again or rebuild the database. Four commands, in this order, from the
+project folder:
+
+```bash
+git pull
+```
+
+```bash
+php artisan migrate
+```
+
+```bash
+npm run build
+```
+
+```bash
+php artisan config:clear && php artisan view:clear
+```
+
+Then start the server again:
+
+```bash
+php artisan serve --port=8123
+```
+
+### Why each one
+
+| Command | What it is for |
+| --- | --- |
+| `git pull` | Brings down the new code |
+| `php artisan migrate` | Adds the new tables. Your existing orders, products and accounts are untouched — a migration adds, it does not rebuild |
+| `npm run build` | **Do not skip this.** New screens bring new styling, and without a rebuild they render with the wrong colours or none at all |
+| `config:clear` / `view:clear` | Throws away the cached settings and compiled pages, so new ones are picked up |
+
+`composer install` and `npm install` are not needed unless `git pull` reports a
+change to `composer.json` or `package.json`. Running them anyway does no harm.
+
+### If `git pull` refuses
+
+It will stop if you have edited files yourself. See what they are:
+
+```bash
+git status
+```
+
+If none of those edits matter, throw them away and pull again:
+
+```bash
+git checkout . && git pull
+```
+
+**That deletes your changes for good.** If any of them do matter, copy those
+files somewhere else first.
+
+`.env`, your uploads and your database are never touched by a pull — they are
+not in the repository.
+
+### Checking it worked
+
+```bash
+php artisan test
+```
+
+Everything should pass. Then open the shop and look for the newer screens:
+customer reviews on a product page, **Reviews** in the back office sidebar, and
+the dashboard showing figures appropriate to whichever role you signed in as.
+
+---
+
 ## Signing in
 
 These accounts are created by step 8. **Sign in with the email address, not a
@@ -246,6 +318,16 @@ php artisan db:seed --class=DemoSalesSeeder
 These are written as orders that already happened. They do not move current
 stock.
 
+**Customer reviews**, so the shop front has something in its "What people say"
+strip and the back office has something to moderate:
+
+```bash
+php artisan db:seed --class=DemoReviewSeeder
+```
+
+Written against orders that were really delivered, so each one satisfies the
+same rule the site enforces. It refuses if any reviews already exist.
+
 **Re-fetch the product photographs** from the manufacturers' own sites. The
 repository already carries them, so this is only for refreshing them:
 
@@ -309,6 +391,12 @@ or `DB_PASSWORD` in `.env` does not match your MySQL root password.
 `php artisan storage:link` has not been run, or it failed. On Windows it needs
 an administrator terminal or Developer Mode — see step 9, which has the
 fallback if neither is possible.
+
+**Star ratings are the wrong colour, or a screen looks half-styled**
+The stylesheet has not been rebuilt since the last pull. Run `npm run build`.
+This is worth knowing because it does not look like a styling fault: a two-star
+review drew as five identical stars, which reads as wrong data rather than
+wrong CSS.
 
 **The assistant answers nothing, or the shop looks empty of chat answers**
 The assistant's answers were not loaded. Run `php artisan db:seed`. It is safe
