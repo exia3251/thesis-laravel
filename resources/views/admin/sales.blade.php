@@ -97,6 +97,13 @@
                     <div id="rfAmount" class="mt-1 text-3xl font-black text-amber-900">PHP 0.00</div>
                     <p class="mt-2 text-xs leading-5 text-amber-900">Send this through GCash first, then record it here. This form does not move any money.</p>
                 </div>
+                {{-- Why the customer asked. The person deciding what to send back
+                     should be reading it, not hunting for it. --}}
+                <div id="rfReasonBox" class="mt-4 hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Their reason</div>
+                    <p id="rfReason" class="mt-1 text-sm italic leading-6 text-[var(--ink)]"></p>
+                </div>
+
                 <label class="mt-4 block text-sm font-medium text-[var(--ink)]">GCash reference of your transfer</label>
                 <input id="rfReference" type="text" maxlength="100" placeholder="e.g. 1029384756" class="mt-2 block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]">
                 <label class="mt-4 block text-sm font-medium text-[var(--ink)]">Notes</label>
@@ -968,17 +975,47 @@
         let deliveryContext = null;
         let refundContext = null;
 
-        function renderLifecycleActions(sale) {
-            if (sale.order_status === 'cancelled') {
-                const refunded = sale.refund_status === 'refunded';
-                const owed = sale.refund_status === 'pending';
+        /**
+         * The refund panel, drawn for any order that has one.
+         *
+         * It used to be nested inside the cancelled branch, which meant it
+         * could never appear for a refund a customer asked for: a customer
+         * may only ask on an order that has been delivered and not
+         * cancelled, so the two conditions could not both be true. Their
+         * request reached the database, the Refunds filter found the order,
+         * and opening it showed "Confirm delivery" and nothing else -- no
+         * reason, no amount, and no way to record it.
+         */
+        function renderRefundPanel(sale) {
+            const refunded = sale.refund_status === 'refunded';
+            const owed = sale.refund_status === 'pending';
 
+            if (!owed && !refunded) return '';
+
+            return `
+                <div class="rounded-lg border ${owed ? 'border-amber-300 bg-amber-50' : 'border-emerald-200 bg-emerald-50'} p-2 text-xs">
+                    <div class="font-semibold ${owed ? 'text-amber-900' : 'text-emerald-800'}">
+                        ${owed ? 'Refund requested' : 'Refunded'}
+                    </div>
+                    ${sale.refund_reason ? `<div class="mt-1 italic text-[var(--muted)]">&ldquo;${escapeHtml(sale.refund_reason)}&rdquo;</div>` : ''}
+                    ${owed ? `<button type="button" onclick="openRefundModal(${sale.sale_id})" class="mt-2 w-full rounded bg-amber-600 px-2 py-1.5 font-semibold text-white transition hover:bg-amber-700">Record ${formatCurrency(sale.refund_amount)} refund</button>` : ''}
+                    ${refunded ? `<div class="mt-1 font-semibold text-emerald-700">${formatCurrency(sale.refund_amount)} refunded${sale.refund_reference ? ' &middot; ' + escapeHtml(sale.refund_reference) : ''}</div>` : ''}
+                    ${refunded && sale.refund_notes ? `<div class="mt-1 text-[var(--muted)]">${escapeHtml(sale.refund_notes)}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function renderLifecycleActions(sale) {
+            const refund = renderRefundPanel(sale);
+
+            if (sale.order_status === 'cancelled') {
                 return `
-                    <div class="rounded-lg border ${owed ? 'border-amber-300 bg-amber-50' : 'border-[var(--line)] bg-[var(--surface)]'} p-2 text-xs">
-                        <div class="font-semibold ${owed ? 'text-amber-900' : 'text-[var(--muted)]'}">Cancelled</div>
-                        ${sale.cancellation_reason ? `<div class="mt-1 text-[var(--muted)]">${escapeHtml(sale.cancellation_reason)}</div>` : ''}
-                        ${owed ? `<button type="button" onclick="openRefundModal(${sale.sale_id})" class="mt-2 w-full rounded bg-amber-600 px-2 py-1.5 font-semibold text-white transition hover:bg-amber-700">Record ${formatCurrency(sale.refund_amount)} refund</button>` : ''}
-                        ${refunded ? `<div class="mt-1 font-semibold text-emerald-700">${formatCurrency(sale.refund_amount)} refunded${sale.refund_reference ? ' - ' + sale.refund_reference : ''}</div>` : ''}
+                    <div class="space-y-2">
+                        <div class="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2 text-xs">
+                            <div class="font-semibold text-[var(--muted)]">Cancelled</div>
+                            ${sale.cancellation_reason ? `<div class="mt-1 italic text-[var(--muted)]">&ldquo;${escapeHtml(sale.cancellation_reason)}&rdquo;</div>` : ''}
+                        </div>
+                        ${refund}
                     </div>
                 `;
             }
@@ -992,7 +1029,14 @@
                 buttons.push(`<a href="/storage/${sale.delivery_proof_path}" target="_blank" class="flex-1 rounded border border-[var(--line)] px-2 py-1 text-center text-xs font-semibold text-[var(--muted)] transition hover:bg-[var(--surface)]">Delivery photo</a>`);
             }
 
-            return buttons.length ? `<div class="flex gap-2">${buttons.join('')}</div>` : '';
+            // A delivered order carrying a refund request is the case the old
+            // shape could not reach, so the panel comes first: it is the thing
+            // waiting on somebody, and the delivery photo is not.
+            const row = buttons.length ? `<div class="flex gap-2">${buttons.join('')}</div>` : '';
+
+            if (!refund) return row;
+
+            return `<div class="space-y-2">${refund}${row}</div>`;
         }
 
         function openDeliveryModal(saleId) {
@@ -1086,6 +1130,10 @@
             refundContext = { saleId };
             document.getElementById('rfSaleId').textContent = '#' + saleId;
             document.getElementById('rfAmount').textContent = formatCurrency(sale.refund_amount);
+
+            const reasonBox = document.getElementById('rfReasonBox');
+            document.getElementById('rfReason').textContent = sale.refund_reason || '';
+            reasonBox.classList.toggle('hidden', !sale.refund_reason);
             document.getElementById('rfReference').value = '';
             document.getElementById('rfNotes').value = '';
             document.getElementById('rfError').classList.add('hidden');
