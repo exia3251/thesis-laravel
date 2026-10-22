@@ -31,7 +31,7 @@ class ReviewController extends Controller
             ? ProductReview::onlyTrashed()
             : ProductReview::query();
 
-        $query->with(['product', 'user']);
+        $query->with(['product', 'user', 'media']);
 
         if ($request->filled('product_id')) {
             $query->where('product_id', $request->integer('product_id'));
@@ -66,6 +66,12 @@ class ReviewController extends Controller
                 'order_no'     => $review->sale?->order_no,
                 'written'      => $review->created_at?->diffForHumans(),
                 'removed'      => $review->trashed(),
+                // Seen here as well, because a review is taken down for
+                // what is in the picture as often as for the words.
+                'media'        => $review->media->map(fn ($m) => [
+                    'kind' => $m->kind,
+                    'url'  => $m->url(),
+                ])->values(),
             ],
             ['summary' => $this->summary()]
         );

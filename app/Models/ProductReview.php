@@ -41,6 +41,12 @@ class ProductReview extends Model
         return $this->belongsTo(Sale::class, 'sale_id', 'sale_id');
     }
 
+    /** Photographs and clips the customer attached. */
+    public function media()
+    {
+        return $this->hasMany(ProductReviewMedia::class, 'review_id', 'review_id');
+    }
+
     /**
      * The delivered order that entitles this customer to review this product,
      * or null if there is none.

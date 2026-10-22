@@ -290,6 +290,42 @@
                         <div class="flex items-center gap-1" id="ratingPicker"></div>
                         <p class="mt-1 text-xs text-[var(--muted)]">Choose a rating, then add words if you want to.</p>
 
+                        {{-- A photograph of what arrived says more than a
+                             paragraph. The limits are stated on the page, not
+                             discovered by having an upload refused. --}}
+                        @php
+                            $media = config('reviews.media');
+
+                            $allowed = array_merge($media['photo']['mimes'], $media['video']['mimes']);
+                            $accept  = '.' . implode(',.', $allowed);
+
+                            $photoMb = round($media['photo']['max_kilobytes'] / 1024);
+                            $videoMb = round($media['video']['max_kilobytes'] / 1024);
+                            $photoTypes = strtoupper(implode(', ', $media['photo']['mimes']));
+                            $videoTypes = strtoupper(implode(', ', $media['video']['mimes']));
+                        @endphp
+
+                        <div class="mt-3">
+                            <label for="reviewMedia" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--primary)]">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M18 10.5h.008v.008H18V10.5Z"/></svg>
+                                Add photos or a video
+                            </label>
+
+                            <input type="file" id="reviewMedia" class="hidden" multiple
+                                   accept="{{ $accept }}"
+                                   onchange="pickReviewMedia(event)">
+
+                            {{-- The limits are on the page, not discovered by
+                                 having an upload refused. --}}
+                            <p class="mt-1.5 text-xs text-[var(--muted)]">
+                                Up to {{ $media['max_files'] }} files.
+                                Photos {{ $photoTypes }} to {{ $photoMb }} MB;
+                                video {{ $videoTypes }} to {{ $videoMb }} MB.
+                            </p>
+
+                            <div id="reviewMediaList" class="mt-2 flex flex-wrap gap-2"></div>
+                        </div>
+
                         <textarea id="reviewBody" rows="3" maxlength="1000"
                                   placeholder="How did it run? Anything another customer should know?"
                                   class="mt-3 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--primary)]"></textarea>
@@ -666,6 +702,80 @@
                         class="text-2xl leading-none transition ${n <= chosenRating ? 'text-amber-500' : 'text-[var(--line)] hover:text-amber-300'}">&#9733;</button>`).join('');
         }
 
+        /* The same ceilings the server holds to, so a file that will be
+           refused is refused here instead of after an upload. The server
+           checks again regardless: this runs in the customer's browser,
+           which is not a place to enforce anything. */
+        @php
+            // Built here rather than inside @json for the same reason as
+            // $packPayload above: the directive's argument parser does not
+            // survive a nested call, and swallows the rest of the file --
+            // which left $packPayload undefined and the page a 500.
+            $mediaRules = config('reviews.media');
+        @endphp
+
+        const MEDIA_RULES = @json($mediaRules);
+        let reviewFiles = [];
+
+        function kindOfFile(file) {
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            if (MEDIA_RULES.photo.mimes.includes(ext)) return 'photo';
+            if (MEDIA_RULES.video.mimes.includes(ext)) return 'video';
+            return null;
+        }
+
+        function pickReviewMedia(event) {
+            const box = document.getElementById('reviewError');
+            box.classList.add('hidden');
+
+            for (const file of Array.from(event.target.files)) {
+                if (reviewFiles.length >= MEDIA_RULES.max_files) {
+                    box.textContent = `You can attach up to ${MEDIA_RULES.max_files} files.`;
+                    box.classList.remove('hidden');
+                    break;
+                }
+
+                const kind = kindOfFile(file);
+
+                if (!kind) {
+                    box.textContent = `${file.name} is not a kind of file we can show.`;
+                    box.classList.remove('hidden');
+                    continue;
+                }
+
+                const limitKb = MEDIA_RULES[kind].max_kilobytes;
+
+                if (file.size / 1024 > limitKb) {
+                    box.textContent = `${file.name} is ${(file.size / 1048576).toFixed(1)} MB. `
+                        + `${kind === 'photo' ? 'Photos' : 'Videos'} are limited to ${Math.round(limitKb / 1024)} MB.`;
+                    box.classList.remove('hidden');
+                    continue;
+                }
+
+                reviewFiles.push({ file, kind, url: URL.createObjectURL(file) });
+            }
+
+            event.target.value = '';
+            drawReviewMedia();
+        }
+
+        function removeReviewFile(index) {
+            URL.revokeObjectURL(reviewFiles[index]?.url);
+            reviewFiles.splice(index, 1);
+            drawReviewMedia();
+        }
+
+        function drawReviewMedia() {
+            document.getElementById('reviewMediaList').innerHTML = reviewFiles.map((m, i) => `
+                <div class="relative h-16 w-16 overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)]">
+                    ${m.kind === 'photo'
+                        ? `<img src="${m.url}" alt="" class="h-full w-full object-cover">`
+                        : `<video src="${m.url}" class="h-full w-full object-cover" muted></video>`}
+                    <button type="button" onclick="removeReviewFile(${i})" aria-label="Remove"
+                            class="absolute right-0 top-0 rounded-bl bg-black/60 px-1.5 text-xs font-bold text-white">&times;</button>
+                </div>`).join('');
+        }
+
         function pickRating(n) {
             chosenRating = Number(n);
             drawRatingPicker();
@@ -700,6 +810,10 @@
                             <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Verified purchase</span>
                         </div>
                         ${r.body ? `<p class="mt-1.5 text-sm leading-6 text-[var(--ink)]">${escapeHtml(r.body)}</p>` : ''}
+                        ${(r.media || []).length ? `<div class="mt-2 flex flex-wrap gap-2">` + r.media.map((m) => m.kind === 'photo'
+                            ? `<a href="${m.url}" target="_blank" rel="noopener"><img src="${m.url}" alt="" loading="lazy" class="h-20 w-20 rounded-lg border border-[var(--line)] object-cover transition hover:brightness-95"></a>`
+                            : `<video src="${m.url}" controls preload="metadata" class="h-20 w-32 rounded-lg border border-[var(--line)] bg-black object-cover"></video>`
+                        ).join('') + `</div>` : ''}
                         <div class="mt-1 text-xs text-[var(--muted)]">${escapeHtml(r.written || '')}</div>
                     </div>`).join('')
                 : '';
@@ -719,10 +833,17 @@
             }
 
             await withBusy(busyButtonOf(event.target), async () => {
+                // FormData, not JSON: a review may now carry files, and the
+                // two cannot travel in the same request as JSON.
+                const form = new FormData();
+                form.append('rating', chosenRating);
+                form.append('body', document.getElementById('reviewBody').value);
+                reviewFiles.forEach((m) => form.append('media[]', m.file));
+
                 const response = await fetch(`/shop-api/products/${REVIEW_PRODUCT_ID}/reviews`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
-                    body: JSON.stringify({ rating: chosenRating, body: document.getElementById('reviewBody').value }),
+                    headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+                    body: form,
                 });
 
                 const payload = await response.json();
@@ -735,6 +856,9 @@
 
                 document.getElementById('reviewBody').value = '';
                 chosenRating = 0;
+                reviewFiles.forEach((m) => URL.revokeObjectURL(m.url));
+                reviewFiles = [];
+                drawReviewMedia();
                 showMessage(payload.message || 'Thank you.');
                 await loadReviews();
             }, 'Posting');

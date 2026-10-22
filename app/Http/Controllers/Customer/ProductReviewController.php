@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Product;
 use App\Models\ProductReview;
+use App\Support\ReviewMedia;
 use Illuminate\Http\Request;
 
 /**
@@ -25,7 +26,7 @@ class ProductReviewController extends Controller
             return response()->json(['success' => false, 'message' => 'That product no longer exists.'], 404);
         }
 
-        $page = ProductReview::with('user')
+        $page = ProductReview::with(['user', 'media'])
             ->where('product_id', $productId)
             ->orderByDesc('created_at')
             ->paginate($this->perPage(10));
@@ -41,6 +42,11 @@ class ProductReviewController extends Controller
                 // whole basis on which it was accepted, so it is worth saying.
                 'verified'  => true,
                 'written'   => $review->created_at?->diffForHumans(),
+                'media'     => $review->media->map(fn ($m) => [
+                    'kind' => $m->kind,
+                    'url'  => $m->url(),
+                    'type' => $m->mime_type,
+                ])->values(),
             ],
             [
                 'summary' => [
@@ -87,11 +93,29 @@ class ProductReviewController extends Controller
         $validated = $request->validate([
             'rating' => ['required', 'integer', 'between:' . ProductReview::MIN_RATING . ',' . ProductReview::MAX_RATING],
             'body'   => ['nullable', 'string', 'max:1000'],
-        ], [
+        ] + ReviewMedia::rules(), [
             'rating.required' => 'Choose a rating from one to five stars.',
             'rating.between'  => 'A rating runs from one star to five.',
             'body.max'        => 'Keep a review under 1,000 characters.',
-        ]);
+        ] + ReviewMedia::messages());
+
+        /*
+         * The per-type ceiling, which the shared rule cannot express: a
+         * photograph is held to four megabytes and a clip to twenty, and one
+         * rule covering both would have to allow twenty for either.
+         *
+         * Checked before anything is written, so a review is never saved with
+         * half its attachments.
+         */
+        foreach ($request->file('media', []) as $index => $file) {
+            if ($problem = ReviewMedia::sizeProblem($file)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $problem,
+                    'errors'  => ['media.' . $index => [$problem]],
+                ], 422);
+            }
+        }
 
         $review = ProductReview::create([
             'product_id' => $productId,
@@ -102,6 +126,10 @@ class ProductReviewController extends Controller
             'rating'     => $validated['rating'],
             'body'       => blank($validated['body'] ?? null) ? null : trim($validated['body']),
         ]);
+
+        foreach ($request->file('media', []) as $file) {
+            ReviewMedia::attach($review, $file);
+        }
 
         ActivityLog::logAction(
             $request->user()->user_id,

@@ -77,6 +77,12 @@ class ViewScriptSyntaxTest extends TestCase
                     $opened -= preg_match_all("/@section\([^)]*,[^)]*\)/", $source);
                 }
 
+                // @php($x = 1) is the same shape: one statement, no @endphp.
+                // Counting it as an opener reported a balanced file as broken.
+                if ($open === '@php') {
+                    $opened -= preg_match_all('/@php\s*\(/', $source);
+                }
+
                 if ($opened !== $closed) {
                     $unbalanced[] = "{$path}: {$opened} {$open} against {$closed} {$close}";
                 }
