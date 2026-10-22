@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\ProductReview;
 use App\Models\SaleItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -170,6 +171,49 @@ class ShopController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $featured,
+        ]);
+    }
+    /**
+     * What customers have said, across the whole shop.
+     *
+     * Every one came from somebody whose order was delivered -- that is
+     * the only way a review can exist -- so the whole set is verified
+     * purchases and the page may say so without qualifying it.
+     *
+     * Not filtered to the flattering ones. A shop that shows only its
+     * five-star reviews is a shop whose rating means nothing, and the
+     * average printed beside them would not match the reviews beneath it.
+     * The business can still take one down from Admin, with a reason
+     * recorded against whoever did it.
+     */
+    public function getTestimonials()
+    {
+        $reviews = ProductReview::with(['user', 'product', 'media'])
+            ->whereNotNull('body')
+            ->where('body', '<>', '')
+            ->orderByDesc('created_at')
+            ->take(6)
+            ->get();
+
+        // Counted over every review, including the rating-only ones left
+            // out above: the figure describes the shop, not this strip.
+        $all = ProductReview::query();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $reviews->map(fn (ProductReview $review) => [
+                'rating'  => $review->rating,
+                'body'    => $review->body,
+                'author'  => $review->displayName(),
+                'product' => $review->product?->product_name,
+                'product_id' => $review->product_id,
+                'written' => $review->created_at?->diffForHumans(),
+                'photo'   => optional($review->media->firstWhere('kind', 'photo'))->url(),
+            ])->values(),
+            'summary' => [
+                'count'   => (clone $all)->count(),
+                'average' => round((float) (clone $all)->avg('rating'), 1) ?: null,
+            ],
         ]);
     }
 }

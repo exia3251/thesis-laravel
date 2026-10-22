@@ -92,8 +92,23 @@ class ProductReview extends Model
      */
     public function displayName(): string
     {
-        $parts = preg_split('/\s+/', trim((string) $this->user?->full_name)) ?: [];
-        $first = $parts[0] ?? 'Customer';
+        $name = trim((string) $this->user?->full_name);
+
+        /*
+         * A leading tag in brackets is a marker the business puts on an
+         * account -- the demo data carries "[demo]" -- and it is for the back
+         * office, not for the shop front, where it was being printed as the
+         * customer's first name.
+         */
+        $name = trim(preg_replace('/^\s*\[[^\]]*\]\s*/', '', $name));
+
+        $parts = array_values(array_filter(preg_split('/\s+/', $name) ?: []));
+
+        if ($parts === []) {
+            return 'Customer';
+        }
+
+        $first = $parts[0];
         $last  = count($parts) > 1 ? ' ' . mb_strtoupper(mb_substr(end($parts), 0, 1)) . '.' : '';
 
         return $first . $last;

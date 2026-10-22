@@ -92,6 +92,25 @@
             </div>
         </section>
 
+        {{-- What customers said. Drawn from the reviews themselves, so the
+             shop cannot claim anything nobody wrote: every one here came
+             from a delivered order, which is the only way a review exists. --}}
+        <section id="testimonials" class="mb-8 hidden">
+            <div class="mb-5 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--primary)]">From our customers</div>
+                    <h2 class="mt-2 text-3xl font-black text-[var(--ink)]">What people say</h2>
+                    <p id="testimonialSummary" class="mt-1 text-sm text-[var(--muted)]"></p>
+                </div>
+                <p class="max-w-md text-sm leading-6 text-[var(--muted)]">
+                    Every review here was left by somebody whose order arrived.
+                    Nobody can review an oil they have not received.
+                </p>
+            </div>
+
+            <div id="testimonialGrid" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"></div>
+        </section>
+
         <section id="catalog" class="mb-6 rounded-[1.5rem] border border-[var(--line)] bg-white p-5 shadow-sm">
             <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
@@ -204,6 +223,62 @@
                 const count = brandCounts[label.dataset.brandCount] ?? 0;
                 label.textContent = count === 1 ? '1 product' : `${count} products`;
             });
+        }
+
+        /* Stars drawn rather than a number written, because a rating is
+           read at a glance. Filled up to the score, hollow after it. */
+        function testimonialStars(rating) {
+            let out = '';
+            for (let i = 1; i <= 5; i++) {
+                out += `<span class="${i <= rating ? 'text-amber-500' : 'text-[var(--line)]'}">&#9733;</span>`;
+            }
+            return out;
+        }
+
+        async function loadTestimonials() {
+            const section = document.getElementById('testimonials');
+
+            try {
+                const response = await fetch('/shop-api/testimonials', { headers: { Accept: 'application/json' } });
+                if (!response.ok) return;
+
+                const { data, summary } = await response.json();
+
+                /* Nothing written yet is not an empty strip with a heading
+                   over it. The section stays hidden until there is
+                   something in it, so a new shop does not advertise that
+                   nobody has bought anything. */
+                if (!data.length) return;
+
+                document.getElementById('testimonialSummary').textContent =
+                    summary.average
+                        ? `${summary.average} out of 5 from ${summary.count} ${summary.count === 1 ? 'review' : 'reviews'}`
+                        : '';
+
+                document.getElementById('testimonialGrid').innerHTML = data.map((t) => `
+                    <figure class="flex h-full flex-col rounded-[1.5rem] border border-[var(--line)] bg-white p-6 shadow-sm">
+                        <div class="text-lg leading-none">${testimonialStars(t.rating)}</div>
+
+                        <blockquote class="mt-3 flex-1 text-sm leading-6 text-[var(--ink)]">
+                            &ldquo;${escapeHtml(t.body)}&rdquo;
+                        </blockquote>
+
+                        ${t.photo ? `<img src="${t.photo}" alt="" loading="lazy" class="mt-4 h-28 w-full rounded-xl border border-[var(--line)] object-cover">` : ''}
+
+                        <figcaption class="mt-4 border-t border-[var(--line)] pt-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm font-bold text-[var(--ink)]">${escapeHtml(t.author)}</span>
+                                <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Verified purchase</span>
+                            </div>
+                            ${t.product ? `<a href="/shop/products/${t.product_id}" class="mt-1 block truncate text-xs text-[var(--muted)] hover:text-[var(--primary)]">on ${escapeHtml(t.product)}</a>` : ''}
+                            <div class="mt-0.5 text-xs text-[var(--muted)]">${escapeHtml(t.written || '')}</div>
+                        </figcaption>
+                    </figure>`).join('');
+
+                section.classList.remove('hidden');
+            } catch (error) {
+                // A strip of opinions is not worth breaking the shop over.
+            }
         }
 
         async function loadFeaturedProducts() {
@@ -400,6 +475,7 @@
                         brands.map((brand) => `<option value="${escapeHtml(brand)}">${escapeHtml(brand)}</option>`).join('');
                     renderShowcase();
                     loadFeaturedProducts();
+                    loadTestimonials();
                     renderProducts();
                 }
             } catch (error) {

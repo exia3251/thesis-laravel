@@ -315,6 +315,9 @@ Route::middleware('throttle:60,1')->group(function () {
     Route::get('/shop-api/products', [ShopController::class, 'getProducts']);
     Route::get('/shop-api/featured-products', [ShopController::class, 'getFeaturedProducts']);
 
+    // What customers said, for the strip on the shop home page.
+    Route::get('/shop-api/testimonials', [ShopController::class, 'getTestimonials']);
+
     /*
      * Reviews are part of the catalogue, not something behind a sign-in. A
      * review a customer cannot read until after they have an account is a
